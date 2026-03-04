@@ -265,8 +265,23 @@ def build_latest_report_html(reports_with_stats):
 
 def build_breadth_html(market_history):
     """
-    Market Breadth section: 4 stats (Bias, Long%, Short%, Sector Avg)
-    plus a full-width breadth trend chart.
+    Market Breadth section: 5 KPI cards + dual-panel chart.
+
+    Signals:
+    - Regime classification: RISK-ON / BULLISH / NEUTRAL / CAUTION / RISK-OFF
+      based on Long-Short spread + L/S ratio composite
+    - Top chart (240px): Long% / Short% lines + MA10 dashed + regime background bands
+      per column + P25 / Median / P75 reference lines
+    - Bottom chart (150px): Long-Short spread as colored bar chart
+      (green >8, blue 5-8, yellow 2-5, orange 0-2, red <0)
+    - Tooltip shows spread + ratio on hover
+
+    Key insight:
+    - Spread > 8  AND ratio > 2.0 → RISK-ON  (strong long bias)
+    - Spread 5-8  AND ratio > 1.5 → BULLISH  (moderate long bias)
+    - Spread 2-5               → NEUTRAL  (cautious)
+    - Spread 0-2               → CAUTION  (reduce exposure)
+    - Spread < 0               → RISK-OFF (short bias)
     """
     if not market_history:
         return ''
@@ -283,11 +298,24 @@ def build_breadth_html(market_history):
     long_breadth  = [h['long_breadth_pct']  for h in history]
     short_breadth = [h['short_breadth_pct'] for h in history]
 
-    latest = history[-1]
-    l_pct  = latest['long_breadth_pct']
-    s_pct  = latest['short_breadth_pct']
-    s_avg  = latest.get('sector_avg', 0.0)
+    # ── Derived series ────────────────────────────────────────────────────────
+    spreads = [round(h['long_breadth_pct'] - h['short_breadth_pct'], 2) for h in history]
 
+    # 10-day moving average of long breadth
+    ma10 = []
+    for i in range(len(long_breadth)):
+        window = long_breadth[max(0, i - 9):i + 1]
+        ma10.append(round(sum(window) / len(window), 2))
+
+    # ── Latest snapshot ───────────────────────────────────────────────────────
+    latest    = history[-1]
+    l_pct     = latest['long_breadth_pct']
+    s_pct     = latest['short_breadth_pct']
+    s_avg     = latest.get('sector_avg', 0.0)
+    spread_val = round(l_pct - s_pct, 1)
+    ratio      = l_pct / s_pct if s_pct > 0 else 99.0
+
+    # ── Day-over-day deltas ───────────────────────────────────────────────────
     def delta_fmt(cur, prev):
         d = round(cur - prev, 1)
         if d > 0:  return f'+{d}', '#00d4aa'
@@ -295,27 +323,64 @@ def build_breadth_html(market_history):
         return '—', '#505068'
 
     if len(history) >= 2:
-        prev = history[-2]
+        prev       = history[-2]
         l_dstr, l_dcol = delta_fmt(l_pct, prev['long_breadth_pct'])
         s_dstr, s_dcol = delta_fmt(s_pct, prev['short_breadth_pct'])
         a_dstr, a_dcol = delta_fmt(s_avg,  prev.get('sector_avg', s_avg))
+        prev_s_str = f"{prev['short_breadth_pct']}%"
     else:
         l_dstr = s_dstr = a_dstr = '—'
         l_dcol = s_dcol = a_dcol = '#505068'
+        prev_s_str = '—'
 
-    ratio = l_pct / s_pct if s_pct > 0 else 99
-    if ratio > 2.0:
-        bias_label, bias_color = 'BULLISH', '#00d4aa'
-    elif ratio > 1.2:
-        bias_label, bias_color = 'NEUTRAL', '#f5a623'
+    # ── 5-day momentum ────────────────────────────────────────────────────────
+    spread_5d_ago = spreads[-6]      if len(spreads) >= 6      else spreads[0]
+    long_5d_ago   = long_breadth[-6] if len(long_breadth) >= 6 else long_breadth[0]
+    spread_mom    = round(spread_val - spread_5d_ago, 1)
+    long_mom      = round(l_pct - long_5d_ago, 1)
+
+    if   spread_mom > 0.5:  smom_str, smom_col = f'+{spread_mom}', '#00d4aa'
+    elif spread_mom < -0.5: smom_str, smom_col = str(spread_mom),  '#ff4a6a'
+    else:                   smom_str, smom_col = '—',              '#505068'
+
+    if   long_mom > 0.5:  lmom_str, lmom_col = f'+{long_mom}', '#00d4aa'
+    elif long_mom < -0.5: lmom_str, lmom_col = str(long_mom),  '#ff4a6a'
+    else:                 lmom_str, lmom_col = '—',            '#505068'
+
+    # ── Regime classification (composite: spread + ratio) ─────────────────────
+    if spread_val > 8 and ratio > 2.0:
+        regime_label = 'RISK-ON'
+        regime_color = '#00d4aa'
+        regime_sub   = 'Strong long bias'
+    elif spread_val > 5 and ratio > 1.5:
+        regime_label = 'BULLISH'
+        regime_color = '#4a9eff'
+        regime_sub   = 'Moderate long bias'
+    elif spread_val > 2:
+        regime_label = 'NEUTRAL'
+        regime_color = '#f5a623'
+        regime_sub   = 'Cautious / mixed'
+    elif spread_val >= 0:
+        regime_label = 'CAUTION'
+        regime_color = '#f97316'
+        regime_sub   = 'Reduce exposure'
     else:
-        bias_label, bias_color = 'BEARISH', '#ff4a6a'
+        regime_label = 'RISK-OFF'
+        regime_color = '#ff4a6a'
+        regime_sub   = 'Short bias active'
+
+    # ── Historical percentile of current spread ────────────────────────────────
+    n_entries  = len(spreads)
+    spread_pct = round(sum(1 for s in spreads if s <= spread_val) / n_entries * 100)
+    spread_ctx = f'{spread_pct}th percentile'
 
     latest_date_display = format_date_display(latest['date'])
 
-    jdates = json.dumps(display_dates)
-    jlong  = json.dumps(long_breadth)
-    jshort = json.dumps(short_breadth)
+    jdates   = json.dumps(display_dates)
+    jlong    = json.dumps(long_breadth)
+    jshort   = json.dumps(short_breadth)
+    jma10    = json.dumps(ma10)
+    jspreads = json.dumps(spreads)
 
     return f"""
 <!-- ── Market Breadth ────────────────────────────────────────────────── -->
@@ -326,42 +391,147 @@ def build_breadth_html(market_history):
   </div>
 
   <div class="br-stats-row">
-    <div class="br-stat">
-      <div class="br-stat-label">Market Bias</div>
-      <div class="br-stat-value" style="color:{bias_color}">{bias_label}</div>
+
+    <!-- Regime -->
+    <div class="br-stat br-stat-regime" style="border-color:rgba(255,255,255,0.06);
+         background:linear-gradient(135deg,#10101a,#14121e);">
+      <div class="br-stat-label">Regime</div>
+      <div class="br-stat-value" style="color:{regime_color}">{regime_label}</div>
+      <div class="br-sub" style="color:{regime_color};opacity:.7">{regime_sub}</div>
     </div>
+
+    <!-- Long Breadth -->
     <div class="br-stat">
       <div class="br-stat-label">Long Breadth</div>
       <div class="br-stat-value stat-green">{l_pct}%
         <span class="br-delta" style="color:{l_dcol}">{l_dstr}</span>
       </div>
+      <div class="br-sub">5d: <span style="color:{lmom_col}">{lmom_str}</span></div>
     </div>
+
+    <!-- Short Breadth -->
     <div class="br-stat">
       <div class="br-stat-label">Short Breadth</div>
       <div class="br-stat-value stat-red">{s_pct}%
         <span class="br-delta" style="color:{s_dcol}">{s_dstr}</span>
       </div>
+      <div class="br-sub">prev: {prev_s_str}</div>
     </div>
+
+    <!-- L-S Spread -->
     <div class="br-stat">
-      <div class="br-stat-label">Sector Avg Score</div>
+      <div class="br-stat-label">L &minus; S Spread</div>
+      <div class="br-stat-value" style="color:{regime_color}">{spread_val}
+        <span class="br-delta" style="color:{smom_col}">{smom_str}</span>
+      </div>
+      <div class="br-sub">{spread_ctx}</div>
+    </div>
+
+    <!-- Sector Avg -->
+    <div class="br-stat">
+      <div class="br-stat-label">Sector Avg</div>
       <div class="br-stat-value stat-blue">{s_avg}
         <span class="br-delta" style="color:{a_dcol}">{a_dstr}</span>
       </div>
+      <div class="br-sub">score / 100</div>
     </div>
+
   </div>
 
+  <!-- ── Chart card ──────────────────────────────────────────────────── -->
   <div class="br-chart-card">
-    <div class="br-chart-title">Breadth Trend &mdash; % stocks scoring 70+</div>
+
+    <!-- Top panel: breadth lines -->
+    <div class="br-chart-row">
+      <div class="br-chart-label">Long &amp; Short Breadth — % stocks scoring 70+
+        <span class="br-pill br-pill-green">Long%</span>
+        <span class="br-pill br-pill-red">Short%</span>
+        <span class="br-pill br-pill-white">MA10</span>
+      </div>
+    </div>
     <div class="br-chart-wrap"><canvas id="breadthChart"></canvas></div>
+
+    <div class="br-divider"></div>
+
+    <!-- Bottom panel: spread bars -->
+    <div class="br-chart-row" style="margin-top:12px">
+      <div class="br-chart-label">Long &minus; Short Spread
+        <span class="br-guide">
+          <span style="color:#00d4aa">▮</span>&nbsp;&gt;8 Risk-On&nbsp;&nbsp;
+          <span style="color:#4a9eff">▮</span>&nbsp;5-8 Bullish&nbsp;&nbsp;
+          <span style="color:#f5a623">▮</span>&nbsp;2-5 Neutral&nbsp;&nbsp;
+          <span style="color:#ff4a6a">▮</span>&nbsp;&lt;0 Risk-Off
+        </span>
+      </div>
+    </div>
+    <div class="br-spread-wrap"><canvas id="spreadChart"></canvas></div>
+
   </div>
 </div>
 <!-- ── /Market Breadth ───────────────────────────────────────────────── -->
 
 <script>
 (function() {{
-  var ctx = document.getElementById('breadthChart').getContext('2d');
-  new Chart(ctx, {{
+
+  // ── Plugin: vertical regime background bands ──────────────────────────────
+  var regimeBgPlugin = {{
+    id: 'regimeBg',
+    beforeDraw: function(chart) {{
+      var ctx  = chart.ctx;
+      var ca   = chart.chartArea;
+      if (!ca) return;
+      var spreads = {jspreads};
+      var n    = spreads.length;
+      var barW = (ca.right - ca.left) / n;
+      ctx.save();
+      for (var i = 0; i < n; i++) {{
+        var sp = spreads[i];
+        if      (sp > 8) ctx.fillStyle = 'rgba(0,212,170,0.10)';
+        else if (sp > 5) ctx.fillStyle = 'rgba(74,158,255,0.07)';
+        else if (sp > 2) ctx.fillStyle = 'rgba(245,166,35,0.05)';
+        else if (sp > 0) ctx.fillStyle = 'rgba(245,166,35,0.02)';
+        else             ctx.fillStyle = 'rgba(255,74,106,0.10)';
+        ctx.fillRect(ca.left + i * barW, ca.top, barW, ca.bottom - ca.top);
+      }}
+      ctx.restore();
+    }}
+  }};
+
+  // ── Plugin: P25 / Median / P75 reference lines ───────────────────────────
+  var refLinesPlugin = {{
+    id: 'refLines',
+    afterDraw: function(chart) {{
+      var ctx   = chart.ctx;
+      var ca    = chart.chartArea;
+      var yAxis = chart.scales.y;
+      if (!ca || !yAxis) return;
+      var lines = [
+        {{ y: 14.3, label: 'P25', color: 'rgba(80,80,120,0.40)' }},
+        {{ y: 15.2, label: 'Med', color: 'rgba(80,80,120,0.65)' }},
+        {{ y: 16.8, label: 'P75', color: 'rgba(80,80,120,0.40)' }},
+      ];
+      ctx.save();
+      lines.forEach(function(line) {{
+        var py = yAxis.getPixelForValue(line.y);
+        ctx.setLineDash([3, 5]);
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth   = 1;
+        ctx.beginPath(); ctx.moveTo(ca.left, py); ctx.lineTo(ca.right, py); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle  = line.color;
+        ctx.font       = '9px Inter, sans-serif';
+        ctx.textAlign  = 'left';
+        ctx.fillText(line.label, ca.right + 4, py + 3);
+      }});
+      ctx.restore();
+    }}
+  }};
+
+  // ── Main breadth chart ───────────────────────────────────────────────────
+  var ctx1 = document.getElementById('breadthChart').getContext('2d');
+  new Chart(ctx1, {{
     type: 'line',
+    plugins: [regimeBgPlugin, refLinesPlugin],
     data: {{
       labels: {jdates},
       datasets: [
@@ -369,44 +539,147 @@ def build_breadth_html(market_history):
           label: 'Long 70+%',
           data: {jlong},
           borderColor: '#00d4aa',
-          backgroundColor: 'rgba(0,212,170,0.12)',
-          fill: true, tension: 0.35,
-          pointRadius: 5, pointBackgroundColor: '#00d4aa', borderWidth: 2.5
+          backgroundColor: 'rgba(0,212,170,0.10)',
+          fill: '+1',
+          tension: 0.35,
+          pointRadius: 2, pointBackgroundColor: '#00d4aa', borderWidth: 2.5,
+          order: 2
         }},
         {{
           label: 'Short 70+%',
           data: {jshort},
           borderColor: '#ff4a6a',
-          backgroundColor: 'rgba(255,74,106,0.08)',
-          fill: true, tension: 0.35,
-          pointRadius: 5, pointBackgroundColor: '#ff4a6a', borderWidth: 2.5
+          backgroundColor: 'rgba(255,74,106,0.06)',
+          fill: false,
+          tension: 0.35,
+          pointRadius: 2, pointBackgroundColor: '#ff4a6a', borderWidth: 2,
+          order: 3
+        }},
+        {{
+          label: 'MA10',
+          data: {jma10},
+          borderColor: 'rgba(255,255,255,0.45)',
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0.35,
+          borderDash: [6, 4],
+          pointRadius: 0, borderWidth: 1.5,
+          order: 1
         }}
       ]
     }},
     options: {{
       responsive: true, maintainAspectRatio: false,
       interaction: {{ mode: 'index', intersect: false }},
+      layout: {{ padding: {{ right: 32 }} }},
       plugins: {{
-        legend: {{
-          display: true, position: 'top',
-          labels: {{ color: '#8888a0', font: {{ size: 11 }}, boxWidth: 12, padding: 16 }}
-        }},
+        legend: {{ display: false }},
         tooltip: {{
           backgroundColor: '#10101a', borderColor: '#2a2a44', borderWidth: 1,
           titleColor: '#e8e8f0', bodyColor: '#8888a0',
-          callbacks: {{ label: function(c) {{ return ' ' + c.dataset.label + ': ' + c.parsed.y + '%'; }} }}
+          callbacks: {{
+            label: function(c) {{
+              if (c.dataset.label === 'MA10')
+                return ' MA10: ' + c.parsed.y.toFixed(1) + '%';
+              return ' ' + c.dataset.label + ': ' + c.parsed.y + '%';
+            }},
+            afterBody: function(items) {{
+              var lo = items.find(function(i) {{ return i.dataset.label === 'Long 70+%'; }});
+              var sh = items.find(function(i) {{ return i.dataset.label === 'Short 70+%'; }});
+              if (lo && sh) {{
+                var sp  = (lo.parsed.y - sh.parsed.y).toFixed(1);
+                var rat = sh.parsed.y > 0
+                          ? (lo.parsed.y / sh.parsed.y).toFixed(2) + 'x'
+                          : '∞';
+                var reg = sp > 8 ? 'RISK-ON'
+                        : sp > 5 ? 'BULLISH'
+                        : sp > 2 ? 'NEUTRAL'
+                        : sp > 0 ? 'CAUTION'
+                        :          'RISK-OFF';
+                return ['', ' Spread : ' + sp, ' Ratio  : ' + rat, ' Regime : ' + reg];
+              }}
+              return [];
+            }}
+          }}
         }}
       }},
       scales: {{
-        x: {{ grid: {{ color: 'rgba(255,255,255,0.04)' }}, ticks: {{ color: '#505068', font: {{ size: 11 }} }} }},
+        x: {{
+          grid: {{ color: 'rgba(255,255,255,0.03)' }},
+          ticks: {{ color: '#505068', font: {{ size: 10 }}, maxTicksLimit: 12 }}
+        }},
         y: {{
           grid: {{ color: 'rgba(255,255,255,0.04)' }},
-          ticks: {{ color: '#505068', font: {{ size: 11 }}, callback: function(v) {{ return v + '%'; }} }},
-          suggestedMin: 0
+          ticks: {{
+            color: '#505068', font: {{ size: 10 }},
+            callback: function(v) {{ return v + '%'; }}
+          }},
+          suggestedMin: 4, suggestedMax: 23
         }}
       }}
     }}
   }});
+
+  // ── Spread bar chart ─────────────────────────────────────────────────────
+  var spreads      = {jspreads};
+  var spreadColors = spreads.map(function(s) {{
+    if (s > 8) return 'rgba(0,212,170,0.80)';
+    if (s > 5) return 'rgba(74,158,255,0.70)';
+    if (s > 2) return 'rgba(245,166,35,0.65)';
+    if (s > 0) return 'rgba(245,166,35,0.35)';
+    return 'rgba(255,74,106,0.80)';
+  }});
+
+  var ctx2 = document.getElementById('spreadChart').getContext('2d');
+  new Chart(ctx2, {{
+    type: 'bar',
+    data: {{
+      labels: {jdates},
+      datasets: [{{
+        label: 'Spread',
+        data: spreads,
+        backgroundColor: spreadColors,
+        borderRadius: 2,
+        borderSkipped: false,
+        borderWidth: 0,
+        barPercentage: 0.9,
+        categoryPercentage: 1.0
+      }}]
+    }},
+    options: {{
+      responsive: true, maintainAspectRatio: false,
+      interaction: {{ mode: 'index', intersect: false }},
+      plugins: {{
+        legend: {{ display: false }},
+        tooltip: {{
+          backgroundColor: '#10101a', borderColor: '#2a2a44', borderWidth: 1,
+          titleColor: '#e8e8f0', bodyColor: '#8888a0',
+          callbacks: {{
+            label: function(c) {{
+              var s   = c.parsed.y;
+              var reg = s > 8 ? 'RISK-ON'
+                      : s > 5 ? 'BULLISH'
+                      : s > 2 ? 'NEUTRAL'
+                      : s > 0 ? 'CAUTION'
+                      :         'RISK-OFF';
+              return [' Spread: ' + s.toFixed(1), ' Regime: ' + reg];
+            }}
+          }}
+        }}
+      }},
+      scales: {{
+        x: {{
+          grid: {{ color: 'rgba(255,255,255,0.02)' }},
+          ticks: {{ color: '#505068', font: {{ size: 10 }}, maxTicksLimit: 12 }}
+        }},
+        y: {{
+          grid: {{ color: 'rgba(255,255,255,0.04)' }},
+          ticks: {{ color: '#505068', font: {{ size: 10 }} }}
+        }}
+      }}
+    }}
+  }});
+
 }})();
 </script>
 """
@@ -414,22 +687,13 @@ def build_breadth_html(market_history):
 
 def build_sector_charts_html(market_history):
     """
-    Sector Performance section:
-      1. Top-10 multi-line trend Chart.js
-      2. Full sparkline grid for all named sectors (sorted by latest score)
+    Sector Performance section — sparkline grid only.
+    (Top-10 multi-line chart removed; full sparkline grid for all named sectors.)
     """
     if not market_history:
         return ''
 
     history = sorted(market_history, key=lambda x: x['date'])
-
-    # Display dates for chart labels
-    display_dates = []
-    for d in [h['date'] for h in history]:
-        try:
-            display_dates.append(datetime.strptime(d, '%Y-%m-%d').strftime('%b %d'))
-        except Exception:
-            display_dates.append(d)
 
     # Latest snapshot
     latest         = history[-1]
@@ -437,26 +701,8 @@ def build_sector_charts_html(market_history):
     if not latest_sectors:
         return ''
 
-    # All sectors that appear in the latest snapshot, sorted by score
+    # All sectors sorted by latest score (descending)
     sectors_sorted = sorted(latest_sectors.items(), key=lambda x: x[1], reverse=True)
-
-    # ── Top-10 multi-line datasets ────────────────────────────────────────────
-    top10 = sectors_sorted[:10]
-    datasets = []
-    for i, (sec_name, _) in enumerate(top10):
-        color = SECTOR_COLORS[i % len(SECTOR_COLORS)]
-        data  = [h.get('sectors', {}).get(sec_name) for h in history]  # None = gap
-        datasets.append({
-            'label':              sec_name,
-            'data':               data,
-            'borderColor':        color,
-            'backgroundColor':    'transparent',
-            'tension':            0.3,
-            'pointRadius':        3,
-            'pointBackgroundColor': color,
-            'borderWidth':        2,
-            'spanGaps':           True,
-        })
 
     # ── Sparkline grid — all sectors ──────────────────────────────────────────
     grid_html = ''
@@ -491,8 +737,6 @@ def build_sector_charts_html(market_history):
       <div class="sec-trend" style="color:{trend_col}">{trend_str}</div>
     </div>"""
 
-    jdates    = json.dumps(display_dates)
-    jdatasets = json.dumps(datasets)
     n_sectors = len(sectors_sorted)
 
     return f"""
@@ -503,60 +747,12 @@ def build_sector_charts_html(market_history):
     <div class="sc-count">{n_sectors} sectors tracked</div>
   </div>
 
-  <!-- Top-10 trend chart -->
-  <div class="sc-chart-card">
-    <div class="sc-chart-title">Top 10 Sectors &mdash; Score Trend Over Time</div>
-    <div class="sc-chart-wrap"><canvas id="sectorTrendChart"></canvas></div>
-  </div>
-
   <!-- All-sector sparkline grid -->
   <div class="sec-grid">
     {grid_html}
   </div>
 </div>
 <!-- ── /Sector Performance ───────────────────────────────────────────── -->
-
-<script>
-(function() {{
-  var ctx = document.getElementById('sectorTrendChart').getContext('2d');
-  new Chart(ctx, {{
-    type: 'line',
-    data: {{
-      labels: {jdates},
-      datasets: {jdatasets}
-    }},
-    options: {{
-      responsive: true, maintainAspectRatio: false,
-      interaction: {{ mode: 'index', intersect: false }},
-      plugins: {{
-        legend: {{
-          display: true, position: 'right',
-          labels: {{ color: '#8888a0', font: {{ size: 10 }}, boxWidth: 10,
-                    padding: 8, usePointStyle: true }}
-        }},
-        tooltip: {{
-          backgroundColor: '#10101a', borderColor: '#2a2a44', borderWidth: 1,
-          titleColor: '#e8e8f0', bodyColor: '#8888a0',
-          callbacks: {{
-            label: function(c) {{
-              if (c.parsed.y === null || c.parsed.y === undefined) return null;
-              return ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1);
-            }}
-          }}
-        }}
-      }},
-      scales: {{
-        x: {{ grid: {{ color: 'rgba(255,255,255,0.04)' }}, ticks: {{ color: '#505068', font: {{ size: 10 }} }} }},
-        y: {{
-          grid: {{ color: 'rgba(255,255,255,0.04)' }},
-          ticks: {{ color: '#505068', font: {{ size: 10 }} }},
-          min: 35, max: 85
-        }}
-      }}
-    }}
-  }});
-}})();
-</script>
 """
 
 
@@ -711,29 +907,53 @@ body {{
     font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
 }}
 .br-stats-row {{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px;
+    display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-bottom:12px;
 }}
 .br-stat {{
     background:var(--bg-card); border:1px solid var(--border-subtle);
     border-radius:var(--radius-sm); padding:12px 14px;
 }}
 .br-stat-label {{
-    font-size:.6rem; font-weight:600; text-transform:uppercase;
+    font-size:.59rem; font-weight:600; text-transform:uppercase;
     letter-spacing:.8px; color:var(--text-muted); margin-bottom:5px;
 }}
 .br-stat-value {{
-    font-family:'JetBrains Mono',monospace; font-size:1.15rem; font-weight:700;
+    font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:700;
 }}
-.br-delta {{ font-size:.7rem; font-weight:500; margin-left:4px; }}
+.br-delta {{ font-size:.68rem; font-weight:500; margin-left:4px; }}
+.br-sub   {{ font-size:.62rem; color:var(--text-muted); margin-top:4px; }}
+
+/* Chart card */
 .br-chart-card {{
     background:var(--bg-card); border:1px solid var(--border-subtle);
-    border-radius:var(--radius); padding:20px 22px 16px;
+    border-radius:var(--radius); padding:20px 22px 18px;
 }}
-.br-chart-title {{
-    font-size:.68rem; font-weight:600; text-transform:uppercase;
-    letter-spacing:1px; color:var(--text-secondary); margin-bottom:14px;
+.br-chart-row {{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
 }}
-.br-chart-wrap {{ position:relative; height:220px; }}
+.br-chart-label {{
+    font-size:.67rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:var(--text-secondary);
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}}
+.br-guide {{
+    font-size:.6rem; font-weight:400; letter-spacing:.3px;
+    color:var(--text-muted); text-transform:none; margin-left:4px;
+}}
+.br-pill {{
+    display:inline-block; font-size:.58rem; font-weight:600; letter-spacing:.5px;
+    text-transform:uppercase; border-radius:4px; padding:2px 7px;
+}}
+.br-pill-green {{ background:rgba(0,212,170,.15); color:#00d4aa; }}
+.br-pill-red   {{ background:rgba(255,74,106,.13); color:#ff4a6a; }}
+.br-pill-white {{ background:rgba(255,255,255,.08); color:rgba(255,255,255,.55); }}
+
+.br-chart-wrap  {{ position:relative; height:240px; }}
+.br-spread-wrap {{ position:relative; height:150px; }}
+.br-divider     {{
+    border:none; border-top:1px solid var(--border-subtle);
+    margin:16px 0 0;
+}}
 
 /* ══ Sector Performance ════════════════════════════════════════════════ */
 .sc-wrap {{
@@ -749,15 +969,6 @@ body {{
 .sc-count {{
     font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
 }}
-.sc-chart-card {{
-    background:var(--bg-card); border:1px solid var(--border-subtle);
-    border-radius:var(--radius); padding:20px 22px 16px; margin-bottom:14px;
-}}
-.sc-chart-title {{
-    font-size:.68rem; font-weight:600; text-transform:uppercase;
-    letter-spacing:1px; color:var(--text-secondary); margin-bottom:14px;
-}}
-.sc-chart-wrap {{ position:relative; height:340px; }}
 
 /* ══ Sector Sparkline Grid ═════════════════════════════════════════════ */
 .sec-grid {{
@@ -806,13 +1017,14 @@ body {{
 
 /* ══ Responsive ════════════════════════════════════════════════════════ */
 @media (max-width:700px) {{
-    .hero-title          {{ font-size:3rem; letter-spacing:-1px; }}
-    .hero                {{ padding:44px 20px 38px; }}
-    .lr-stats            {{ grid-template-columns:repeat(3,1fr); }}
-    .lr-date             {{ font-size:1.1rem; }}
-    .br-stats-row        {{ grid-template-columns:repeat(2,1fr); }}
-    .sc-chart-wrap       {{ height:260px; }}
-    .sec-grid            {{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }}
+    .hero-title    {{ font-size:3rem; letter-spacing:-1px; }}
+    .hero          {{ padding:44px 20px 38px; }}
+    .lr-stats      {{ grid-template-columns:repeat(3,1fr); }}
+    .lr-date       {{ font-size:1.1rem; }}
+    .br-stats-row  {{ grid-template-columns:repeat(2,1fr); }}
+    .br-chart-wrap {{ height:180px; }}
+    .br-spread-wrap{{ height:110px; }}
+    .sec-grid      {{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }}
 }}
 </style>
 </head>
