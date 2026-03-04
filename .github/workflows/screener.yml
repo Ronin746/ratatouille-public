@@ -1,14 +1,14 @@
 name: Ratatouille Screener
 
 on:
-  # Due trigger per coprire EST (inverno) ed EDT (estate):
-  # NYSE chiude sempre alle 16:00 ET → 30 min dopo:
-  #   16:30 ET = 21:30 UTC quando EST (UTC-5)  → nov–mar
-  #   16:30 ET = 20:30 UTC quando EDT (UTC-4)  → mar–nov
+  # Due trigger per coprire CET (inverno) e CEST (estate):
+  # Esecuzione alle 8:00 ora italiana, da martedì a sabato:
+  #   8:00 CET  = 7:00 UTC (inverno, ultima dom ottobre – ultima dom marzo)
+  #   8:00 CEST = 6:00 UTC (estate, ultima dom marzo – ultima dom ottobre)
   # Il guard step qui sotto garantisce che solo il trigger corretto proceda.
   schedule:
-    - cron: '30 21 * * 1-5'   # EST (inverno)
-    - cron: '30 20 * * 1-5'   # EDT (estate)
+    - cron: '0 7 * * 2-6'    # CET  (inverno) — 8:00 ora italiana
+    - cron: '0 6 * * 2-6'    # CEST (estate)  — 8:00 ora italiana
 
   # Avvio manuale dalla tab "Actions" su GitHub (bypassa il guard)
   workflow_dispatch:
@@ -21,8 +21,8 @@ jobs:
       contents: write   # necessario per git push dei nuovi report
 
     steps:
-      # ── 0. Guard: procedi solo se NYSE ha appena chiuso (ora ET = 16:xx) ──
-      - name: Check NYSE just closed
+      # ── 0. Guard: procedi solo se sono le 8:xx ora italiana ──
+      - name: Check Italian morning 8AM
         id: guard
         run: |
           python3 - <<'EOF'
@@ -30,11 +30,11 @@ jobs:
           from zoneinfo import ZoneInfo
           import os
 
-          et_now = datetime.now(ZoneInfo("America/New_York"))
-          hour   = et_now.hour
-          proceed = 16 <= hour < 17
+          it_now  = datetime.now(ZoneInfo("Europe/Rome"))
+          hour    = it_now.hour
+          proceed = 7 <= hour < 9
 
-          print(f"ET time: {et_now.strftime('%H:%M')} — proceed: {proceed}")
+          print(f"Italy time: {it_now.strftime('%H:%M')} — proceed: {proceed}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"proceed={str(proceed).lower()}\n")
           EOF

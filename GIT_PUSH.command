@@ -5,6 +5,7 @@
 #  Fa git add di tutto, commit con data odierna e push.
 # ─────────────────────────────────────────────────────────────────
 
+REPO_URL="https://github.com/Ronin746/ratatouille.git"
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
@@ -14,14 +15,21 @@ echo "   RATATOUILLE — Push su GitHub"
 echo "═══════════════════════════════════════════════════"
 echo ""
 
-# ── Controlla che siamo in un repo git ────────────────
+# ── Inizializza repo se necessario ────────────────────
 if [ ! -d ".git" ]; then
-    echo "⚠️  Questa cartella non è un repository Git."
-    echo "   Esegui prima: git init && git remote add origin <URL>"
-    echo ""
-    echo "Press ENTER to close."
-    read
-    exit 1
+    echo "Inizializzazione repo Git..."
+    git init
+    git branch -M main
+fi
+
+# ── Configura remote origin ───────────────────────────
+CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null)
+if [ -z "$CURRENT_REMOTE" ]; then
+    echo "Configurazione remote origin..."
+    git remote add origin "$REPO_URL"
+elif [ "$CURRENT_REMOTE" != "$REPO_URL" ]; then
+    echo "Aggiornamento remote origin..."
+    git remote set-url origin "$REPO_URL"
 fi
 
 # ── Stato attuale ──────────────────────────────────────
@@ -59,24 +67,34 @@ fi
 echo ""
 echo "Push verso GitHub..."
 echo "───────────────────────────────────────────────────"
-git push
+git push -u origin main
 PUSH_EXIT=$?
 echo "───────────────────────────────────────────────────"
 
 if [ $PUSH_EXIT -eq 0 ]; then
-    REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "GitHub")
     echo ""
     echo "═══════════════════════════════════════════════════"
     echo "  ✅  Push completato!"
-    echo "  📦  $REMOTE_URL"
+    echo "  📦  $REPO_URL"
     echo "═══════════════════════════════════════════════════"
 else
     echo ""
     echo "⚠️  Push fallito (codice $PUSH_EXIT)."
     echo "   Possibili cause:"
     echo "   - Nessuna connessione internet"
-    echo "   - Remote non configurato (git remote add origin <URL>)"
-    echo "   - Conflitti: fai prima 'git pull'"
+    echo "   - Conflitti: provo force push..."
+    echo ""
+    read -p "   Vuoi forzare il push? (s/n) " FORCE
+    if [ "$FORCE" = "s" ] || [ "$FORCE" = "S" ]; then
+        git push --force origin main
+        if [ $? -eq 0 ]; then
+            echo ""
+            echo "  ✅  Force push completato!"
+            echo "  📦  $REPO_URL"
+        else
+            echo "  ⚠️  Anche il force push è fallito."
+        fi
+    fi
 fi
 
 echo ""
