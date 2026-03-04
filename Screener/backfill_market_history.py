@@ -25,6 +25,9 @@ import os
 import sys
 from datetime import datetime
 
+# Sector baskets are imported lazily inside functions that need them
+# (avoids circular-import risk and keeps top-level imports light)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data loading
@@ -143,24 +146,37 @@ def download_price_history(tickers, period='6mo', batch_size=400):
 
 def compute_backfill_entries(close_df, days=90, ma_long=50, ma_short=20):
     """
-    For each of the last `days` trading days, compute breadth proxies.
+    For each of the last `days` trading days, compute breadth proxies and
+    per-basket sector scores using SECTOR_BASKETS from sector_baskets.py.
 
-    Metrics:
+    Breadth metrics:
       long_breadth_pct  = % stocks with close > MA50  (proxy for screener's % score >= 70)
       short_breadth_pct = % stocks with close < MA20  (proxy for % Short_Score >= 70)
 
-    Sector scores are intentionally NOT computed here. They are derived only
-    from real screener CSV data (via update_archive.py / compute_market_scores).
-    Estimated entries always carry sectors={} and sector_avg=0.0.
+    Sector scores (estimated proxy):
+      For each basket in SECTOR_BASKETS, compute avg of (close/MA50 - 1)*200 + 50
+      across basket tickers that have valid price + MA50 data (min 2 tickers).
+      sector_avg = mean of all basket scores with enough valid tickers.
 
     Returns a list of entry dicts (oldest first) with 'estimated': True.
     """
+    from sector_baskets import SECTOR_BASKETS
+
     # Forward-fill gaps (weekends/holidays per ticker)
     closes = close_df.ffill()
 
     n_avail = len(closes)
     if n_avail < ma_long + 5:
         raise ValueError(f'Need at least {ma_long + 5} days of data; only {n_avail} available')
+
+    # Pre-compute which basket tickers are actually present in our price data
+    basket_map = {}   # basket_name -> list[ticker] present in closes.columns
+    for bname, btickers in SECTOR_BASKETS.items():
+        present = [t for t in btickers if t in closes.columns]
+        if len(present) >= 2:
+            basket_map[bname] = present
+
+    print(f'  Baskets with price data: {len(basket_map)}/{len(SECTOR_BASKETS)}')
 
     # The last `days` rows that have enough history for MA calculation
     target_dates = closes.index[ma_long:]   # first date we can compute MA50
@@ -194,14 +210,28 @@ def compute_backfill_entries(close_df, days=90, ma_long=50, ma_short=20):
         long_count        = int((tc > m50).sum())
         short_count       = int((tc < m20).sum())
 
+        # ── Sector scores via SECTOR_BASKETS ───────────────────────────────────
+        sectors = {}
+        for bname, btickers in basket_map.items():
+            tc_b  = today_close[btickers]
+            m50_b = ma50[btickers]
+            v     = tc_b.notna() & m50_b.notna() & (m50_b > 0)
+            if v.sum() < 2:
+                continue
+            # Proxy score: (close/MA50 - 1)*200 + 50  →  centred on 50, like Final_Score
+            scores = (tc_b[v] / m50_b[v] - 1) * 200 + 50
+            sectors[bname] = round(float(scores.mean()), 1)
+
+        sector_avg = round(sum(sectors.values()) / len(sectors), 1) if sectors else 0.0
+
         entries.append({
             'date':              date.strftime('%Y-%m-%d'),
             'long_breadth_pct':  long_breadth_pct,
             'short_breadth_pct': short_breadth_pct,
-            'sector_avg':        0.0,
+            'sector_avg':        sector_avg,
             'long_count':        long_count,
             'short_count':       short_count,
-            'sectors':           {},
+            'sectors':           sectors,
             'estimated':         True,
         })
 
@@ -218,13 +248,17 @@ def safe_mean(values):
 
 def calibrate_entries(backfill_entries, existing_history):
     """
-    Scale backfill breadth estimates to match existing screener data.
+    Scale/offset backfill estimates to match existing screener data.
 
-    Calibration computes:
+    Breadth calibration (multiplicative):
       long_scale  = mean(screener_long_pct  / backfill_long_pct)   on overlap dates
       short_scale = mean(screener_short_pct / backfill_short_pct)  on overlap dates
 
-    Sector scores are not calibrated because estimated entries have sectors={}.
+    Sector calibration (additive offset):
+      For each basket present in both real and estimated data on overlap dates,
+      offset = mean(real_score - estimated_score).
+      Baskets without overlap data use the global mean sector offset as fallback.
+      sector_avg is also corrected by the global offset.
 
     Returns calibrated list ('estimated': True preserved).
     """
@@ -236,25 +270,61 @@ def calibrate_entries(backfill_entries, existing_history):
         print('  ⚠ No overlapping dates — skipping calibration (raw estimates used)')
         return backfill_entries
 
-    long_scales  = []
-    short_scales = []
+    long_scales      = []
+    short_scales     = []
+    basket_diffs     = {}   # basket_name -> [real_score - estimated_score, ...]
+    sector_avg_diffs = []
 
     for e in overlap:
         r = real_entries[e['date']]
-        if e['long_breadth_pct']  > 0: long_scales.append(r['long_breadth_pct']  / e['long_breadth_pct'])
-        if e['short_breadth_pct'] > 0: short_scales.append(r['short_breadth_pct'] / e['short_breadth_pct'])
+        if e['long_breadth_pct']  > 0:
+            long_scales.append(r['long_breadth_pct']  / e['long_breadth_pct'])
+        if e['short_breadth_pct'] > 0:
+            short_scales.append(r['short_breadth_pct'] / e['short_breadth_pct'])
+
+        # Per-basket sector offsets
+        r_sectors = r.get('sectors', {})
+        e_sectors = e.get('sectors', {})
+        for bname, e_score in e_sectors.items():
+            if bname in r_sectors:
+                basket_diffs.setdefault(bname, []).append(r_sectors[bname] - e_score)
+
+        # sector_avg offset
+        r_avg = r.get('sector_avg', 0)
+        e_avg = e.get('sector_avg', 0)
+        if r_avg != 0 and e_avg != 0:
+            sector_avg_diffs.append(r_avg - e_avg)
 
     long_scale  = round(safe_mean(long_scales),  4)
     short_scale = round(safe_mean(short_scales), 4)
 
+    per_basket_offset = {b: round(sum(d) / len(d), 2) for b, d in basket_diffs.items() if d}
+    global_sec_offset = round(sum(sector_avg_diffs) / len(sector_avg_diffs), 2) \
+                        if sector_avg_diffs else 0.0
+
     print(f'  Calibration ({len(overlap)} overlap dates):')
     print(f'    long_scale={long_scale:.3f}  short_scale={short_scale:.3f}')
+    print(f'    sector global_offset={global_sec_offset:+.1f}  '
+          f'per-basket offsets computed for {len(per_basket_offset)} baskets')
 
     calibrated = []
     for e in backfill_entries:
         c = dict(e)
         c['long_breadth_pct']  = round(c['long_breadth_pct']  * long_scale,  1)
         c['short_breadth_pct'] = round(c['short_breadth_pct'] * short_scale, 1)
+
+        # Apply per-basket offsets (global fallback for baskets not in overlap)
+        new_sectors = {}
+        for bname, score in c.get('sectors', {}).items():
+            off = per_basket_offset.get(bname, global_sec_offset)
+            new_sectors[bname] = round(score + off, 1)
+        c['sectors'] = new_sectors
+
+        if new_sectors:
+            c['sector_avg'] = round(sum(new_sectors.values()) / len(new_sectors), 1)
+        elif c.get('sector_avg', 0) != 0:
+            c['sector_avg'] = round(c['sector_avg'] + global_sec_offset, 1)
+
         calibrated.append(c)
 
     return calibrated

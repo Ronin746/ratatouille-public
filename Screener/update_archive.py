@@ -109,17 +109,16 @@ def compute_market_scores(date_str):
             short_breadth_pct = round(float((df['Short_Score'] >= 70).sum()) / n * 100, 1)
             short_count       = int((df['Short_Score'] >= 70).sum())
 
+        from sector_baskets import SECTOR_BASKETS
         sectors    = {}
         sector_avg = 0.0
-        if 'Sector' in df.columns:
-            named         = df[df['Sector'] != 'Other']
-            sector_counts = named.groupby('Sector').size()
-            sector_means  = named.groupby('Sector')['Final_Score'].mean()
-            for sec, avg in sector_means.items():
-                if sector_counts.get(sec, 0) >= 2:
-                    sectors[sec] = round(float(avg), 1)
-            if sectors:
-                sector_avg = round(sum(sectors.values()) / len(sectors), 1)
+        for basket_name, basket_tickers in SECTOR_BASKETS.items():
+            present = df[df.index.isin(basket_tickers)]
+            if len(present) >= 2:
+                avg_score = present['Final_Score'].mean()
+                sectors[basket_name] = round(float(avg_score), 1)
+        if sectors:
+            sector_avg = round(sum(sectors.values()) / len(sectors), 1)
 
         return {
             'date':              date_str,
