@@ -2,13 +2,13 @@ name: Ratatouille Screener
 
 on:
   # Due trigger per coprire EST (inverno) ed EDT (estate):
-  # NYSE chiude sempre alle 16:00 ET → 5 min dopo:
-  #   16:05 ET = 21:05 UTC quando EST (UTC-5)  → nov–mar
-  #   16:05 ET = 20:05 UTC quando EDT (UTC-4)  → mar–nov
+  # NYSE chiude sempre alle 16:00 ET → 30 min dopo:
+  #   16:30 ET = 21:30 UTC quando EST (UTC-5)  → nov–mar
+  #   16:30 ET = 20:30 UTC quando EDT (UTC-4)  → mar–nov
   # Il guard step qui sotto garantisce che solo il trigger corretto proceda.
   schedule:
-    - cron: '5 21 * * 1-5'   # EST (inverno)
-    - cron: '5 20 * * 1-5'   # EDT (estate)
+    - cron: '30 21 * * 1-5'   # EST (inverno)
+    - cron: '30 20 * * 1-5'   # EDT (estate)
 
   # Avvio manuale dalla tab "Actions" su GitHub (bypassa il guard)
   workflow_dispatch:
