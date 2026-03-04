@@ -2,25 +2,17 @@
 """
 deploy_to_cloudflare.py — Deploy Archive/ to Cloudflare Pages.
 
-Uses the Cloudflare Pages Direct Upload API (single multipart POST):
+Uses curl subprocess for reliable multipart/form-data uploads to:
   POST /accounts/{accountId}/pages/projects/{projectName}/deployments
-  Body: multipart/form-data with branch + manifest + one part per file (named by hash)
 
 Hash format: first 32 hex chars of SHA-256 — the exact format used by Wrangler CLI.
-Uses only Python standard library — no pip required.
+Uses only Python standard library + system curl — no pip required.
 
 Credentials are read from env vars CF_ACCOUNT_ID / CF_API_TOKEN (GitHub Actions),
 with hardcoded fallback for local use.
 """
 
-import hashlib, json, os, ssl, sys, time
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
-
-# macOS Python.org installs often lack system CA certs — use unverified context.
-_SSL_CTX = ssl.create_default_context()
-_SSL_CTX.check_hostname = False
-_SSL_CTX.verify_mode    = ssl.CERT_NONE
+import hashlib, json, os, subprocess, sys
 
 # ── Config ────────────────────────────────────────────────────────────────────
 ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID", "5d542bdd57fb4aac9391856b2f41a2a5")
@@ -30,18 +22,6 @@ ROOT       = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR   = os.path.join(ROOT, "Archive")
 CF_BASE    = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/pages/projects"
 SITE_URL   = f"https://{PROJECT}.pages.dev"
-
-MIME = {
-    ".html": "text/html; charset=utf-8",
-    ".css":  "text/css",
-    ".js":   "application/javascript",
-    ".json": "application/json",
-    ".png":  "image/png",
-    ".jpg":  "image/jpeg",
-    ".ico":  "image/x-icon",
-    ".svg":  "image/svg+xml",
-    ".txt":  "text/plain",
-}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -55,7 +35,10 @@ def file_hash(path):
 
 
 def collect_files():
-    """Return {'/rel/path': '/abs/path'} for every deployable file."""
+    """
+    Return {'rel/path': '/abs/path'} for every deployable file.
+    Keys do NOT have a leading slash (Cloudflare API requirement).
+    """
     out = {}
     for root, dirs, fnames in os.walk(SITE_DIR):
         dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -63,72 +46,23 @@ def collect_files():
             if fname.startswith(".") or fname.endswith(".zip"):
                 continue
             abs_path = os.path.join(root, fname)
-            rel_path = "/" + os.path.relpath(abs_path, SITE_DIR)
+            rel_path = os.path.relpath(abs_path, SITE_DIR).replace(os.sep, "/")
             out[rel_path] = abs_path
     return out
 
 
-def build_multipart(files_dict):
-    """
-    Build multipart/form-data body:
-      - field 'branch' = "main"
-      - field 'manifest' = JSON {'/path': 'hash32', ...}
-      - one field per unique file, named by its hash32, containing raw file bytes
-    """
-    boundary = ("CFDeploy" + str(int(time.time()))).encode()
-
-    # Compute manifest
-    manifest = {}
-    for rel, abs_path in files_dict.items():
-        manifest[rel] = file_hash(abs_path)
-
-    parts = []
-
-    # branch
-    parts.append(
-        b"--" + boundary + b"\r\n"
-        b'Content-Disposition: form-data; name="branch"\r\n\r\n'
-        b"main\r\n"
-    )
-
-    # manifest
-    parts.append(
-        b"--" + boundary + b"\r\n"
-        b'Content-Disposition: form-data; name="manifest"\r\n'
-        b"Content-Type: application/json\r\n\r\n"
-        + json.dumps(manifest).encode() + b"\r\n"
-    )
-
-    # one part per unique file, named by hash
-    seen = set()
-    for rel, h in manifest.items():
-        if h in seen:
-            continue
-        seen.add(h)
-        abs_path = files_dict[rel]
-        ext = os.path.splitext(abs_path)[1].lower()
-        ct  = MIME.get(ext, "application/octet-stream")
-        with open(abs_path, "rb") as f:
-            content = f.read()
-        parts.append(
-            b"--" + boundary + b"\r\n"
-            + f'Content-Disposition: form-data; name="{h}"\r\n'.encode()
-            + f"Content-Type: {ct}\r\n\r\n".encode()
-            + content + b"\r\n"
-        )
-
-    body      = b"".join(parts) + b"--" + boundary + b"--\r\n"
-    ct_header = "multipart/form-data; boundary=" + boundary.decode()
-    return body, ct_header, manifest
-
-
 def cf_get(url):
-    req = Request(url, method="GET", headers={"Authorization": f"Bearer {API_TOKEN}"})
+    """GET request via curl, returns parsed JSON."""
+    result = subprocess.run(
+        ["curl", "-s", "-X", "GET",
+         "-H", f"Authorization: Bearer {API_TOKEN}",
+         url],
+        capture_output=True, text=True
+    )
     try:
-        with urlopen(req, context=_SSL_CTX) as r:
-            return json.loads(r.read())
-    except HTTPError as e:
-        return {"success": False, "_http": e.code, "_body": e.read().decode()}
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {"success": False, "_raw": result.stdout, "_err": result.stderr}
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -141,10 +75,10 @@ def deploy():
     # Check project exists
     res = cf_get(f"{CF_BASE}/{PROJECT}")
     if not res.get("success"):
-        if res.get("_http") == 404:
+        if "404" in str(res):
             print(f"  ✗  Project '{PROJECT}' not found — create it first in the Cloudflare dashboard.")
         else:
-            print(f"  ✗  Error: {res}")
+            print(f"  ✗  Error: {json.dumps(res, indent=2)[:500]}")
         sys.exit(1)
     print(f"  ✓  Project '{PROJECT}' ready")
 
@@ -155,33 +89,54 @@ def deploy():
         sys.exit(1)
     print(f"  Computing hashes for {len(files)} files...")
 
-    # Build multipart body
-    body, ct_header, manifest = build_multipart(files)
-    total_mb = len(body) / 1024 / 1024
+    # Build manifest + compute total size
+    manifest = {}
+    total_bytes = 0
+    for rel, abs_path in files.items():
+        manifest[rel] = file_hash(abs_path)
+        total_bytes += os.path.getsize(abs_path)
+
+    total_mb = total_bytes / 1024 / 1024
     print(f"  Uploading {len(files)} files ({total_mb:.1f} MB)...")
 
-    # POST deployment
-    req = Request(
-        f"{CF_BASE}/{PROJECT}/deployments",
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {API_TOKEN}",
-            "Content-Type":  ct_header,
-        },
-    )
+    # Build curl command with -F flags (exactly like Cloudflare docs)
+    deploy_url = f"{CF_BASE}/{PROJECT}/deployments"
+    cmd = [
+        "curl", "-s", "-X", "POST",
+        "-H", f"Authorization: Bearer {API_TOKEN}",
+        "-F", "branch=main",
+        "-F", f"manifest={json.dumps(manifest)}",
+    ]
 
-    try:
-        with urlopen(req, context=_SSL_CTX) as r:
-            result = json.loads(r.read())
-    except HTTPError as e:
-        err = e.read().decode()
-        print(f"  ✗  Deploy failed (HTTP {e.code}):")
-        print(f"     {err[:500]}")
+    # Add each unique file as a form field named by its hash
+    seen_hashes = set()
+    for rel, h in manifest.items():
+        if h in seen_hashes:
+            continue
+        seen_hashes.add(h)
+        abs_path = files[rel]
+        # Use @file syntax for binary upload
+        cmd.extend(["-F", f"{h}=@{abs_path}"])
+
+    cmd.append(deploy_url)
+
+    # Execute curl
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"  ✗  curl failed (exit {result.returncode}):")
+        print(f"     {result.stderr[:500]}")
         sys.exit(1)
 
-    if result.get("success"):
-        dep  = result["result"]
+    try:
+        response = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        print(f"  ✗  Invalid JSON response:")
+        print(f"     {result.stdout[:500]}")
+        sys.exit(1)
+
+    if response.get("success"):
+        dep  = response["result"]
         live = dep.get("url") or SITE_URL
         print()
         print("─────────────────────────────────────────────────")
@@ -191,7 +146,8 @@ def deploy():
         print(f"__CF_URL__={live}")
         return live
     else:
-        print(f"  ✗  Deploy failed: {json.dumps(result, indent=2)}")
+        print(f"  ✗  Deploy failed:")
+        print(f"     {json.dumps(response, indent=2)}")
         sys.exit(1)
 
 
