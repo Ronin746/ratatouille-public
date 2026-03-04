@@ -2,9 +2,13 @@
 backfill_market_history.py — Historical Market Breadth Backfiller
 
 Downloads ~6 months of price history for all tickers from the latest CSV,
-computes proxy metrics (% above MA50, % below MA20, sector relative scores),
-calibrates against existing screener data, and backfills
-Archive/market_score_history.json with entries going back ~90 days.
+computes proxy breadth metrics (% above MA50, % below MA20), calibrates
+against existing screener data, and backfills Archive/market_score_history.json
+with entries going back ~90 days.
+
+NOTE: Sector scores are NOT computed for estimated entries. They are derived
+exclusively from real screener CSV data (by update_archive.py). Estimated
+entries always have sectors={} and sector_avg=0.0.
 
 Entries added by this script are tagged with "estimated": true to distinguish
 them from real screener runs.
@@ -137,19 +141,20 @@ def download_price_history(tickers, period='6mo', batch_size=400):
 # Backfill computation
 # ─────────────────────────────────────────────────────────────────────────────
 
-def compute_backfill_entries(close_df, sector_map, days=90, ma_long=50, ma_short=20):
+def compute_backfill_entries(close_df, days=90, ma_long=50, ma_short=20):
     """
-    For each of the last `days` trading days, compute breadth + sector proxies.
+    For each of the last `days` trading days, compute breadth proxies.
 
     Metrics:
       long_breadth_pct  = % stocks with close > MA50  (proxy for screener's % score >= 70)
       short_breadth_pct = % stocks with close < MA20  (proxy for % Short_Score >= 70)
-      sector scores     = (avg_close / avg_MA50 - 1) * 200 + 50  clipped [30, 85]
+
+    Sector scores are intentionally NOT computed here. They are derived only
+    from real screener CSV data (via update_archive.py / compute_market_scores).
+    Estimated entries always carry sectors={} and sector_avg=0.0.
 
     Returns a list of entry dicts (oldest first) with 'estimated': True.
     """
-    import numpy as np
-
     # Forward-fill gaps (weekends/holidays per ticker)
     closes = close_df.ffill()
 
@@ -180,7 +185,7 @@ def compute_backfill_entries(close_df, sector_map, days=90, ma_long=50, ma_short
         if n_valid < 200:
             continue
 
-        tc = today_close[valid_mask]
+        tc  = today_close[valid_mask]
         m50 = ma50[valid_mask]
         m20 = ma20[valid_mask]
 
@@ -189,35 +194,14 @@ def compute_backfill_entries(close_df, sector_map, days=90, ma_long=50, ma_short
         long_count        = int((tc > m50).sum())
         short_count       = int((tc < m20).sum())
 
-        # Per-sector scores
-        sectors = {}
-        if sector_map:
-            # Group valid tickers by sector
-            sec_groups: dict[str, list] = {}
-            for ticker in tc.index:
-                sec = sector_map.get(ticker, '')
-                if sec and sec not in ('Other', 'nan', ''):
-                    sec_groups.setdefault(sec, []).append(ticker)
-
-            for sec_name, sec_tickers in sec_groups.items():
-                good = [t for t in sec_tickers if m50[t] > 0]
-                if len(good) < 2:
-                    continue
-                ratios    = np.array([tc[t] / m50[t] for t in good])
-                avg_ratio = float(np.mean(ratios))
-                raw_score = (avg_ratio - 1.0) * 200.0 + 50.0
-                sectors[sec_name] = round(float(np.clip(raw_score, 30.0, 85.0)), 1)
-
-        sector_avg = round(float(np.mean(list(sectors.values()))), 1) if sectors else 0.0
-
         entries.append({
             'date':              date.strftime('%Y-%m-%d'),
             'long_breadth_pct':  long_breadth_pct,
             'short_breadth_pct': short_breadth_pct,
-            'sector_avg':        sector_avg,
+            'sector_avg':        0.0,
             'long_count':        long_count,
             'short_count':       short_count,
-            'sectors':           sectors,
+            'sectors':           {},
             'estimated':         True,
         })
 
@@ -234,14 +218,15 @@ def safe_mean(values):
 
 def calibrate_entries(backfill_entries, existing_history):
     """
-    Scale backfill estimates to match existing screener data.
+    Scale backfill breadth estimates to match existing screener data.
 
     Calibration computes:
       long_scale  = mean(screener_long_pct  / backfill_long_pct)   on overlap dates
       short_scale = mean(screener_short_pct / backfill_short_pct)  on overlap dates
-      sec_offset  = mean(screener_sector_avg - backfill_sector_avg) on overlap dates
 
-    Returns calibrated list (all values adjusted, 'estimated': True preserved).
+    Sector scores are not calibrated because estimated entries have sectors={}.
+
+    Returns calibrated list ('estimated': True preserved).
     """
     real_entries = {h['date']: h for h in existing_history if not h.get('estimated')}
 
@@ -251,40 +236,25 @@ def calibrate_entries(backfill_entries, existing_history):
         print('  ⚠ No overlapping dates — skipping calibration (raw estimates used)')
         return backfill_entries
 
-    long_scales   = []
-    short_scales  = []
-    sec_offsets   = []
+    long_scales  = []
+    short_scales = []
 
     for e in overlap:
         r = real_entries[e['date']]
         if e['long_breadth_pct']  > 0: long_scales.append(r['long_breadth_pct']  / e['long_breadth_pct'])
         if e['short_breadth_pct'] > 0: short_scales.append(r['short_breadth_pct'] / e['short_breadth_pct'])
-        if e['sector_avg'] > 0 and r.get('sector_avg', 0) > 0:
-            sec_offsets.append(r['sector_avg'] - e['sector_avg'])
 
     long_scale  = round(safe_mean(long_scales),  4)
     short_scale = round(safe_mean(short_scales), 4)
-    sec_offset  = round(safe_mean(sec_offsets),  2) if sec_offsets else 0.0
 
     print(f'  Calibration ({len(overlap)} overlap dates):')
-    print(f'    long_scale={long_scale:.3f}  '
-          f'short_scale={short_scale:.3f}  '
-          f'sec_offset={sec_offset:+.2f}')
+    print(f'    long_scale={long_scale:.3f}  short_scale={short_scale:.3f}')
 
     calibrated = []
     for e in backfill_entries:
         c = dict(e)
         c['long_breadth_pct']  = round(c['long_breadth_pct']  * long_scale,  1)
         c['short_breadth_pct'] = round(c['short_breadth_pct'] * short_scale, 1)
-
-        if sec_offset != 0.0:
-            if c['sector_avg'] > 0:
-                c['sector_avg'] = round(c['sector_avg'] + sec_offset, 1)
-            if c['sectors']:
-                c['sectors'] = {
-                    k: round(float(min(max(v + sec_offset, 28.0), 90.0)), 1)
-                    for k, v in c['sectors'].items()
-                }
         calibrated.append(c)
 
     return calibrated
@@ -328,11 +298,10 @@ def main():
         sys.exit(1)
     print(f'  {os.path.basename(csv_path)}  (dated {csv_date})')
 
-    # ── 3. Load tickers + sector map ──────────────────────────────────────────
-    print('Loading tickers and sectors…')
-    tickers, sector_map = get_tickers_and_sectors(csv_path)
-    n_sec = len({v for v in sector_map.values() if v not in ('Other', 'nan', '')})
-    print(f'  {len(tickers):,} tickers  |  {n_sec} named sectors')
+    # ── 3. Load tickers ───────────────────────────────────────────────────────
+    print('Loading tickers…')
+    tickers, _sector_map = get_tickers_and_sectors(csv_path)
+    print(f'  {len(tickers):,} tickers  (sector scores come from real CSV runs only)')
 
     # ── 4. Download price history ─────────────────────────────────────────────
     print('\nDownloading price history (may take several minutes for ~6000 tickers)…')
@@ -346,7 +315,7 @@ def main():
     print(f'\nComputing {args.days}-day backfill…')
     try:
         backfill_entries = compute_backfill_entries(
-            close_df, sector_map, days=args.days)
+            close_df, days=args.days)
     except Exception as e:
         print(f'ERROR computing backfill: {e}')
         sys.exit(1)
@@ -371,8 +340,7 @@ def main():
             continue
         print(f'  {e["date"]}  long={e["long_breadth_pct"]:5.1f}%  '
               f'short={e["short_breadth_pct"]:5.1f}%  '
-              f'sec_avg={e["sector_avg"]:5.1f}  '
-              f'sectors={len(e["sectors"])}')
+              f'(sectors=[] — from real CSV runs only)')
 
     if args.dry_run:
         print('\n[dry-run] No changes written.')
