@@ -6,196 +6,241 @@
 <title>Ratatouille &#8212; Market Intelligence Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
-    --bg-primary:   #080810;
-    --bg-card:      #10101a;
-    --bg-card-hover:#18182a;
-    --border-subtle:#1c1c30;
-    --border-accent:#2a2a44;
-    --text-primary: #e8e8f0;
+    --bg-primary:    #080810;
+    --bg-card:       #10101a;
+    --bg-card-hover: #18182a;
+    --border-subtle: #1c1c30;
+    --border-accent: #2a2a44;
+    --text-primary:  #e8e8f0;
     --text-secondary:#8888a0;
-    --text-muted:   #505068;
-    --accent-green: #00d4aa;
-    --accent-gold:  #f5a623;
-    --accent-blue:  #4a9eff;
-    --accent-red:   #ff4a6a;
-    --radius:       16px;
-    --radius-sm:    10px;
+    --text-muted:    #505068;
+    --accent-green:  #00d4aa;
+    --accent-gold:   #f5a623;
+    --accent-blue:   #4a9eff;
+    --accent-red:    #ff4a6a;
+    --radius:        16px;
+    --radius-sm:     10px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
     font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-    background:var(--bg-primary);
-    color:var(--text-primary);
-    min-height:100vh;
-    line-height:1.6;
+    background:var(--bg-primary); color:var(--text-primary);
+    min-height:100vh; line-height:1.6;
 }
 
-/* ── Hero ── */
+/* ══ Hero ══════════════════════════════════════════════════════════════ */
 .hero {
     background:linear-gradient(135deg,#0a0a18 0%,#100e22 50%,#0a1018 100%);
     border-bottom:1px solid var(--border-subtle);
-    padding:72px 40px 64px;
-    text-align:center;
-    position:relative;
-    overflow:hidden;
+    padding:60px 40px 52px; text-align:center; position:relative; overflow:hidden;
 }
 .hero::before {
-    content:'';
-    position:absolute; inset:0;
+    content:''; position:absolute; inset:0;
     background:
-        radial-gradient(ellipse 80% 60% at 50% 0%,  rgba(74,158,255,0.07),transparent),
-        radial-gradient(ellipse 60% 40% at 15% 100%,rgba(0,212,170,0.05), transparent),
-        radial-gradient(ellipse 50% 40% at 85% 80%, rgba(139,92,246,0.04),transparent);
+        radial-gradient(ellipse 80% 60% at 50%  0%, rgba(74,158,255,.07),  transparent),
+        radial-gradient(ellipse 60% 40% at 15% 100%,rgba(0,212,170,.05),   transparent),
+        radial-gradient(ellipse 50% 40% at 85%  80%,rgba(139,92,246,.04),  transparent);
     pointer-events:none;
 }
 .hero-eyebrow {
     font-size:.7rem; font-weight:600; letter-spacing:3px;
-    text-transform:uppercase; color:var(--accent-blue);
-    margin-bottom:16px; opacity:.8;
+    text-transform:uppercase; color:var(--accent-blue); margin-bottom:14px; opacity:.8;
 }
 .hero-title {
     font-size:4.5rem; font-weight:800; letter-spacing:-3px; line-height:1;
     background:linear-gradient(135deg,#e8e8f0 0%,#aaaacc 60%,#8888aa 100%);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    margin-bottom:14px;
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px;
 }
 .hero-subtitle {
-    font-size:1rem; color:var(--text-secondary); margin-bottom:40px;
-}
-.hero-meta {
-    display:flex; justify-content:center; align-items:center;
-    gap:40px; flex-wrap:wrap;
-}
-.hero-stat-val {
-    font-family:'JetBrains Mono',monospace;
-    font-size:2.2rem; font-weight:700; display:block;
-    background:linear-gradient(135deg,var(--accent-green),var(--accent-blue));
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-}
-.hero-stat-label {
-    font-size:.7rem; color:var(--text-muted);
-    text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
-    margin-top:2px;
-}
-.hero-divider {
-    width:1px; height:44px; background:var(--border-accent);
+    font-size:1rem; color:var(--text-secondary);
 }
 
-/* ── Main ── */
-.main {
-    max-width:1000px; margin:0 auto; padding:52px 24px 80px;
+/* ══ Latest Report ═════════════════════════════════════════════════════ */
+.lr-wrap {
+    max-width:1000px; margin:0 auto; padding:48px 24px 0;
 }
-.section-header {
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+.lr-header-row {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
 }
-.section-title {
+.lr-section-title {
     font-size:.78rem; font-weight:600; color:var(--text-secondary);
     text-transform:uppercase; letter-spacing:1.2px;
 }
-.last-updated {
-    font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+.lr-card {
+    display:block; text-decoration:none; color:inherit;
+    background:linear-gradient(135deg,#0d1a18,#0e1520);
+    border:1px solid rgba(0,212,170,.3);
+    border-radius:var(--radius); padding:28px 32px;
+    box-shadow:0 0 60px rgba(0,212,170,.06);
+    transition:all .2s ease;
 }
-
-/* ── Report Cards ── */
-.reports-grid { display:flex; flex-direction:column; gap:12px; }
-
-.report-card {
-    background:var(--bg-card);
-    border:1px solid var(--border-subtle);
-    border-radius:var(--radius);
-    padding:22px 28px;
-    text-decoration:none; color:inherit; display:block;
-    transition:all .2s ease; position:relative; overflow:hidden;
-}
-.report-card::after {
-    content:''; position:absolute; inset:0;
-    background:linear-gradient(135deg,transparent,rgba(74,158,255,.025));
-    opacity:0; transition:opacity .2s;
-}
-.report-card:hover {
-    border-color:var(--border-accent);
-    background:var(--bg-card-hover);
+.lr-card:hover {
+    border-color:rgba(0,212,170,.55);
+    box-shadow:0 14px 60px rgba(0,212,170,.13);
     transform:translateY(-2px);
-    box-shadow:0 12px 40px rgba(0,0,0,.5);
 }
-.report-card:hover::after { opacity:1; }
-.report-card--latest {
-    border-color:rgba(0,212,170,.28);
-    background:linear-gradient(135deg,#10101a,#0d1a18);
-    box-shadow:0 0 50px rgba(0,212,170,.07);
+.lr-card-top {
+    display:flex; align-items:center; gap:18px; margin-bottom:24px;
 }
-.report-card--latest:hover {
-    border-color:rgba(0,212,170,.5);
-    box-shadow:0 12px 50px rgba(0,212,170,.12);
-}
-
-.report-card-header {
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
-}
-.report-date-info { display:flex; align-items:center; gap:14px; }
-.report-date {
-    font-size:1.08rem; font-weight:600; color:var(--text-primary);
-}
-.latest-badge {
+.lr-live-badge {
     font-size:.63rem; font-weight:700; letter-spacing:1px;
     color:var(--accent-green); background:rgba(0,212,170,.1);
     border:1px solid rgba(0,212,170,.2); border-radius:20px;
-    padding:3px 12px; text-transform:uppercase;
+    padding:4px 12px; text-transform:uppercase; flex-shrink:0;
+    animation:pulse-badge 2.2s ease-in-out infinite;
 }
-.report-arrow {
-    color:var(--text-muted); font-size:1.15rem;
-    transition:all .2s; font-family:'JetBrains Mono',monospace;
+@keyframes pulse-badge {
+    0%,100% { opacity:1; } 50% { opacity:.55; }
 }
-.report-card:hover .report-arrow { color:var(--accent-green); transform:translateX(6px); }
-.report-card--latest .report-arrow { color:var(--accent-green); }
+.lr-date {
+    font-size:1.4rem; font-weight:700; color:var(--text-primary); flex:1;
+}
+.lr-arrow {
+    color:var(--accent-green); font-size:1.4rem;
+    font-family:'JetBrains Mono',monospace; transition:transform .2s;
+}
+.lr-card:hover .lr-arrow { transform:translateX(7px); }
+.lr-stats {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+}
+.lr-stat {
+    background:rgba(255,255,255,.03); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm); padding:14px 16px;
+}
+.lr-stat-label {
+    font-size:.63rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--text-muted); margin-bottom:6px;
+}
+.lr-stat-value {
+    font-family:'JetBrains Mono',monospace; font-size:1.35rem; font-weight:700;
+}
 
-.report-stats {
-    display:grid; grid-template-columns:repeat(5,1fr); gap:10px;
+/* ══ Market Breadth ════════════════════════════════════════════════════ */
+.br-wrap {
+    max-width:1000px; margin:0 auto; padding:44px 24px 0;
 }
-.report-stat {
-    background:rgba(255,255,255,.02); border-radius:var(--radius-sm);
-    padding:10px 12px; border:1px solid var(--border-subtle);
+.br-header-row {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
 }
-.rstat-label {
-    font-size:.62rem; font-weight:600; text-transform:uppercase;
+.br-section-title {
+    font-size:.78rem; font-weight:600; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:1.2px;
+}
+.br-as-of {
+    font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+}
+.br-stats-row {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px;
+}
+.br-stat {
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm); padding:12px 14px;
+}
+.br-stat-label {
+    font-size:.6rem; font-weight:600; text-transform:uppercase;
     letter-spacing:.8px; color:var(--text-muted); margin-bottom:5px;
 }
-.rstat-value {
-    font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:700;
+.br-stat-value {
+    font-family:'JetBrains Mono',monospace; font-size:1.15rem; font-weight:700;
 }
+.br-delta { font-size:.7rem; font-weight:500; margin-left:4px; }
+.br-chart-card {
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius); padding:20px 22px 16px;
+}
+.br-chart-title {
+    font-size:.68rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:var(--text-secondary); margin-bottom:14px;
+}
+.br-chart-wrap { position:relative; height:220px; }
+
+/* ══ Sector Performance ════════════════════════════════════════════════ */
+.sc-wrap {
+    max-width:1000px; margin:0 auto; padding:44px 24px 0;
+}
+.sc-header-row {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+}
+.sc-section-title {
+    font-size:.78rem; font-weight:600; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:1.2px;
+}
+.sc-count {
+    font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+}
+.sc-chart-card {
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius); padding:20px 22px 16px; margin-bottom:14px;
+}
+.sc-chart-title {
+    font-size:.68rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:var(--text-secondary); margin-bottom:14px;
+}
+.sc-chart-wrap { position:relative; height:340px; }
+
+/* ══ Sector Sparkline Grid ═════════════════════════════════════════════ */
+.sec-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:8px;
+}
+.sec-card {
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm); padding:10px 12px 8px;
+    transition:border-color .15s;
+}
+.sec-card:hover { border-color:var(--border-accent); }
+.sec-card-top {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom:5px;
+}
+.sec-name {
+    font-size:.58rem; font-weight:600; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:.5px; line-height:1.35;
+    flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    margin-right:6px;
+}
+.sec-score {
+    font-family:'JetBrains Mono',monospace; font-size:.82rem;
+    font-weight:700; flex-shrink:0;
+}
+.sec-spark { line-height:0; margin:2px 0 4px; }
+.sec-trend {
+    font-family:'JetBrains Mono',monospace; font-size:.58rem; font-weight:600;
+}
+
+/* ══ Shared stat colors ════════════════════════════════════════════════ */
 .stat-green { color:var(--accent-green); }
 .stat-gold  { color:var(--accent-gold);  }
 .stat-blue  { color:var(--accent-blue);  }
 .stat-red   { color:var(--accent-red);   }
 
-/* ── Empty State ── */
-.empty-state {
-    text-align:center; padding:80px 20px; color:var(--text-muted);
-}
-.empty-state-icon  { font-size:3rem; margin-bottom:16px; }
-.empty-state-text  { font-size:1rem; }
-
-/* ── Footer ── */
+/* ══ Footer ════════════════════════════════════════════════════════════ */
 .footer {
-    border-top:1px solid var(--border-subtle); padding:28px 40px;
-    text-align:center; font-size:.7rem; color:var(--text-muted);
-    letter-spacing:.3px;
+    border-top:1px solid var(--border-subtle);
+    padding:32px 40px; text-align:center;
+    font-size:.7rem; color:var(--text-muted); letter-spacing:.3px;
+    margin-top:64px;
 }
 
-/* ── Responsive ── */
-@media (max-width:640px) {
-    .report-stats  { grid-template-columns:repeat(3,1fr); }
-    .hero-divider  { display:none; }
-    .hero-title    { font-size:3rem; letter-spacing:-1px; }
-    .hero          { padding:48px 20px 40px; }
-    .report-card   { padding:18px 20px; }
+/* ══ Responsive ════════════════════════════════════════════════════════ */
+@media (max-width:700px) {
+    .hero-title          { font-size:3rem; letter-spacing:-1px; }
+    .hero                { padding:44px 20px 38px; }
+    .lr-stats            { grid-template-columns:repeat(3,1fr); }
+    .lr-date             { font-size:1.1rem; }
+    .br-stats-row        { grid-template-columns:repeat(2,1fr); }
+    .sc-chart-wrap       { height:260px; }
+    .sec-grid            { grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }
 }
 </style>
 </head>
 <body>
 
+<!-- ── Hero ──────────────────────────────────────────────────────────── -->
 <div class="hero">
     <div class="hero-eyebrow">Market Intelligence System</div>
     <div class="hero-title">Ratatouille</div>
@@ -476,8 +521,749 @@ body {
     </div>
 </div>
 
+<!-- ── Latest Report ─────────────────────────────────────────────────── -->
+<div class="lr-wrap">
+  <div class="lr-header-row">
+    <div class="lr-section-title">Latest Report</div>
+  </div>
+  <a href="reports/2026-03-03.html" class="lr-card">
+    <div class="lr-card-top">
+      <div class="lr-live-badge">&#9679; LIVE</div>
+      <div class="lr-date">Tuesday, Mar 03, 2026</div>
+      <div class="lr-arrow">&#8594;</div>
+    </div>
+    <div class="lr-stats">
+      <div class="lr-stat">
+        <div class="lr-stat-label">Scanned</div>
+        <div class="lr-stat-value stat-blue">6,173</div>
+      </div>
+      <div class="lr-stat">
+        <div class="lr-stat-label">Top Pick</div>
+        <div class="lr-stat-value stat-gold">ERAS</div>
+      </div>
+      <div class="lr-stat">
+        <div class="lr-stat-label">Best Score</div>
+        <div class="lr-stat-value stat-green">89.5</div>
+      </div>
+    </div>
+  </a>
+</div>
+<!-- ── /Latest Report ────────────────────────────────────────────────── -->
+
+
+
+<!-- ── Market Breadth ────────────────────────────────────────────────── -->
+<div class="br-wrap">
+  <div class="br-header-row">
+    <div class="br-section-title">Market Breadth</div>
+    <div class="br-as-of">as of Wednesday, Mar 04, 2026</div>
+  </div>
+
+  <div class="br-stats-row">
+    <div class="br-stat">
+      <div class="br-stat-label">Market Bias</div>
+      <div class="br-stat-value" style="color:#f5a623">NEUTRAL</div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Long Breadth</div>
+      <div class="br-stat-value stat-green">13.6%
+        <span class="br-delta" style="color:#ff4a6a">-1.2</span>
+      </div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Short Breadth</div>
+      <div class="br-stat-value stat-red">10.3%
+        <span class="br-delta" style="color:#00d4aa">+2.5</span>
+      </div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Sector Avg Score</div>
+      <div class="br-stat-value stat-blue">52.0
+        <span class="br-delta" style="color:#ff4a6a">-3.4</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="br-chart-card">
+    <div class="br-chart-title">Breadth Trend &mdash; % stocks scoring 70+</div>
+    <div class="br-chart-wrap"><canvas id="breadthChart"></canvas></div>
+  </div>
+</div>
+<!-- ── /Market Breadth ───────────────────────────────────────────────── -->
+
+<script>
+(function() {
+  var ctx = document.getElementById('breadthChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["Nov 13", "Nov 14", "Nov 17", "Nov 18", "Nov 19", "Nov 20", "Nov 21", "Nov 24", "Nov 25", "Nov 26", "Nov 28", "Dec 01", "Dec 02", "Dec 03", "Dec 04", "Dec 05", "Dec 08", "Dec 09", "Dec 10", "Dec 11", "Dec 12", "Dec 15", "Dec 16", "Dec 17", "Dec 18", "Dec 19", "Dec 22", "Dec 23", "Dec 24", "Dec 26", "Dec 29", "Dec 30", "Dec 31", "Jan 02", "Jan 05", "Jan 06", "Jan 07", "Jan 08", "Jan 09", "Jan 12", "Jan 13", "Jan 14", "Jan 15", "Jan 16", "Jan 20", "Jan 21", "Jan 22", "Jan 23", "Jan 26", "Jan 27", "Jan 28", "Jan 29", "Jan 30", "Feb 02", "Feb 03", "Feb 04", "Feb 05", "Feb 06", "Feb 09", "Feb 10", "Feb 11", "Feb 12", "Feb 13", "Feb 17", "Feb 18", "Feb 19", "Feb 20", "Feb 23", "Feb 24", "Feb 25", "Feb 26", "Feb 27", "Mar 02", "Mar 03", "Mar 04"],
+      datasets: [
+        {
+          label: 'Long 70+%',
+          data: [11.2, 11.0, 9.3, 9.5, 9.2, 8.0, 9.9, 10.6, 12.7, 13.7, 14.5, 13.5, 13.4, 14.6, 15.1, 14.7, 14.2, 14.5, 15.7, 16.4, 15.5, 14.9, 14.4, 13.9, 14.4, 14.7, 15.3, 14.8, 15.4, 15.5, 15.0, 14.9, 14.2, 14.8, 16.2, 17.1, 16.9, 18.1, 18.4, 18.7, 18.6, 19.1, 19.5, 19.2, 17.8, 19.1, 19.7, 19.0, 18.7, 18.7, 17.7, 17.7, 17.0, 17.1, 16.6, 16.3, 14.9, 16.4, 16.6, 16.8, 16.3, 15.2, 15.6, 15.5, 15.9, 16.8, 17.1, 14.5, 15.0, 16.4, 13.8, 13.9, 14.4, 14.8, 13.6],
+          borderColor: '#00d4aa',
+          backgroundColor: 'rgba(0,212,170,0.12)',
+          fill: true, tension: 0.35,
+          pointRadius: 5, pointBackgroundColor: '#00d4aa', borderWidth: 2.5
+        },
+        {
+          label: 'Short 70+%',
+          data: [10.8, 11.0, 12.5, 12.4, 12.6, 13.4, 11.4, 10.7, 8.6, 7.6, 6.6, 7.5, 7.8, 6.4, 6.0, 6.6, 7.0, 6.7, 5.8, 5.4, 6.5, 7.3, 7.9, 8.8, 8.4, 8.4, 8.1, 9.0, 8.5, 8.7, 9.4, 9.7, 11.0, 9.9, 8.2, 7.2, 7.8, 6.3, 6.4, 6.1, 6.4, 5.9, 5.4, 5.9, 7.6, 6.3, 5.6, 6.6, 6.9, 7.1, 8.3, 8.2, 9.3, 8.8, 9.0, 9.3, 10.5, 9.0, 8.7, 8.4, 8.8, 10.0, 9.5, 9.4, 8.9, 9.1, 9.5, 10.1, 9.4, 8.7, 9.8, 8.8, 8.0, 7.8, 10.3],
+          borderColor: '#ff4a6a',
+          backgroundColor: 'rgba(255,74,106,0.08)',
+          fill: true, tension: 0.35,
+          pointRadius: 5, pointBackgroundColor: '#ff4a6a', borderWidth: 2.5
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'top',
+          labels: { color: '#8888a0', font: { size: 11 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#10101a', borderColor: '#2a2a44', borderWidth: 1,
+          titleColor: '#e8e8f0', bodyColor: '#8888a0',
+          callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + c.parsed.y + '%'; } }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505068', font: { size: 11 } } },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#505068', font: { size: 11 }, callback: function(v) { return v + '%'; } },
+          suggestedMin: 0
+        }
+      }
+    }
+  });
+})();
+</script>
+
+
+
+<!-- ── Sector Performance ───────────────────────────────────────────── -->
+<div class="sc-wrap">
+  <div class="sc-header-row">
+    <div class="sc-section-title">Sector Performance</div>
+    <div class="sc-count">69 sectors tracked</div>
+  </div>
+
+  <!-- Top-10 trend chart -->
+  <div class="sc-chart-card">
+    <div class="sc-chart-title">Top 10 Sectors &mdash; Score Trend Over Time</div>
+    <div class="sc-chart-wrap"><canvas id="sectorTrendChart"></canvas></div>
+  </div>
+
+  <!-- All-sector sparkline grid -->
+  <div class="sec-grid">
+    
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="OPTICAL NETWORKING">OPTICAL NETWORKING</div>
+        <div class="sec-score" style="color:#00d4aa">88.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,13.3 5.1,14.3 6.3,18.6 7.4,22.3 8.5,20.1 9.7,31.0 10.8,27.6 11.9,17.5 13.1,15.1 14.2,9.7 15.4,7.2 16.5,11.7 17.6,10.0 18.8,9.7 19.9,5.4 21.0,6.0 22.2,5.0 23.3,5.0 24.4,5.0 25.6,5.0 26.7,5.0 27.8,5.0 29.0,11.5 30.1,18.0 31.2,11.7 32.4,5.2 33.5,5.0 34.6,5.0 35.8,5.2 36.9,6.4 38.1,11.9 39.2,11.6 40.3,15.4 41.5,9.8 42.6,14.1 43.7,5.0 44.9,5.0 46.0,8.8 47.1,9.3 48.3,10.2 49.4,5.9 50.5,8.2 51.7,5.0 52.8,5.4 53.9,7.3 55.1,5.5 56.2,8.1 57.4,14.9 58.5,14.3 59.6,7.8 60.8,5.9 61.9,5.6 63.0,6.3 64.2,5.0 65.3,5.0 66.4,5.0 67.6,5.0 68.7,5.0 69.8,5.0 71.0,5.0 72.1,5.0 73.2,5.0 74.4,5.0 75.5,5.0 76.6,5.0 80.1,5.0 81.2,5.0 86.9,14.1 88.0,5.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,13.3 5.1,14.3 6.3,18.6 7.4,22.3 8.5,20.1 9.7,31.0 10.8,27.6 11.9,17.5 13.1,15.1 14.2,9.7 15.4,7.2 16.5,11.7 17.6,10.0 18.8,9.7 19.9,5.4 21.0,6.0 22.2,5.0 23.3,5.0 24.4,5.0 25.6,5.0 26.7,5.0 27.8,5.0 29.0,11.5 30.1,18.0 31.2,11.7 32.4,5.2 33.5,5.0 34.6,5.0 35.8,5.2 36.9,6.4 38.1,11.9 39.2,11.6 40.3,15.4 41.5,9.8 42.6,14.1 43.7,5.0 44.9,5.0 46.0,8.8 47.1,9.3 48.3,10.2 49.4,5.9 50.5,8.2 51.7,5.0 52.8,5.4 53.9,7.3 55.1,5.5 56.2,8.1 57.4,14.9 58.5,14.3 59.6,7.8 60.8,5.9 61.9,5.6 63.0,6.3 64.2,5.0 65.3,5.0 66.4,5.0 67.6,5.0 68.7,5.0 69.8,5.0 71.0,5.0 72.1,5.0 73.2,5.0 74.4,5.0 75.5,5.0 76.6,5.0 80.1,5.0 81.2,5.0 86.9,14.1 88.0,5.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+9.3</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="MARINE SHIPPING">MARINE SHIPPING</div>
+        <div class="sec-score" style="color:#00d4aa">88.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,25.4 5.1,23.8 6.3,23.5 7.4,23.2 8.5,26.0 9.7,31.0 10.8,27.5 11.9,26.1 13.1,19.5 14.2,19.2 15.4,15.9 16.5,17.4 17.6,19.1 18.8,13.0 19.9,12.6 21.0,14.6 22.2,16.8 23.3,16.9 24.4,17.8 25.6,18.6 26.7,25.0 27.8,21.8 29.0,25.2 30.1,24.9 31.2,26.6 32.4,27.9 33.5,26.4 34.6,24.6 35.8,25.5 36.9,24.9 38.1,24.7 39.2,26.6 40.3,27.5 41.5,26.0 42.6,25.9 43.7,20.0 44.9,18.0 46.0,15.7 47.1,19.2 48.3,17.4 49.4,20.5 50.5,16.2 51.7,12.7 52.8,16.8 53.9,17.4 55.1,11.2 56.2,12.0 57.4,12.5 58.5,11.1 59.6,9.6 60.8,8.8 61.9,9.3 63.0,13.0 64.2,10.6 65.3,11.7 66.4,12.4 67.6,19.8 68.7,14.2 69.8,13.7 71.0,15.5 72.1,11.1 73.2,17.2 74.4,12.1 75.5,5.0 76.6,5.0 78.9,17.7 80.1,5.0 81.2,5.0 82.3,16.6 83.5,17.5 84.6,16.3 85.7,15.6 86.9,14.4 88.0,5.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,25.4 5.1,23.8 6.3,23.5 7.4,23.2 8.5,26.0 9.7,31.0 10.8,27.5 11.9,26.1 13.1,19.5 14.2,19.2 15.4,15.9 16.5,17.4 17.6,19.1 18.8,13.0 19.9,12.6 21.0,14.6 22.2,16.8 23.3,16.9 24.4,17.8 25.6,18.6 26.7,25.0 27.8,21.8 29.0,25.2 30.1,24.9 31.2,26.6 32.4,27.9 33.5,26.4 34.6,24.6 35.8,25.5 36.9,24.9 38.1,24.7 39.2,26.6 40.3,27.5 41.5,26.0 42.6,25.9 43.7,20.0 44.9,18.0 46.0,15.7 47.1,19.2 48.3,17.4 49.4,20.5 50.5,16.2 51.7,12.7 52.8,16.8 53.9,17.4 55.1,11.2 56.2,12.0 57.4,12.5 58.5,11.1 59.6,9.6 60.8,8.8 61.9,9.3 63.0,13.0 64.2,10.6 65.3,11.7 66.4,12.4 67.6,19.8 68.7,14.2 69.8,13.7 71.0,15.5 72.1,11.1 73.2,17.2 74.4,12.1 75.5,5.0 76.6,5.0 78.9,17.7 80.1,5.0 81.2,5.0 82.3,16.6 83.5,17.5 84.6,16.3 85.7,15.6 86.9,14.4 88.0,5.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+21.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="OIL AND GAS DOWNSTREAM">OIL AND GAS DOWNSTREAM</div>
+        <div class="sec-score" style="color:#00d4aa">83.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,12.7 5.1,9.5 6.3,12.0 7.4,9.5 8.5,13.4 9.7,18.5 10.8,17.1 11.9,17.5 13.1,17.5 14.2,17.3 15.4,16.3 16.5,14.8 17.6,16.8 18.8,17.9 19.9,19.1 21.0,20.1 22.2,21.8 23.3,21.7 24.4,21.9 25.6,23.5 26.7,24.6 27.8,24.9 29.0,29.7 30.1,30.1 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,27.4 43.7,30.1 44.9,29.5 46.0,24.8 47.1,25.5 48.3,26.9 49.4,26.3 50.5,24.3 51.7,25.4 52.8,27.8 53.9,27.8 55.1,23.8 56.2,24.5 57.4,24.2 58.5,26.2 59.6,25.4 60.8,24.6 61.9,23.4 63.0,22.2 64.2,22.8 65.3,17.7 66.4,13.9 67.6,14.2 68.7,10.0 69.8,10.6 71.0,11.8 72.1,9.6 73.2,13.9 74.4,11.4 75.5,12.4 76.6,14.4 78.9,20.2 80.1,17.0 81.2,15.8 82.3,19.6 83.5,21.5 84.6,20.0 85.7,18.8 86.9,17.7 88.0,5.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,12.7 5.1,9.5 6.3,12.0 7.4,9.5 8.5,13.4 9.7,18.5 10.8,17.1 11.9,17.5 13.1,17.5 14.2,17.3 15.4,16.3 16.5,14.8 17.6,16.8 18.8,17.9 19.9,19.1 21.0,20.1 22.2,21.8 23.3,21.7 24.4,21.9 25.6,23.5 26.7,24.6 27.8,24.9 29.0,29.7 30.1,30.1 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,27.4 43.7,30.1 44.9,29.5 46.0,24.8 47.1,25.5 48.3,26.9 49.4,26.3 50.5,24.3 51.7,25.4 52.8,27.8 53.9,27.8 55.1,23.8 56.2,24.5 57.4,24.2 58.5,26.2 59.6,25.4 60.8,24.6 61.9,23.4 63.0,22.2 64.2,22.8 65.3,17.7 66.4,13.9 67.6,14.2 68.7,10.0 69.8,10.6 71.0,11.8 72.1,9.6 73.2,13.9 74.4,11.4 75.5,12.4 76.6,14.4 78.9,20.2 80.1,17.0 81.2,15.8 82.3,19.6 83.5,21.5 84.6,20.0 85.7,18.8 86.9,17.7 88.0,5.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+14.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="OIL AND GAS UPSTREAM">OIL AND GAS UPSTREAM</div>
+        <div class="sec-score" style="color:#00d4aa">82.0</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,20.5 5.1,18.9 6.3,21.9 7.4,20.3 8.5,21.8 9.7,24.4 10.8,23.7 11.9,22.7 13.1,23.9 14.2,22.1 15.4,19.6 16.5,18.9 17.6,21.3 18.8,16.4 19.9,16.4 21.0,16.0 22.2,19.0 23.3,19.3 24.4,18.6 25.6,21.4 26.7,22.9 27.8,24.6 29.0,29.4 30.1,25.4 31.2,29.0 32.4,27.8 33.5,27.0 34.6,26.2 35.8,27.3 36.9,28.0 38.1,26.3 39.2,25.0 40.3,26.6 41.5,24.1 42.6,26.3 43.7,28.7 44.9,31.0 46.0,27.4 47.1,27.9 48.3,26.9 49.4,23.6 50.5,21.6 51.7,23.7 52.8,23.2 53.9,24.3 55.1,19.5 56.2,20.3 57.4,19.2 58.5,19.0 59.6,17.4 60.8,15.5 61.9,12.7 63.0,12.3 64.2,18.6 65.3,15.1 66.4,11.2 67.6,15.7 68.7,11.1 69.8,10.7 71.0,11.7 72.1,6.7 73.2,12.0 74.4,9.1 75.5,12.4 76.6,8.0 78.9,14.0 80.1,5.9 81.2,5.9 82.3,14.5 83.5,15.8 84.6,15.3 85.7,13.2 86.9,12.7 88.0,5.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,20.5 5.1,18.9 6.3,21.9 7.4,20.3 8.5,21.8 9.7,24.4 10.8,23.7 11.9,22.7 13.1,23.9 14.2,22.1 15.4,19.6 16.5,18.9 17.6,21.3 18.8,16.4 19.9,16.4 21.0,16.0 22.2,19.0 23.3,19.3 24.4,18.6 25.6,21.4 26.7,22.9 27.8,24.6 29.0,29.4 30.1,25.4 31.2,29.0 32.4,27.8 33.5,27.0 34.6,26.2 35.8,27.3 36.9,28.0 38.1,26.3 39.2,25.0 40.3,26.6 41.5,24.1 42.6,26.3 43.7,28.7 44.9,31.0 46.0,27.4 47.1,27.9 48.3,26.9 49.4,23.6 50.5,21.6 51.7,23.7 52.8,23.2 53.9,24.3 55.1,19.5 56.2,20.3 57.4,19.2 58.5,19.0 59.6,17.4 60.8,15.5 61.9,12.7 63.0,12.3 64.2,18.6 65.3,15.1 66.4,11.2 67.6,15.7 68.7,11.1 69.8,10.7 71.0,11.7 72.1,6.7 73.2,12.0 74.4,9.1 75.5,12.4 76.6,8.0 78.9,14.0 80.1,5.9 81.2,5.9 82.3,14.5 83.5,15.8 84.6,15.3 85.7,13.2 86.9,12.7 88.0,5.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+21.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="OIL AND GAS MIDSTREAM">OIL AND GAS MIDSTREAM</div>
+        <div class="sec-score" style="color:#00d4aa">80.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.2 5.1,23.6 6.3,26.0 7.4,25.3 8.5,25.8 9.7,26.9 10.8,25.6 11.9,26.7 13.1,26.3 14.2,26.1 15.4,24.4 16.5,24.7 17.6,26.5 18.8,23.7 19.9,22.1 21.0,22.3 22.2,23.1 23.3,24.6 24.4,24.9 25.6,24.6 26.7,25.1 27.8,25.7 29.0,29.4 30.1,27.5 31.2,29.8 32.4,30.0 33.5,28.9 34.6,27.9 35.8,28.3 36.9,28.8 38.1,28.3 39.2,28.0 40.3,28.7 41.5,28.0 42.6,29.2 43.7,31.0 44.9,28.5 46.0,26.2 47.1,25.2 48.3,24.8 49.4,20.8 50.5,20.4 51.7,21.3 52.8,19.9 53.9,21.8 55.1,20.0 56.2,20.6 57.4,19.2 58.5,19.2 59.6,16.8 60.8,13.9 61.9,12.7 63.0,14.7 64.2,16.3 65.3,13.0 66.4,12.9 67.6,13.3 68.7,11.4 69.8,10.9 71.0,11.0 72.1,8.7 73.2,11.1 74.4,6.2 75.5,7.4 76.6,5.8 78.9,11.6 80.1,5.1 81.2,5.0 82.3,10.9 83.5,11.6 84.6,10.3 85.7,9.8 86.9,9.2 88.0,5.4 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,26.2 5.1,23.6 6.3,26.0 7.4,25.3 8.5,25.8 9.7,26.9 10.8,25.6 11.9,26.7 13.1,26.3 14.2,26.1 15.4,24.4 16.5,24.7 17.6,26.5 18.8,23.7 19.9,22.1 21.0,22.3 22.2,23.1 23.3,24.6 24.4,24.9 25.6,24.6 26.7,25.1 27.8,25.7 29.0,29.4 30.1,27.5 31.2,29.8 32.4,30.0 33.5,28.9 34.6,27.9 35.8,28.3 36.9,28.8 38.1,28.3 39.2,28.0 40.3,28.7 41.5,28.0 42.6,29.2 43.7,31.0 44.9,28.5 46.0,26.2 47.1,25.2 48.3,24.8 49.4,20.8 50.5,20.4 51.7,21.3 52.8,19.9 53.9,21.8 55.1,20.0 56.2,20.6 57.4,19.2 58.5,19.2 59.6,16.8 60.8,13.9 61.9,12.7 63.0,14.7 64.2,16.3 65.3,13.0 66.4,12.9 67.6,13.3 68.7,11.4 69.8,10.9 71.0,11.0 72.1,8.7 73.2,11.1 74.4,6.2 75.5,7.4 76.6,5.8 78.9,11.6 80.1,5.1 81.2,5.0 82.3,10.9 83.5,11.6 84.6,10.3 85.7,9.8 86.9,9.2 88.0,5.4" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.4" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+23.3</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="LIQUEFIED NATURAL GAS">LIQUEFIED NATURAL GAS</div>
+        <div class="sec-score" style="color:#00d4aa">78.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,27.5 5.1,25.1 6.3,26.5 7.4,26.6 8.5,27.6 9.7,28.7 10.8,28.2 11.9,29.2 13.1,28.6 14.2,26.4 15.4,24.5 16.5,25.6 17.6,26.7 18.8,23.8 19.9,22.1 21.0,23.4 22.2,24.6 23.3,24.5 24.4,28.0 25.6,27.9 26.7,28.6 27.8,29.6 29.0,31.0 30.1,29.6 31.2,29.5 32.4,27.7 33.5,26.6 34.6,24.8 35.8,24.8 36.9,25.6 38.1,24.5 39.2,24.2 40.3,24.8 41.5,22.7 42.6,22.7 43.7,25.8 44.9,25.4 46.0,21.8 47.1,22.9 48.3,22.9 49.4,18.8 50.5,16.8 51.7,17.9 52.8,14.8 53.9,17.8 55.1,14.6 56.2,12.3 57.4,11.1 58.5,13.1 59.6,13.2 60.8,10.7 61.9,9.6 63.0,9.9 64.2,13.6 65.3,11.0 66.4,11.7 67.6,13.1 68.7,9.7 69.8,7.7 71.0,7.0 72.1,5.6 73.2,8.5 74.4,6.0 75.5,7.8 76.6,5.5 78.9,10.5 80.1,5.6 81.2,7.4 82.3,9.7 83.5,10.2 84.6,9.9 85.7,8.8 86.9,8.1 88.0,5.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,27.5 5.1,25.1 6.3,26.5 7.4,26.6 8.5,27.6 9.7,28.7 10.8,28.2 11.9,29.2 13.1,28.6 14.2,26.4 15.4,24.5 16.5,25.6 17.6,26.7 18.8,23.8 19.9,22.1 21.0,23.4 22.2,24.6 23.3,24.5 24.4,28.0 25.6,27.9 26.7,28.6 27.8,29.6 29.0,31.0 30.1,29.6 31.2,29.5 32.4,27.7 33.5,26.6 34.6,24.8 35.8,24.8 36.9,25.6 38.1,24.5 39.2,24.2 40.3,24.8 41.5,22.7 42.6,22.7 43.7,25.8 44.9,25.4 46.0,21.8 47.1,22.9 48.3,22.9 49.4,18.8 50.5,16.8 51.7,17.9 52.8,14.8 53.9,17.8 55.1,14.6 56.2,12.3 57.4,11.1 58.5,13.1 59.6,13.2 60.8,10.7 61.9,9.6 63.0,9.9 64.2,13.6 65.3,11.0 66.4,11.7 67.6,13.1 68.7,9.7 69.8,7.7 71.0,7.0 72.1,5.6 73.2,8.5 74.4,6.0 75.5,7.8 76.6,5.5 78.9,10.5 80.1,5.6 81.2,7.4 82.3,9.7 83.5,10.2 84.6,9.9 85.7,8.8 86.9,8.1 88.0,5.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="5.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+31.0</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="GOLD">GOLD</div>
+        <div class="sec-score" style="color:#00d4aa">74.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.9 5.1,24.8 6.3,27.2 7.4,26.0 8.5,24.7 9.7,31.0 10.8,30.3 11.9,23.3 13.1,21.9 14.2,15.7 15.4,13.0 16.5,13.9 17.6,16.4 18.8,17.1 19.9,16.5 21.0,18.6 22.2,22.4 23.3,18.4 24.4,16.5 25.6,12.0 26.7,13.6 27.8,14.7 29.0,14.8 30.1,13.8 31.2,13.8 32.4,10.9 33.5,6.6 34.6,6.2 35.8,7.6 36.9,6.3 38.1,14.8 39.2,14.1 40.3,15.9 41.5,17.0 42.6,13.0 43.7,8.0 44.9,9.1 46.0,9.2 47.1,8.4 48.3,5.0 49.4,5.0 50.5,5.2 51.7,5.7 52.8,5.7 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,16.0 64.2,17.5 65.3,12.1 66.4,13.5 67.6,23.0 68.7,15.3 69.8,5.4 71.0,5.3 72.1,5.0 73.2,16.3 74.4,8.3 75.5,13.6 76.6,11.6 78.9,17.8 80.1,5.2 81.2,5.0 82.3,16.1 83.5,17.6 84.6,17.2 85.7,14.7 86.9,14.0 88.0,14.1 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,22.9 5.1,24.8 6.3,27.2 7.4,26.0 8.5,24.7 9.7,31.0 10.8,30.3 11.9,23.3 13.1,21.9 14.2,15.7 15.4,13.0 16.5,13.9 17.6,16.4 18.8,17.1 19.9,16.5 21.0,18.6 22.2,22.4 23.3,18.4 24.4,16.5 25.6,12.0 26.7,13.6 27.8,14.7 29.0,14.8 30.1,13.8 31.2,13.8 32.4,10.9 33.5,6.6 34.6,6.2 35.8,7.6 36.9,6.3 38.1,14.8 39.2,14.1 40.3,15.9 41.5,17.0 42.6,13.0 43.7,8.0 44.9,9.1 46.0,9.2 47.1,8.4 48.3,5.0 49.4,5.0 50.5,5.2 51.7,5.7 52.8,5.7 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,16.0 64.2,17.5 65.3,12.1 66.4,13.5 67.6,23.0 68.7,15.3 69.8,5.4 71.0,5.3 72.1,5.0 73.2,16.3 74.4,8.3 75.5,13.6 76.6,11.6 78.9,17.8 80.1,5.2 81.2,5.0 82.3,16.1 83.5,17.6 84.6,17.2 85.7,14.7 86.9,14.0 88.0,14.1" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="14.1" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+13.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="OIL AND GAS EQUIPMENT AND SERVICES">OIL AND GAS EQUIPMEN…</div>
+        <div class="sec-score" style="color:#00d4aa">74.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,25.7 5.1,23.4 6.3,27.3 7.4,25.7 8.5,27.1 9.7,31.0 10.8,28.1 11.9,27.9 13.1,25.9 14.2,26.2 15.4,24.8 16.5,23.2 17.6,24.0 18.8,17.0 19.9,16.1 21.0,17.2 22.2,19.4 23.3,17.4 24.4,16.2 25.6,16.4 26.7,21.0 27.8,21.9 29.0,29.2 30.1,28.1 31.2,30.9 32.4,30.1 33.5,28.2 34.6,28.2 35.8,29.5 36.9,30.5 38.1,30.3 39.2,29.2 40.3,30.9 41.5,26.2 42.6,20.7 43.7,21.6 44.9,24.0 46.0,19.2 47.1,19.2 48.3,20.5 49.4,16.7 50.5,15.9 51.7,15.2 52.8,15.8 53.9,17.0 55.1,9.9 56.2,9.5 57.4,10.9 58.5,10.1 59.6,8.2 60.8,12.3 61.9,8.2 63.0,9.6 64.2,9.8 65.3,8.8 66.4,9.2 67.6,13.3 68.7,6.8 69.8,5.0 71.0,7.7 72.1,5.0 73.2,9.0 74.4,6.7 75.5,8.4 76.6,5.3 78.9,15.4 80.1,6.2 81.2,5.0 82.3,15.1 83.5,17.0 84.6,16.6 85.7,16.6 86.9,17.1 88.0,15.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,25.7 5.1,23.4 6.3,27.3 7.4,25.7 8.5,27.1 9.7,31.0 10.8,28.1 11.9,27.9 13.1,25.9 14.2,26.2 15.4,24.8 16.5,23.2 17.6,24.0 18.8,17.0 19.9,16.1 21.0,17.2 22.2,19.4 23.3,17.4 24.4,16.2 25.6,16.4 26.7,21.0 27.8,21.9 29.0,29.2 30.1,28.1 31.2,30.9 32.4,30.1 33.5,28.2 34.6,28.2 35.8,29.5 36.9,30.5 38.1,30.3 39.2,29.2 40.3,30.9 41.5,26.2 42.6,20.7 43.7,21.6 44.9,24.0 46.0,19.2 47.1,19.2 48.3,20.5 49.4,16.7 50.5,15.9 51.7,15.2 52.8,15.8 53.9,17.0 55.1,9.9 56.2,9.5 57.4,10.9 58.5,10.1 59.6,8.2 60.8,12.3 61.9,8.2 63.0,9.6 64.2,9.8 65.3,8.8 66.4,9.2 67.6,13.3 68.7,6.8 69.8,5.0 71.0,7.7 72.1,5.0 73.2,9.0 74.4,6.7 75.5,8.4 76.6,5.3 78.9,15.4 80.1,6.2 81.2,5.0 82.3,15.1 83.5,17.0 84.6,16.6 85.7,16.6 86.9,17.1 88.0,15.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="15.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+13.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="SILVER">SILVER</div>
+        <div class="sec-score" style="color:#00d4aa">73.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.7 5.1,24.4 6.3,26.8 7.4,26.6 8.5,25.5 9.7,31.0 10.8,30.3 11.9,25.1 13.1,24.2 14.2,17.8 15.4,10.6 16.5,12.1 17.6,14.5 18.8,15.9 19.9,17.0 21.0,17.2 22.2,19.7 23.3,14.2 24.4,12.8 25.6,8.1 26.7,10.6 27.8,10.6 29.0,10.9 30.1,10.1 31.2,11.1 32.4,7.5 33.5,5.0 34.6,5.0 35.8,6.2 36.9,5.0 38.1,10.2 39.2,9.0 40.3,11.5 41.5,13.1 42.6,8.3 43.7,5.0 44.9,6.8 46.0,7.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,14.4 64.2,15.9 65.3,11.0 66.4,11.3 67.6,21.8 68.7,15.1 69.8,9.0 71.0,9.0 72.1,7.0 73.2,18.3 74.4,12.0 75.5,16.1 76.6,13.3 78.9,16.0 80.1,5.0 81.2,5.0 82.3,13.9 83.5,14.3 84.6,13.8 85.7,12.3 86.9,11.9 88.0,12.9 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,22.7 5.1,24.4 6.3,26.8 7.4,26.6 8.5,25.5 9.7,31.0 10.8,30.3 11.9,25.1 13.1,24.2 14.2,17.8 15.4,10.6 16.5,12.1 17.6,14.5 18.8,15.9 19.9,17.0 21.0,17.2 22.2,19.7 23.3,14.2 24.4,12.8 25.6,8.1 26.7,10.6 27.8,10.6 29.0,10.9 30.1,10.1 31.2,11.1 32.4,7.5 33.5,5.0 34.6,5.0 35.8,6.2 36.9,5.0 38.1,10.2 39.2,9.0 40.3,11.5 41.5,13.1 42.6,8.3 43.7,5.0 44.9,6.8 46.0,7.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,14.4 64.2,15.9 65.3,11.0 66.4,11.3 67.6,21.8 68.7,15.1 69.8,9.0 71.0,9.0 72.1,7.0 73.2,18.3 74.4,12.0 75.5,16.1 76.6,13.3 78.9,16.0 80.1,5.0 81.2,5.0 82.3,13.9 83.5,14.3 84.6,13.8 85.7,12.3 86.9,11.9 88.0,12.9" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="12.9" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+18.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="ALUMINUM">ALUMINUM</div>
+        <div class="sec-score" style="color:#00d4aa">72.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,20.7 5.1,23.6 6.3,27.6 7.4,29.3 8.5,28.2 9.7,31.0 10.8,28.3 11.9,24.6 13.1,21.6 14.2,18.2 15.4,16.4 16.5,17.1 17.6,17.1 18.8,9.2 19.9,8.9 21.0,11.3 22.2,13.3 23.3,14.8 24.4,11.8 25.6,6.0 26.7,9.2 27.8,10.2 29.0,8.2 30.1,10.0 31.2,6.8 32.4,5.0 33.5,5.0 34.6,5.0 35.8,5.0 36.9,5.0 38.1,5.0 39.2,5.0 40.3,5.0 41.5,5.0 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,10.4 64.2,5.0 65.3,5.0 66.4,5.0 67.6,11.0 68.7,5.0 69.8,5.0 71.0,5.0 72.1,5.0 73.2,8.7 74.4,14.7 75.5,14.6 76.6,9.6 78.9,12.1 80.1,15.9 81.2,14.9 82.3,12.2 83.5,13.3 84.6,13.6 85.7,14.2 86.9,12.1 88.0,16.2 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,20.7 5.1,23.6 6.3,27.6 7.4,29.3 8.5,28.2 9.7,31.0 10.8,28.3 11.9,24.6 13.1,21.6 14.2,18.2 15.4,16.4 16.5,17.1 17.6,17.1 18.8,9.2 19.9,8.9 21.0,11.3 22.2,13.3 23.3,14.8 24.4,11.8 25.6,6.0 26.7,9.2 27.8,10.2 29.0,8.2 30.1,10.0 31.2,6.8 32.4,5.0 33.5,5.0 34.6,5.0 35.8,5.0 36.9,5.0 38.1,5.0 39.2,5.0 40.3,5.0 41.5,5.0 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,10.4 64.2,5.0 65.3,5.0 66.4,5.0 67.6,11.0 68.7,5.0 69.8,5.0 71.0,5.0 72.1,5.0 73.2,8.7 74.4,14.7 75.5,14.6 76.6,9.6 78.9,12.1 80.1,15.9 81.2,14.9 82.3,12.2 83.5,13.3 84.6,13.6 85.7,14.2 86.9,12.1 88.0,16.2" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="16.2" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+6.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="UTILITIES & TELECOM">UTILITIES & TELECOM</div>
+        <div class="sec-score" style="color:#00d4aa">70.8</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,23.5 5.1,23.6 6.3,22.3 7.4,23.2 8.5,24.8 9.7,24.6 10.8,24.0 11.9,24.5 13.1,24.1 14.2,23.1 15.4,21.9 16.5,24.5 17.6,24.5 18.8,25.3 19.9,26.1 21.0,26.6 22.2,29.1 23.3,30.1 24.4,31.0 25.6,30.6 26.7,29.8 27.8,28.9 29.0,29.2 30.1,28.0 31.2,27.5 32.4,29.4 33.5,28.7 34.6,27.7 35.8,26.4 36.9,25.9 38.1,25.1 39.2,24.6 40.3,24.8 41.5,25.1 42.6,24.6 43.7,24.8 44.9,27.0 46.0,25.5 47.1,25.1 48.3,25.1 49.4,25.9 50.5,24.4 51.7,24.2 52.8,24.3 53.9,24.7 55.1,24.4 56.2,24.4 57.4,24.4 58.5,23.3 59.6,23.1 60.8,21.4 61.9,19.0 63.0,16.4 64.2,17.9 65.3,14.8 66.4,13.2 67.6,12.9 68.7,14.5 69.8,14.8 71.0,12.8 72.1,9.5 73.2,7.5 74.4,5.0 75.5,6.8 76.6,10.1 78.9,12.9 80.1,6.4 81.2,5.8 82.3,10.7 83.5,11.7 84.6,12.1 85.7,10.4 86.9,11.8 88.0,8.9 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,23.5 5.1,23.6 6.3,22.3 7.4,23.2 8.5,24.8 9.7,24.6 10.8,24.0 11.9,24.5 13.1,24.1 14.2,23.1 15.4,21.9 16.5,24.5 17.6,24.5 18.8,25.3 19.9,26.1 21.0,26.6 22.2,29.1 23.3,30.1 24.4,31.0 25.6,30.6 26.7,29.8 27.8,28.9 29.0,29.2 30.1,28.0 31.2,27.5 32.4,29.4 33.5,28.7 34.6,27.7 35.8,26.4 36.9,25.9 38.1,25.1 39.2,24.6 40.3,24.8 41.5,25.1 42.6,24.6 43.7,24.8 44.9,27.0 46.0,25.5 47.1,25.1 48.3,25.1 49.4,25.9 50.5,24.4 51.7,24.2 52.8,24.3 53.9,24.7 55.1,24.4 56.2,24.4 57.4,24.4 58.5,23.3 59.6,23.1 60.8,21.4 61.9,19.0 63.0,16.4 64.2,17.9 65.3,14.8 66.4,13.2 67.6,12.9 68.7,14.5 69.8,14.8 71.0,12.8 72.1,9.5 73.2,7.5 74.4,5.0 75.5,6.8 76.6,10.1 78.9,12.9 80.1,6.4 81.2,5.8 82.3,10.7 83.5,11.7 84.6,12.1 85.7,10.4 86.9,11.8 88.0,8.9" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="8.9" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+19.7</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CONSTRUCTION & ENGINEERING">CONSTRUCTION & ENGIN…</div>
+        <div class="sec-score" style="color:#4a9eff">68.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,24.6 5.1,25.4 6.3,27.2 7.4,26.7 8.5,25.5 9.7,28.2 10.8,28.1 11.9,25.8 13.1,24.0 14.2,22.4 15.4,21.8 16.5,24.3 17.6,23.6 18.8,21.7 19.9,19.7 21.0,20.9 22.2,22.0 23.3,23.3 24.4,21.3 25.6,19.2 26.7,24.3 27.8,25.0 29.0,25.5 30.1,31.0 31.2,29.5 32.4,28.4 33.5,27.9 34.6,27.3 35.8,27.0 36.9,27.1 38.1,28.2 39.2,28.8 40.3,30.3 41.5,25.4 42.6,22.2 43.7,21.3 44.9,24.5 46.0,25.6 47.1,22.2 48.3,20.7 49.4,19.6 50.5,21.6 51.7,20.8 52.8,18.6 53.9,21.7 55.1,18.2 56.2,17.4 57.4,18.9 58.5,18.2 59.6,17.4 60.8,16.7 61.9,15.4 63.0,17.5 64.2,15.2 65.3,14.1 66.4,17.0 67.6,17.6 68.7,10.9 69.8,8.8 71.0,9.0 72.1,9.8 73.2,13.0 74.4,11.2 75.5,10.4 76.6,10.6 78.9,11.7 80.1,8.1 81.2,5.0 82.3,11.0 83.5,14.0 84.6,14.3 85.7,15.3 86.9,15.5 88.0,16.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,24.6 5.1,25.4 6.3,27.2 7.4,26.7 8.5,25.5 9.7,28.2 10.8,28.1 11.9,25.8 13.1,24.0 14.2,22.4 15.4,21.8 16.5,24.3 17.6,23.6 18.8,21.7 19.9,19.7 21.0,20.9 22.2,22.0 23.3,23.3 24.4,21.3 25.6,19.2 26.7,24.3 27.8,25.0 29.0,25.5 30.1,31.0 31.2,29.5 32.4,28.4 33.5,27.9 34.6,27.3 35.8,27.0 36.9,27.1 38.1,28.2 39.2,28.8 40.3,30.3 41.5,25.4 42.6,22.2 43.7,21.3 44.9,24.5 46.0,25.6 47.1,22.2 48.3,20.7 49.4,19.6 50.5,21.6 51.7,20.8 52.8,18.6 53.9,21.7 55.1,18.2 56.2,17.4 57.4,18.9 58.5,18.2 59.6,17.4 60.8,16.7 61.9,15.4 63.0,17.5 64.2,15.2 65.3,14.1 66.4,17.0 67.6,17.6 68.7,10.9 69.8,8.8 71.0,9.0 72.1,9.8 73.2,13.0 74.4,11.2 75.5,10.4 76.6,10.6 78.9,11.7 80.1,8.1 81.2,5.0 82.3,11.0 83.5,14.0 84.6,14.3 85.7,15.3 86.9,15.5 88.0,16.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="16.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+12.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="REAL ESTATE & REITs">REAL ESTATE & REITs</div>
+        <div class="sec-score" style="color:#4a9eff">68.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.2 5.1,25.5 6.3,26.0 7.4,25.0 8.5,27.0 9.7,27.8 10.8,26.3 11.9,26.3 13.1,25.4 14.2,24.0 15.4,23.0 16.5,26.2 17.6,27.1 18.8,26.4 19.9,26.1 21.0,25.9 22.2,26.6 23.3,28.4 24.4,28.9 25.6,27.8 26.7,27.7 27.8,26.2 29.0,28.3 30.1,28.3 31.2,30.0 32.4,31.0 33.5,30.4 34.6,30.0 35.8,28.9 36.9,28.7 38.1,28.2 39.2,28.0 40.3,29.6 41.5,29.1 42.6,28.8 43.7,27.9 44.9,30.5 46.0,29.1 47.1,28.3 48.3,27.5 49.4,25.2 50.5,22.8 51.7,21.6 52.8,19.7 53.9,24.0 55.1,23.4 56.2,26.2 57.4,26.0 58.5,26.0 59.6,25.7 60.8,27.4 61.9,23.5 63.0,23.3 64.2,25.9 65.3,25.2 66.4,22.2 67.6,23.2 68.7,19.4 69.8,18.3 71.0,15.7 72.1,13.4 73.2,10.8 74.4,7.6 75.5,5.0 76.6,11.1 78.9,14.8 80.1,9.5 81.2,9.9 82.3,13.2 83.5,14.3 84.6,14.3 85.7,11.5 86.9,12.7 88.0,12.1 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,26.2 5.1,25.5 6.3,26.0 7.4,25.0 8.5,27.0 9.7,27.8 10.8,26.3 11.9,26.3 13.1,25.4 14.2,24.0 15.4,23.0 16.5,26.2 17.6,27.1 18.8,26.4 19.9,26.1 21.0,25.9 22.2,26.6 23.3,28.4 24.4,28.9 25.6,27.8 26.7,27.7 27.8,26.2 29.0,28.3 30.1,28.3 31.2,30.0 32.4,31.0 33.5,30.4 34.6,30.0 35.8,28.9 36.9,28.7 38.1,28.2 39.2,28.0 40.3,29.6 41.5,29.1 42.6,28.8 43.7,27.9 44.9,30.5 46.0,29.1 47.1,28.3 48.3,27.5 49.4,25.2 50.5,22.8 51.7,21.6 52.8,19.7 53.9,24.0 55.1,23.4 56.2,26.2 57.4,26.0 58.5,26.0 59.6,25.7 60.8,27.4 61.9,23.5 63.0,23.3 64.2,25.9 65.3,25.2 66.4,22.2 67.6,23.2 68.7,19.4 69.8,18.3 71.0,15.7 72.1,13.4 73.2,10.8 74.4,7.6 75.5,5.0 76.6,11.1 78.9,14.8 80.1,9.5 81.2,9.9 82.3,13.2 83.5,14.3 84.6,14.3 85.7,11.5 86.9,12.7 88.0,12.1" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="12.1" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+13.2</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="COPPER">COPPER</div>
+        <div class="sec-score" style="color:#4a9eff">67.1</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,21.6 5.1,23.6 6.3,26.4 7.4,28.1 8.5,25.4 9.7,31.0 10.8,28.1 11.9,23.7 13.1,22.1 14.2,18.9 15.4,16.4 16.5,16.5 17.6,18.3 18.8,14.8 19.9,14.9 21.0,14.9 22.2,16.7 23.3,16.7 24.4,14.3 25.6,11.0 26.7,14.4 27.8,14.4 29.0,15.8 30.1,14.7 31.2,13.6 32.4,12.1 33.5,9.6 34.6,7.4 35.8,8.0 36.9,5.8 38.1,9.5 39.2,8.0 40.3,9.7 41.5,7.6 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.3 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,5.0 64.2,5.0 65.3,5.0 66.4,5.0 67.6,10.8 68.7,8.2 69.8,5.0 71.0,6.3 72.1,5.0 73.2,9.5 74.4,8.6 75.5,13.7 76.6,12.6 78.9,16.1 80.1,9.9 81.2,5.4 82.3,13.2 83.5,14.3 84.6,13.5 85.7,13.1 86.9,12.3 88.0,17.9 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,21.6 5.1,23.6 6.3,26.4 7.4,28.1 8.5,25.4 9.7,31.0 10.8,28.1 11.9,23.7 13.1,22.1 14.2,18.9 15.4,16.4 16.5,16.5 17.6,18.3 18.8,14.8 19.9,14.9 21.0,14.9 22.2,16.7 23.3,16.7 24.4,14.3 25.6,11.0 26.7,14.4 27.8,14.4 29.0,15.8 30.1,14.7 31.2,13.6 32.4,12.1 33.5,9.6 34.6,7.4 35.8,8.0 36.9,5.8 38.1,9.5 39.2,8.0 40.3,9.7 41.5,7.6 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.3 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,5.0 64.2,5.0 65.3,5.0 66.4,5.0 67.6,10.8 68.7,8.2 69.8,5.0 71.0,6.3 72.1,5.0 73.2,9.5 74.4,8.6 75.5,13.7 76.6,12.6 78.9,16.1 80.1,9.9 81.2,5.4 82.3,13.2 83.5,14.3 84.6,13.5 85.7,13.1 86.9,12.3 88.0,17.9" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="17.9" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+6.1</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="COAL">COAL</div>
+        <div class="sec-score" style="color:#4a9eff">65.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,11.1 5.1,12.3 6.3,14.3 7.4,16.3 8.5,21.2 9.7,26.8 10.8,26.6 11.9,26.2 13.1,25.7 14.2,24.9 15.4,23.2 16.5,28.9 17.6,30.9 18.8,25.2 19.9,23.5 21.0,23.0 22.2,24.4 23.3,21.7 24.4,21.3 25.6,17.6 26.7,18.7 27.8,23.4 29.0,26.7 30.1,31.0 31.2,26.7 32.4,24.7 33.5,23.7 34.6,23.3 35.8,23.8 36.9,25.2 38.1,25.7 39.2,26.4 40.3,26.2 41.5,25.3 42.6,26.0 43.7,24.1 44.9,26.7 46.0,22.8 47.1,17.5 48.3,15.9 49.4,16.6 50.5,15.8 51.7,14.1 52.8,12.0 53.9,11.3 55.1,5.2 56.2,5.7 57.4,10.6 58.5,17.8 59.6,17.5 60.8,20.7 61.9,18.8 63.0,20.1 64.2,17.0 65.3,11.6 66.4,15.0 67.6,15.7 68.7,7.9 69.8,5.0 71.0,8.2 72.1,6.5 73.2,10.7 74.4,8.7 75.5,12.6 76.6,13.9 78.9,18.5 80.1,14.6 81.2,14.6 82.3,16.0 83.5,16.2 84.6,17.5 85.7,17.3 86.9,18.3 88.0,14.1 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,11.1 5.1,12.3 6.3,14.3 7.4,16.3 8.5,21.2 9.7,26.8 10.8,26.6 11.9,26.2 13.1,25.7 14.2,24.9 15.4,23.2 16.5,28.9 17.6,30.9 18.8,25.2 19.9,23.5 21.0,23.0 22.2,24.4 23.3,21.7 24.4,21.3 25.6,17.6 26.7,18.7 27.8,23.4 29.0,26.7 30.1,31.0 31.2,26.7 32.4,24.7 33.5,23.7 34.6,23.3 35.8,23.8 36.9,25.2 38.1,25.7 39.2,26.4 40.3,26.2 41.5,25.3 42.6,26.0 43.7,24.1 44.9,26.7 46.0,22.8 47.1,17.5 48.3,15.9 49.4,16.6 50.5,15.8 51.7,14.1 52.8,12.0 53.9,11.3 55.1,5.2 56.2,5.7 57.4,10.6 58.5,17.8 59.6,17.5 60.8,20.7 61.9,18.8 63.0,20.1 64.2,17.0 65.3,11.6 66.4,15.0 67.6,15.7 68.7,7.9 69.8,5.0 71.0,8.2 72.1,6.5 73.2,10.7 74.4,8.7 75.5,12.6 76.6,13.9 78.9,18.5 80.1,14.6 81.2,14.6 82.3,16.0 83.5,16.2 84.6,17.5 85.7,17.3 86.9,18.3 88.0,14.1" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="14.1" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-2.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CONSUMER STAPLES">CONSUMER STAPLES</div>
+        <div class="sec-score" style="color:#4a9eff">64.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,30.9 5.1,30.6 6.3,30.7 7.4,28.7 8.5,29.3 9.7,28.8 10.8,26.8 11.9,29.3 13.1,27.2 14.2,26.0 15.4,25.3 16.5,26.0 17.6,27.9 18.8,28.6 19.9,29.4 21.0,29.8 22.2,31.0 23.3,30.4 24.4,28.9 25.6,28.2 26.7,26.7 27.8,24.4 29.0,24.6 30.1,23.0 31.2,24.6 32.4,25.2 33.5,25.5 34.6,25.8 35.8,24.6 36.9,24.8 38.1,25.0 39.2,24.7 40.3,25.4 41.5,26.3 42.6,28.8 43.7,30.1 44.9,30.9 46.0,26.7 47.1,24.4 48.3,23.1 49.4,21.1 50.5,17.9 51.7,17.7 52.8,18.8 53.9,18.8 55.1,19.9 56.2,19.4 57.4,18.5 58.5,18.5 59.6,17.5 60.8,18.6 61.9,19.9 63.0,15.3 64.2,14.7 65.3,11.9 66.4,8.6 67.6,6.0 68.7,5.5 69.8,7.2 71.0,7.0 72.1,5.0 73.2,5.2 74.4,6.3 75.5,10.4 76.6,10.1 78.9,13.2 80.1,7.8 81.2,7.4 82.3,11.6 83.5,11.4 84.6,12.1 85.7,9.5 86.9,10.7 88.0,15.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,30.9 5.1,30.6 6.3,30.7 7.4,28.7 8.5,29.3 9.7,28.8 10.8,26.8 11.9,29.3 13.1,27.2 14.2,26.0 15.4,25.3 16.5,26.0 17.6,27.9 18.8,28.6 19.9,29.4 21.0,29.8 22.2,31.0 23.3,30.4 24.4,28.9 25.6,28.2 26.7,26.7 27.8,24.4 29.0,24.6 30.1,23.0 31.2,24.6 32.4,25.2 33.5,25.5 34.6,25.8 35.8,24.6 36.9,24.8 38.1,25.0 39.2,24.7 40.3,25.4 41.5,26.3 42.6,28.8 43.7,30.1 44.9,30.9 46.0,26.7 47.1,24.4 48.3,23.1 49.4,21.1 50.5,17.9 51.7,17.7 52.8,18.8 53.9,18.8 55.1,19.9 56.2,19.4 57.4,18.5 58.5,18.5 59.6,17.5 60.8,18.6 61.9,19.9 63.0,15.3 64.2,14.7 65.3,11.9 66.4,8.6 67.6,6.0 68.7,5.5 69.8,7.2 71.0,7.0 72.1,5.0 73.2,5.2 74.4,6.3 75.5,10.4 76.6,10.1 78.9,13.2 80.1,7.8 81.2,7.4 82.3,11.6 83.5,11.4 84.6,12.1 85.7,9.5 86.9,10.7 88.0,15.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="15.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+18.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="AGRIBUSINESS">AGRIBUSINESS</div>
+        <div class="sec-score" style="color:#4a9eff">64.1</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.8 5.1,27.0 6.3,29.1 7.4,28.8 8.5,29.6 9.7,31.0 10.8,27.8 11.9,27.3 13.1,25.1 14.2,24.9 15.4,24.3 16.5,23.9 17.6,24.8 18.8,25.2 19.9,25.3 21.0,25.7 22.2,27.0 23.3,27.7 24.4,25.8 25.6,23.2 26.7,22.4 27.8,23.4 29.0,24.1 30.1,22.6 31.2,22.9 32.4,23.1 33.5,22.8 34.6,22.6 35.8,21.8 36.9,21.0 38.1,21.1 39.2,20.7 40.3,21.2 41.5,19.0 42.6,18.6 43.7,17.7 44.9,19.2 46.0,15.3 47.1,14.7 48.3,14.7 49.4,13.5 50.5,11.5 51.7,10.4 52.8,11.7 53.9,11.9 55.1,9.8 56.2,9.5 57.4,9.0 58.5,9.2 59.6,8.6 60.8,9.3 61.9,8.7 63.0,10.0 64.2,9.8 65.3,8.6 66.4,6.8 67.6,10.4 68.7,8.2 69.8,7.3 71.0,6.4 72.1,5.0 73.2,8.2 74.4,7.4 75.5,8.2 76.6,8.7 78.9,10.6 80.1,11.9 81.2,10.8 82.3,10.8 83.5,12.9 84.6,12.5 85.7,11.9 86.9,12.4 88.0,15.1 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,26.8 5.1,27.0 6.3,29.1 7.4,28.8 8.5,29.6 9.7,31.0 10.8,27.8 11.9,27.3 13.1,25.1 14.2,24.9 15.4,24.3 16.5,23.9 17.6,24.8 18.8,25.2 19.9,25.3 21.0,25.7 22.2,27.0 23.3,27.7 24.4,25.8 25.6,23.2 26.7,22.4 27.8,23.4 29.0,24.1 30.1,22.6 31.2,22.9 32.4,23.1 33.5,22.8 34.6,22.6 35.8,21.8 36.9,21.0 38.1,21.1 39.2,20.7 40.3,21.2 41.5,19.0 42.6,18.6 43.7,17.7 44.9,19.2 46.0,15.3 47.1,14.7 48.3,14.7 49.4,13.5 50.5,11.5 51.7,10.4 52.8,11.7 53.9,11.9 55.1,9.8 56.2,9.5 57.4,9.0 58.5,9.2 59.6,8.6 60.8,9.3 61.9,8.7 63.0,10.0 64.2,9.8 65.3,8.6 66.4,6.8 67.6,10.4 68.7,8.2 69.8,7.3 71.0,6.4 72.1,5.0 73.2,8.2 74.4,7.4 75.5,8.2 76.6,8.7 78.9,10.6 80.1,11.9 81.2,10.8 82.3,10.8 83.5,12.9 84.6,12.5 85.7,11.9 86.9,12.4 88.0,15.1" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="15.1" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+20.7</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="BRAZIL">BRAZIL</div>
+        <div class="sec-score" style="color:#4a9eff">61.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,18.3 5.1,18.6 6.3,21.0 7.4,20.9 8.5,22.7 9.7,26.1 10.8,24.9 11.9,23.9 13.1,23.1 14.2,19.5 15.4,18.7 16.5,20.0 17.6,17.2 18.8,17.5 19.9,15.7 21.0,25.4 22.2,25.2 23.3,25.2 24.4,24.9 25.6,23.8 26.7,23.9 27.8,22.9 29.0,27.6 30.1,29.9 31.2,28.6 32.4,29.5 33.5,31.0 34.6,29.0 35.8,29.0 36.9,28.5 38.1,30.9 39.2,28.7 40.3,29.9 41.5,28.5 42.6,26.3 43.7,25.4 44.9,26.4 46.0,25.6 47.1,24.5 48.3,24.7 49.4,25.7 50.5,23.9 51.7,23.9 52.8,25.1 53.9,22.8 55.1,17.9 56.2,14.0 57.4,11.1 58.5,11.7 59.6,6.5 60.8,5.0 61.9,6.9 63.0,11.9 64.2,11.5 65.3,9.0 66.4,12.8 67.6,14.6 68.7,13.3 69.8,9.3 71.0,9.9 72.1,5.5 73.2,9.3 74.4,11.8 75.5,13.6 76.6,13.0 78.9,19.9 80.1,10.7 81.2,8.2 82.3,18.0 83.5,19.2 84.6,19.0 85.7,19.7 86.9,19.4 88.0,20.9 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,18.3 5.1,18.6 6.3,21.0 7.4,20.9 8.5,22.7 9.7,26.1 10.8,24.9 11.9,23.9 13.1,23.1 14.2,19.5 15.4,18.7 16.5,20.0 17.6,17.2 18.8,17.5 19.9,15.7 21.0,25.4 22.2,25.2 23.3,25.2 24.4,24.9 25.6,23.8 26.7,23.9 27.8,22.9 29.0,27.6 30.1,29.9 31.2,28.6 32.4,29.5 33.5,31.0 34.6,29.0 35.8,29.0 36.9,28.5 38.1,30.9 39.2,28.7 40.3,29.9 41.5,28.5 42.6,26.3 43.7,25.4 44.9,26.4 46.0,25.6 47.1,24.5 48.3,24.7 49.4,25.7 50.5,23.9 51.7,23.9 52.8,25.1 53.9,22.8 55.1,17.9 56.2,14.0 57.4,11.1 58.5,11.7 59.6,6.5 60.8,5.0 61.9,6.9 63.0,11.9 64.2,11.5 65.3,9.0 66.4,12.8 67.6,14.6 68.7,13.3 69.8,9.3 71.0,9.9 72.1,5.5 73.2,9.3 74.4,11.8 75.5,13.6 76.6,13.0 78.9,19.9 80.1,10.7 81.2,8.2 82.3,18.0 83.5,19.2 84.6,19.0 85.7,19.7 86.9,19.4 88.0,20.9" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="20.9" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-3.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="DATA CENTERS">DATA CENTERS</div>
+        <div class="sec-score" style="color:#4a9eff">61.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,27.0 5.1,28.6 6.3,30.4 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,29.0 13.1,28.3 14.2,25.7 15.4,23.1 16.5,25.4 17.6,25.3 18.8,24.6 19.9,22.5 21.0,21.3 22.2,20.5 23.3,20.4 24.4,18.9 25.6,18.6 26.7,25.8 27.8,29.1 29.0,29.4 30.1,31.0 31.2,31.0 32.4,26.9 33.5,24.0 34.6,24.6 35.8,24.2 36.9,25.4 38.1,26.0 39.2,26.5 40.3,27.4 41.5,20.7 42.6,19.9 43.7,15.3 44.9,16.8 46.0,18.0 47.1,14.0 48.3,10.2 49.4,10.6 50.5,9.9 51.7,8.9 52.8,7.3 53.9,10.6 55.1,8.5 56.2,7.7 57.4,9.2 58.5,10.0 59.6,6.9 60.8,5.0 61.9,7.4 63.0,11.7 64.2,8.9 65.3,9.1 66.4,16.8 67.6,20.4 68.7,12.7 69.8,9.8 71.0,11.2 72.1,8.5 73.2,11.3 74.4,10.8 75.5,12.8 76.6,14.6 78.9,15.0 80.1,14.9 81.2,12.0 82.3,14.6 83.5,16.8 84.6,17.2 85.7,17.1 86.9,16.6 88.0,15.4 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,27.0 5.1,28.6 6.3,30.4 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,29.0 13.1,28.3 14.2,25.7 15.4,23.1 16.5,25.4 17.6,25.3 18.8,24.6 19.9,22.5 21.0,21.3 22.2,20.5 23.3,20.4 24.4,18.9 25.6,18.6 26.7,25.8 27.8,29.1 29.0,29.4 30.1,31.0 31.2,31.0 32.4,26.9 33.5,24.0 34.6,24.6 35.8,24.2 36.9,25.4 38.1,26.0 39.2,26.5 40.3,27.4 41.5,20.7 42.6,19.9 43.7,15.3 44.9,16.8 46.0,18.0 47.1,14.0 48.3,10.2 49.4,10.6 50.5,9.9 51.7,8.9 52.8,7.3 53.9,10.6 55.1,8.5 56.2,7.7 57.4,9.2 58.5,10.0 59.6,6.9 60.8,5.0 61.9,7.4 63.0,11.7 64.2,8.9 65.3,9.1 66.4,16.8 67.6,20.4 68.7,12.7 69.8,9.8 71.0,11.2 72.1,8.5 73.2,11.3 74.4,10.8 75.5,12.8 76.6,14.6 78.9,15.0 80.1,14.9 81.2,12.0 82.3,14.6 83.5,16.8 84.6,17.2 85.7,17.1 86.9,16.6 88.0,15.4" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="15.4" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+20.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="BASIC MATERIALS & CHEMICALS">BASIC MATERIALS & CH…</div>
+        <div class="sec-score" style="color:#4a9eff">60.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,24.2 5.1,26.0 6.3,28.0 7.4,28.4 8.5,26.7 9.7,27.2 10.8,23.9 11.9,23.9 13.1,22.2 14.2,21.8 15.4,21.0 16.5,21.7 17.6,22.7 18.8,22.5 19.9,23.1 21.0,24.3 22.2,29.5 23.3,31.0 24.4,28.5 25.6,25.5 26.7,24.0 27.8,23.8 29.0,23.6 30.1,22.5 31.2,23.1 32.4,23.7 33.5,21.8 34.6,21.9 35.8,21.3 36.9,20.9 38.1,20.7 39.2,20.3 40.3,21.2 41.5,19.6 42.6,18.2 43.7,15.1 44.9,16.2 46.0,14.2 47.1,12.2 48.3,11.5 49.4,11.7 50.5,11.9 51.7,11.9 52.8,11.9 53.9,15.7 55.1,12.6 56.2,12.4 57.4,12.7 58.5,12.1 59.6,13.1 60.8,13.8 61.9,12.9 63.0,10.7 64.2,10.6 65.3,9.3 66.4,5.9 67.6,8.8 68.7,9.6 69.8,9.2 71.0,6.5 72.1,5.1 73.2,5.0 74.4,7.0 75.5,7.1 76.6,6.9 78.9,5.5 80.1,7.1 81.2,7.3 82.3,5.4 83.5,8.1 84.6,8.4 85.7,6.7 86.9,8.7 88.0,14.8 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,24.2 5.1,26.0 6.3,28.0 7.4,28.4 8.5,26.7 9.7,27.2 10.8,23.9 11.9,23.9 13.1,22.2 14.2,21.8 15.4,21.0 16.5,21.7 17.6,22.7 18.8,22.5 19.9,23.1 21.0,24.3 22.2,29.5 23.3,31.0 24.4,28.5 25.6,25.5 26.7,24.0 27.8,23.8 29.0,23.6 30.1,22.5 31.2,23.1 32.4,23.7 33.5,21.8 34.6,21.9 35.8,21.3 36.9,20.9 38.1,20.7 39.2,20.3 40.3,21.2 41.5,19.6 42.6,18.2 43.7,15.1 44.9,16.2 46.0,14.2 47.1,12.2 48.3,11.5 49.4,11.7 50.5,11.9 51.7,11.9 52.8,11.9 53.9,15.7 55.1,12.6 56.2,12.4 57.4,12.7 58.5,12.1 59.6,13.1 60.8,13.8 61.9,12.9 63.0,10.7 64.2,10.6 65.3,9.3 66.4,5.9 67.6,8.8 68.7,9.6 69.8,9.2 71.0,6.5 72.1,5.1 73.2,5.0 74.4,7.0 75.5,7.1 76.6,6.9 78.9,5.5 80.1,7.1 81.2,7.3 82.3,5.4 83.5,8.1 84.6,8.4 85.7,6.7 86.9,8.7 88.0,14.8" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="14.8" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+12.7</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="FUEL CELL">FUEL CELL</div>
+        <div class="sec-score" style="color:#f5a623">58.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,24.4 5.1,26.4 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.6 21.0,25.8 22.2,27.8 23.3,28.2 24.4,29.7 25.6,25.5 26.7,30.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,29.8 32.4,31.0 33.5,30.2 34.6,30.2 35.8,28.8 36.9,30.1 38.1,31.0 39.2,31.0 40.3,31.0 41.5,25.1 42.6,21.6 43.7,21.0 44.9,23.1 46.0,19.1 47.1,18.1 48.3,16.2 49.4,15.7 50.5,16.3 51.7,16.2 52.8,10.3 53.9,9.6 55.1,8.9 56.2,5.0 57.4,5.0 58.5,11.8 59.6,6.3 60.8,5.0 61.9,9.4 63.0,17.0 64.2,19.2 65.3,15.3 66.4,23.6 67.6,31.0 68.7,24.9 69.8,21.6 71.0,23.9 72.1,23.7 73.2,30.4 74.4,28.2 75.5,27.9 76.6,24.8 78.9,24.0 80.1,23.9 81.2,18.5 82.3,22.0 83.5,23.4 84.6,23.1 85.7,23.7 86.9,23.0 88.0,19.3 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,24.4 5.1,26.4 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.6 21.0,25.8 22.2,27.8 23.3,28.2 24.4,29.7 25.6,25.5 26.7,30.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,29.8 32.4,31.0 33.5,30.2 34.6,30.2 35.8,28.8 36.9,30.1 38.1,31.0 39.2,31.0 40.3,31.0 41.5,25.1 42.6,21.6 43.7,21.0 44.9,23.1 46.0,19.1 47.1,18.1 48.3,16.2 49.4,15.7 50.5,16.3 51.7,16.2 52.8,10.3 53.9,9.6 55.1,8.9 56.2,5.0 57.4,5.0 58.5,11.8 59.6,6.3 60.8,5.0 61.9,9.4 63.0,17.0 64.2,19.2 65.3,15.3 66.4,23.6 67.6,31.0 68.7,24.9 69.8,21.6 71.0,23.9 72.1,23.7 73.2,30.4 74.4,28.2 75.5,27.9 76.6,24.8 78.9,24.0 80.1,23.9 81.2,18.5 82.3,22.0 83.5,23.4 84.6,23.1 85.7,23.7 86.9,23.0 88.0,19.3" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="19.3" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+10.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="INDUSTRIALS & CONGLOMERATES">INDUSTRIALS & CONGLO…</div>
+        <div class="sec-score" style="color:#f5a623">57.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,19.6 5.1,21.0 6.3,24.9 7.4,27.7 8.5,25.3 9.7,31.0 10.8,26.6 11.9,24.3 13.1,21.3 14.2,20.9 15.4,18.6 16.5,23.4 17.6,22.0 18.8,19.2 19.9,19.2 21.0,21.5 22.2,23.2 23.3,24.5 24.4,22.1 25.6,18.5 26.7,19.0 27.8,19.3 29.0,22.1 30.1,26.1 31.2,24.9 32.4,22.7 33.5,22.0 34.6,22.1 35.8,21.5 36.9,21.5 38.1,23.4 39.2,24.5 40.3,27.8 41.5,22.1 42.6,16.0 43.7,11.4 44.9,17.1 46.0,16.7 47.1,13.9 48.3,11.5 49.4,9.7 50.5,9.9 51.7,8.6 52.8,8.3 53.9,19.5 55.1,13.8 56.2,15.0 57.4,17.2 58.5,17.5 59.6,18.5 60.8,22.0 61.9,15.6 63.0,17.8 64.2,16.1 65.3,13.3 66.4,8.5 67.6,15.1 68.7,5.7 69.8,7.2 71.0,5.0 72.1,10.0 73.2,17.9 74.4,15.3 75.5,15.3 76.6,14.9 78.9,12.0 80.1,17.0 81.2,11.8 82.3,10.7 83.5,16.0 84.6,13.9 85.7,14.2 86.9,15.0 88.0,21.8 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,19.6 5.1,21.0 6.3,24.9 7.4,27.7 8.5,25.3 9.7,31.0 10.8,26.6 11.9,24.3 13.1,21.3 14.2,20.9 15.4,18.6 16.5,23.4 17.6,22.0 18.8,19.2 19.9,19.2 21.0,21.5 22.2,23.2 23.3,24.5 24.4,22.1 25.6,18.5 26.7,19.0 27.8,19.3 29.0,22.1 30.1,26.1 31.2,24.9 32.4,22.7 33.5,22.0 34.6,22.1 35.8,21.5 36.9,21.5 38.1,23.4 39.2,24.5 40.3,27.8 41.5,22.1 42.6,16.0 43.7,11.4 44.9,17.1 46.0,16.7 47.1,13.9 48.3,11.5 49.4,9.7 50.5,9.9 51.7,8.6 52.8,8.3 53.9,19.5 55.1,13.8 56.2,15.0 57.4,17.2 58.5,17.5 59.6,18.5 60.8,22.0 61.9,15.6 63.0,17.8 64.2,16.1 65.3,13.3 66.4,8.5 67.6,15.1 68.7,5.7 69.8,7.2 71.0,5.0 72.1,10.0 73.2,17.9 74.4,15.3 75.5,15.3 76.6,14.9 78.9,12.0 80.1,17.0 81.2,11.8 82.3,10.7 83.5,16.0 84.6,13.9 85.7,14.2 86.9,15.0 88.0,21.8" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="21.8" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-1.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="LOGISTICS">LOGISTICS</div>
+        <div class="sec-score" style="color:#f5a623">56.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,27.1 5.1,27.3 6.3,27.4 7.4,28.7 8.5,29.6 9.7,31.0 10.8,24.8 11.9,22.9 13.1,17.3 14.2,15.0 15.4,15.7 16.5,14.0 17.6,14.5 18.8,12.3 19.9,12.6 21.0,10.4 22.2,13.0 23.3,12.9 24.4,8.5 25.6,7.5 26.7,9.0 27.8,9.9 29.0,10.1 30.1,10.3 31.2,8.4 32.4,8.6 33.5,9.7 34.6,10.1 35.8,10.8 36.9,11.2 38.1,13.3 39.2,15.7 40.3,18.3 41.5,16.6 42.6,14.7 43.7,11.4 44.9,13.0 46.0,11.2 47.1,8.9 48.3,8.3 49.4,9.8 50.5,8.2 51.7,6.5 52.8,10.7 53.9,16.8 55.1,11.7 56.2,12.3 57.4,16.5 58.5,18.3 59.6,17.3 60.8,18.0 61.9,14.7 63.0,15.4 64.2,10.2 65.3,8.2 66.4,5.0 67.6,7.5 68.7,10.0 69.8,11.2 71.0,11.3 72.1,13.3 73.2,27.1 74.4,24.8 75.5,24.3 76.6,19.1 78.9,16.1 80.1,26.5 81.2,26.9 82.3,19.2 83.5,23.4 84.6,21.2 85.7,21.9 86.9,23.5 88.0,29.1 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,27.1 5.1,27.3 6.3,27.4 7.4,28.7 8.5,29.6 9.7,31.0 10.8,24.8 11.9,22.9 13.1,17.3 14.2,15.0 15.4,15.7 16.5,14.0 17.6,14.5 18.8,12.3 19.9,12.6 21.0,10.4 22.2,13.0 23.3,12.9 24.4,8.5 25.6,7.5 26.7,9.0 27.8,9.9 29.0,10.1 30.1,10.3 31.2,8.4 32.4,8.6 33.5,9.7 34.6,10.1 35.8,10.8 36.9,11.2 38.1,13.3 39.2,15.7 40.3,18.3 41.5,16.6 42.6,14.7 43.7,11.4 44.9,13.0 46.0,11.2 47.1,8.9 48.3,8.3 49.4,9.8 50.5,8.2 51.7,6.5 52.8,10.7 53.9,16.8 55.1,11.7 56.2,12.3 57.4,16.5 58.5,18.3 59.6,17.3 60.8,18.0 61.9,14.7 63.0,15.4 64.2,10.2 65.3,8.2 66.4,5.0 67.6,7.5 68.7,10.0 69.8,11.2 71.0,11.3 72.1,13.3 73.2,27.1 74.4,24.8 75.5,24.3 76.6,19.1 78.9,16.1 80.1,26.5 81.2,26.9 82.3,19.2 83.5,23.4 84.6,21.2 85.7,21.9 86.9,23.5 88.0,29.1" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.1" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-1.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="INDUSTRIAL DISTRIBUTION">INDUSTRIAL DISTRIBUT…</div>
+        <div class="sec-score" style="color:#f5a623">55.5</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,30.8 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,29.9 11.9,29.6 13.1,25.4 14.2,24.2 15.4,24.2 16.5,25.4 17.6,24.7 18.8,22.9 19.9,24.1 21.0,24.3 22.2,25.4 23.3,25.2 24.4,21.3 25.6,18.8 26.7,19.4 27.8,19.8 29.0,19.7 30.1,20.6 31.2,20.2 32.4,19.4 33.5,19.4 34.6,19.4 35.8,18.8 36.9,18.5 38.1,19.0 39.2,19.9 40.3,21.8 41.5,20.5 42.6,17.6 43.7,16.9 44.9,19.4 46.0,15.1 47.1,12.3 48.3,10.9 49.4,11.0 50.5,10.4 51.7,8.2 52.8,9.0 53.9,12.0 55.1,8.9 56.2,7.9 57.4,9.9 58.5,11.3 59.6,13.1 60.8,13.8 61.9,13.3 63.0,13.7 64.2,11.6 65.3,9.6 66.4,6.4 67.6,8.2 68.7,5.0 69.8,6.4 71.0,6.8 72.1,5.6 73.2,9.7 74.4,9.3 75.5,10.6 76.6,11.1 78.9,11.5 80.1,17.7 81.2,15.3 82.3,12.9 83.5,15.9 84.6,15.5 85.7,16.0 86.9,16.0 88.0,18.5 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,30.8 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,29.9 11.9,29.6 13.1,25.4 14.2,24.2 15.4,24.2 16.5,25.4 17.6,24.7 18.8,22.9 19.9,24.1 21.0,24.3 22.2,25.4 23.3,25.2 24.4,21.3 25.6,18.8 26.7,19.4 27.8,19.8 29.0,19.7 30.1,20.6 31.2,20.2 32.4,19.4 33.5,19.4 34.6,19.4 35.8,18.8 36.9,18.5 38.1,19.0 39.2,19.9 40.3,21.8 41.5,20.5 42.6,17.6 43.7,16.9 44.9,19.4 46.0,15.1 47.1,12.3 48.3,10.9 49.4,11.0 50.5,10.4 51.7,8.2 52.8,9.0 53.9,12.0 55.1,8.9 56.2,7.9 57.4,9.9 58.5,11.3 59.6,13.1 60.8,13.8 61.9,13.3 63.0,13.7 64.2,11.6 65.3,9.6 66.4,6.4 67.6,8.2 68.7,5.0 69.8,6.4 71.0,6.8 72.1,5.6 73.2,9.7 74.4,9.3 75.5,10.6 76.6,11.1 78.9,11.5 80.1,17.7 81.2,15.3 82.3,12.9 83.5,15.9 84.6,15.5 85.7,16.0 86.9,16.0 88.0,18.5" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="18.5" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+21.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="RAILROAD">RAILROAD</div>
+        <div class="sec-score" style="color:#f5a623">54.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.2 5.1,26.4 6.3,29.1 7.4,29.7 8.5,29.8 9.7,31.0 10.8,28.0 11.9,27.2 13.1,25.3 14.2,23.3 15.4,21.9 16.5,22.8 17.6,23.1 18.8,19.9 19.9,18.4 21.0,18.6 22.2,18.9 23.3,19.6 24.4,16.2 25.6,16.4 26.7,16.3 27.8,15.9 29.0,16.9 30.1,18.0 31.2,16.8 32.4,17.3 33.5,17.7 34.6,14.5 35.8,12.6 36.9,13.9 38.1,14.5 39.2,16.4 40.3,17.4 41.5,16.2 42.6,17.0 43.7,13.4 44.9,14.0 46.0,10.7 47.1,13.8 48.3,13.4 49.4,14.3 50.5,15.6 51.7,14.5 52.8,13.1 53.9,17.0 55.1,14.0 56.2,14.0 57.4,15.6 58.5,14.3 59.6,13.2 60.8,16.0 61.9,13.4 63.0,14.6 64.2,16.5 65.3,22.4 66.4,21.3 67.6,21.8 68.7,19.5 69.8,19.2 71.0,17.1 72.1,16.0 73.2,16.2 74.4,15.6 75.5,15.6 76.6,16.2 78.9,5.4 80.1,16.2 81.2,14.9 82.3,5.0 83.5,6.5 84.6,5.7 85.7,5.4 86.9,5.9 88.0,19.3 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,26.2 5.1,26.4 6.3,29.1 7.4,29.7 8.5,29.8 9.7,31.0 10.8,28.0 11.9,27.2 13.1,25.3 14.2,23.3 15.4,21.9 16.5,22.8 17.6,23.1 18.8,19.9 19.9,18.4 21.0,18.6 22.2,18.9 23.3,19.6 24.4,16.2 25.6,16.4 26.7,16.3 27.8,15.9 29.0,16.9 30.1,18.0 31.2,16.8 32.4,17.3 33.5,17.7 34.6,14.5 35.8,12.6 36.9,13.9 38.1,14.5 39.2,16.4 40.3,17.4 41.5,16.2 42.6,17.0 43.7,13.4 44.9,14.0 46.0,10.7 47.1,13.8 48.3,13.4 49.4,14.3 50.5,15.6 51.7,14.5 52.8,13.1 53.9,17.0 55.1,14.0 56.2,14.0 57.4,15.6 58.5,14.3 59.6,13.2 60.8,16.0 61.9,13.4 63.0,14.6 64.2,16.5 65.3,22.4 66.4,21.3 67.6,21.8 68.7,19.5 69.8,19.2 71.0,17.1 72.1,16.0 73.2,16.2 74.4,15.6 75.5,15.6 76.6,16.2 78.9,5.4 80.1,16.2 81.2,14.9 82.3,5.0 83.5,6.5 84.6,5.7 85.7,5.4 86.9,5.9 88.0,19.3" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="19.3" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+9.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="STEEL">STEEL</div>
+        <div class="sec-score" style="color:#f5a623">53.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.7 5.1,27.1 6.3,28.6 7.4,28.8 8.5,28.4 9.7,31.0 10.8,28.5 11.9,26.4 13.1,23.1 14.2,19.5 15.4,18.4 16.5,19.6 17.6,19.8 18.8,16.1 19.9,17.0 21.0,18.7 22.2,19.5 23.3,18.7 24.4,14.7 25.6,11.7 26.7,13.8 27.8,15.1 29.0,15.6 30.1,15.3 31.2,16.0 32.4,17.9 33.5,15.6 34.6,15.6 35.8,15.7 36.9,15.4 38.1,18.0 39.2,18.9 40.3,20.0 41.5,16.8 42.6,18.0 43.7,14.7 44.9,17.3 46.0,16.4 47.1,16.3 48.3,14.4 49.4,12.2 50.5,9.1 51.7,7.9 52.8,10.7 53.9,13.4 55.1,8.7 56.2,8.6 57.4,7.6 58.5,13.5 59.6,11.7 60.8,12.8 61.9,11.7 63.0,16.2 64.2,12.3 65.3,8.1 66.4,6.9 67.6,11.4 68.7,5.6 69.8,6.2 71.0,7.0 72.1,5.0 73.2,13.7 74.4,14.7 75.5,16.4 76.6,17.1 78.9,14.9 80.1,21.7 81.2,23.9 82.3,17.0 83.5,21.0 84.6,20.1 85.7,20.7 86.9,19.0 88.0,28.4 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,26.7 5.1,27.1 6.3,28.6 7.4,28.8 8.5,28.4 9.7,31.0 10.8,28.5 11.9,26.4 13.1,23.1 14.2,19.5 15.4,18.4 16.5,19.6 17.6,19.8 18.8,16.1 19.9,17.0 21.0,18.7 22.2,19.5 23.3,18.7 24.4,14.7 25.6,11.7 26.7,13.8 27.8,15.1 29.0,15.6 30.1,15.3 31.2,16.0 32.4,17.9 33.5,15.6 34.6,15.6 35.8,15.7 36.9,15.4 38.1,18.0 39.2,18.9 40.3,20.0 41.5,16.8 42.6,18.0 43.7,14.7 44.9,17.3 46.0,16.4 47.1,16.3 48.3,14.4 49.4,12.2 50.5,9.1 51.7,7.9 52.8,10.7 53.9,13.4 55.1,8.7 56.2,8.6 57.4,7.6 58.5,13.5 59.6,11.7 60.8,12.8 61.9,11.7 63.0,16.2 64.2,12.3 65.3,8.1 66.4,6.9 67.6,11.4 68.7,5.6 69.8,6.2 71.0,7.0 72.1,5.0 73.2,13.7 74.4,14.7 75.5,16.4 76.6,17.1 78.9,14.9 80.1,21.7 81.2,23.9 82.3,17.0 83.5,21.0 84.6,20.1 85.7,20.7 86.9,19.0 88.0,28.4" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="28.4" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-2.1</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="DEFENSE">DEFENSE</div>
+        <div class="sec-score" style="color:#f5a623">53.2</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,28.0 5.1,28.0 6.3,29.0 7.4,29.1 8.5,29.5 9.7,31.0 10.8,30.7 11.9,30.0 13.1,28.6 14.2,28.5 15.4,27.9 16.5,30.5 17.6,29.8 18.8,29.2 19.9,26.0 21.0,27.2 22.2,26.1 23.3,27.2 24.4,26.5 25.6,25.2 26.7,26.0 27.8,25.7 29.0,27.3 30.1,27.9 31.2,27.6 32.4,24.9 33.5,22.2 34.6,22.1 35.8,22.0 36.9,23.0 38.1,23.5 39.2,24.2 40.3,25.1 41.5,22.3 42.6,16.9 43.7,15.2 44.9,17.3 46.0,12.9 47.1,9.3 48.3,8.0 49.4,8.1 50.5,7.1 51.7,6.3 52.8,5.0 53.9,9.1 55.1,9.2 56.2,10.0 57.4,10.6 58.5,12.9 59.6,12.1 60.8,14.0 61.9,15.5 63.0,16.9 64.2,18.4 65.3,18.1 66.4,21.7 67.6,23.8 68.7,19.9 69.8,18.9 71.0,20.6 72.1,25.7 73.2,25.7 74.4,24.0 75.5,24.2 76.6,22.4 78.9,21.0 80.1,24.1 81.2,23.7 82.3,20.9 83.5,23.3 84.6,22.5 85.7,21.6 86.9,21.4 88.0,25.4 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,28.0 5.1,28.0 6.3,29.0 7.4,29.1 8.5,29.5 9.7,31.0 10.8,30.7 11.9,30.0 13.1,28.6 14.2,28.5 15.4,27.9 16.5,30.5 17.6,29.8 18.8,29.2 19.9,26.0 21.0,27.2 22.2,26.1 23.3,27.2 24.4,26.5 25.6,25.2 26.7,26.0 27.8,25.7 29.0,27.3 30.1,27.9 31.2,27.6 32.4,24.9 33.5,22.2 34.6,22.1 35.8,22.0 36.9,23.0 38.1,23.5 39.2,24.2 40.3,25.1 41.5,22.3 42.6,16.9 43.7,15.2 44.9,17.3 46.0,12.9 47.1,9.3 48.3,8.0 49.4,8.1 50.5,7.1 51.7,6.3 52.8,5.0 53.9,9.1 55.1,9.2 56.2,10.0 57.4,10.6 58.5,12.9 59.6,12.1 60.8,14.0 61.9,15.5 63.0,16.9 64.2,18.4 65.3,18.1 66.4,21.7 67.6,23.8 68.7,19.9 69.8,18.9 71.0,20.6 72.1,25.7 73.2,25.7 74.4,24.0 75.5,24.2 76.6,22.4 78.9,21.0 80.1,24.1 81.2,23.7 82.3,20.9 83.5,23.3 84.6,22.5 85.7,21.6 86.9,21.4 88.0,25.4" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="25.4" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+4.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="RETAIL & DEPARTMENT STORES">RETAIL & DEPARTMENT …</div>
+        <div class="sec-score" style="color:#f5a623">52.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.2 5.1,23.4 6.3,26.8 7.4,27.2 8.5,29.0 9.7,29.9 10.8,23.3 11.9,25.9 13.1,16.4 14.2,10.8 15.4,11.1 16.5,12.4 17.6,12.5 18.8,14.0 19.9,11.6 21.0,7.2 22.2,11.2 23.3,10.3 24.4,8.1 25.6,5.0 26.7,6.4 27.8,8.1 29.0,9.5 30.1,10.0 31.2,10.6 32.4,10.0 33.5,14.3 34.6,16.6 35.8,15.3 36.9,14.3 38.1,16.7 39.2,18.1 40.3,19.6 41.5,15.8 42.6,14.3 43.7,10.7 44.9,14.4 46.0,11.0 47.1,13.2 48.3,13.8 49.4,12.1 50.5,14.7 51.7,13.9 52.8,15.5 53.9,19.2 55.1,19.6 56.2,23.8 57.4,23.3 58.5,25.4 59.6,27.3 60.8,30.0 61.9,31.0 63.0,29.7 64.2,27.0 65.3,25.4 66.4,24.4 67.6,26.4 68.7,22.5 69.8,24.0 71.0,27.6 72.1,25.0 73.2,24.4 74.4,22.0 75.5,21.2 76.6,20.7 78.9,16.7 80.1,24.6 81.2,24.9 82.3,18.8 83.5,20.0 84.6,20.3 85.7,19.5 86.9,21.3 88.0,30.2 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,22.2 5.1,23.4 6.3,26.8 7.4,27.2 8.5,29.0 9.7,29.9 10.8,23.3 11.9,25.9 13.1,16.4 14.2,10.8 15.4,11.1 16.5,12.4 17.6,12.5 18.8,14.0 19.9,11.6 21.0,7.2 22.2,11.2 23.3,10.3 24.4,8.1 25.6,5.0 26.7,6.4 27.8,8.1 29.0,9.5 30.1,10.0 31.2,10.6 32.4,10.0 33.5,14.3 34.6,16.6 35.8,15.3 36.9,14.3 38.1,16.7 39.2,18.1 40.3,19.6 41.5,15.8 42.6,14.3 43.7,10.7 44.9,14.4 46.0,11.0 47.1,13.2 48.3,13.8 49.4,12.1 50.5,14.7 51.7,13.9 52.8,15.5 53.9,19.2 55.1,19.6 56.2,23.8 57.4,23.3 58.5,25.4 59.6,27.3 60.8,30.0 61.9,31.0 63.0,29.7 64.2,27.0 65.3,25.4 66.4,24.4 67.6,26.4 68.7,22.5 69.8,24.0 71.0,27.6 72.1,25.0 73.2,24.4 74.4,22.0 75.5,21.2 76.6,20.7 78.9,16.7 80.1,24.6 81.2,24.9 82.3,18.8 83.5,20.0 84.6,20.3 85.7,19.5 86.9,21.3 88.0,30.2" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="30.2" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-9.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="HOMEBUILDING">HOMEBUILDING</div>
+        <div class="sec-score" style="color:#f5a623">51.8</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,27.5 5.1,27.8 6.3,31.0 7.4,30.8 8.5,30.8 9.7,30.7 10.8,24.5 11.9,25.2 13.1,19.7 14.2,18.0 15.4,18.2 16.5,18.5 17.6,18.7 18.8,16.6 19.9,19.9 21.0,20.3 22.2,22.3 23.3,23.3 24.4,19.3 25.6,18.0 26.7,18.8 27.8,19.0 29.0,20.1 30.1,21.2 31.2,20.6 32.4,22.4 33.5,23.1 34.6,23.7 35.8,22.6 36.9,22.4 38.1,22.9 39.2,23.2 40.3,24.3 41.5,22.7 42.6,21.6 43.7,20.6 44.9,22.9 46.0,17.8 47.1,10.2 48.3,9.6 49.4,8.3 50.5,9.6 51.7,8.1 52.8,9.6 53.9,12.7 55.1,9.5 56.2,11.2 57.4,13.7 58.5,14.8 59.6,16.4 60.8,16.9 61.9,16.0 63.0,18.7 64.2,18.3 65.3,15.5 66.4,10.7 67.6,11.2 68.7,9.5 69.8,10.1 71.0,6.0 72.1,6.3 73.2,7.8 74.4,5.0 75.5,6.7 76.6,7.9 78.9,10.2 80.1,12.3 81.2,12.1 82.3,11.5 83.5,15.1 84.6,15.4 85.7,15.5 86.9,17.2 88.0,21.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,27.5 5.1,27.8 6.3,31.0 7.4,30.8 8.5,30.8 9.7,30.7 10.8,24.5 11.9,25.2 13.1,19.7 14.2,18.0 15.4,18.2 16.5,18.5 17.6,18.7 18.8,16.6 19.9,19.9 21.0,20.3 22.2,22.3 23.3,23.3 24.4,19.3 25.6,18.0 26.7,18.8 27.8,19.0 29.0,20.1 30.1,21.2 31.2,20.6 32.4,22.4 33.5,23.1 34.6,23.7 35.8,22.6 36.9,22.4 38.1,22.9 39.2,23.2 40.3,24.3 41.5,22.7 42.6,21.6 43.7,20.6 44.9,22.9 46.0,17.8 47.1,10.2 48.3,9.6 49.4,8.3 50.5,9.6 51.7,8.1 52.8,9.6 53.9,12.7 55.1,9.5 56.2,11.2 57.4,13.7 58.5,14.8 59.6,16.4 60.8,16.9 61.9,16.0 63.0,18.7 64.2,18.3 65.3,15.5 66.4,10.7 67.6,11.2 68.7,9.5 69.8,10.1 71.0,6.0 72.1,6.3 73.2,7.8 74.4,5.0 75.5,6.7 76.6,7.9 78.9,10.2 80.1,12.3 81.2,12.1 82.3,11.5 83.5,15.1 84.6,15.4 85.7,15.5 86.9,17.2 88.0,21.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="21.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+10.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="MEDIA & ENTERTAINMENT">MEDIA & ENTERTAINMENT</div>
+        <div class="sec-score" style="color:#f5a623">51.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,14.0 5.1,15.3 6.3,17.1 7.4,14.2 8.5,16.9 9.7,19.6 10.8,18.7 11.9,20.1 13.1,19.0 14.2,16.5 15.4,15.2 16.5,13.7 17.6,14.0 18.8,13.8 19.9,12.6 21.0,11.1 22.2,10.0 23.3,8.0 24.4,6.9 25.6,5.9 26.7,5.4 27.8,6.3 29.0,8.1 30.1,9.9 31.2,9.5 32.4,8.8 33.5,6.9 34.6,5.8 35.8,5.0 36.9,5.1 38.1,5.9 39.2,5.9 40.3,7.3 41.5,8.7 42.6,6.8 43.7,7.3 44.9,8.3 46.0,8.1 47.1,8.8 48.3,9.9 49.4,10.3 50.5,11.1 51.7,12.1 52.8,13.7 53.9,15.3 55.1,15.0 56.2,15.9 57.4,13.1 58.5,13.4 59.6,14.4 60.8,15.6 61.9,16.2 63.0,18.3 64.2,21.1 65.3,25.1 66.4,27.2 67.6,30.0 68.7,27.3 69.8,26.2 71.0,23.2 72.1,25.6 73.2,31.0 74.4,28.8 75.5,28.1 76.6,26.4 78.9,23.5 80.1,27.7 81.2,24.8 82.3,23.7 83.5,25.0 84.6,24.8 85.7,23.5 86.9,24.6 88.0,16.6 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,14.0 5.1,15.3 6.3,17.1 7.4,14.2 8.5,16.9 9.7,19.6 10.8,18.7 11.9,20.1 13.1,19.0 14.2,16.5 15.4,15.2 16.5,13.7 17.6,14.0 18.8,13.8 19.9,12.6 21.0,11.1 22.2,10.0 23.3,8.0 24.4,6.9 25.6,5.9 26.7,5.4 27.8,6.3 29.0,8.1 30.1,9.9 31.2,9.5 32.4,8.8 33.5,6.9 34.6,5.8 35.8,5.0 36.9,5.1 38.1,5.9 39.2,5.9 40.3,7.3 41.5,8.7 42.6,6.8 43.7,7.3 44.9,8.3 46.0,8.1 47.1,8.8 48.3,9.9 49.4,10.3 50.5,11.1 51.7,12.1 52.8,13.7 53.9,15.3 55.1,15.0 56.2,15.9 57.4,13.1 58.5,13.4 59.6,14.4 60.8,15.6 61.9,16.2 63.0,18.3 64.2,21.1 65.3,25.1 66.4,27.2 67.6,30.0 68.7,27.3 69.8,26.2 71.0,23.2 72.1,25.6 73.2,31.0 74.4,28.8 75.5,28.1 76.6,26.4 78.9,23.5 80.1,27.7 81.2,24.8 82.3,23.7 83.5,25.0 84.6,24.8 85.7,23.5 86.9,24.6 88.0,16.6" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="16.6" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-2.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="APPAREL, FOOTWEAR & LUXURY">APPAREL, FOOTWEAR & …</div>
+        <div class="sec-score" style="color:#f5a623">51.0</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,27.9 5.1,28.9 6.3,31.0 7.4,29.3 8.5,28.3 9.7,30.1 10.8,25.8 11.9,25.9 13.1,21.9 14.2,19.3 15.4,18.5 16.5,16.3 17.6,17.4 18.8,13.7 19.9,13.9 21.0,11.3 22.2,14.8 23.3,15.0 24.4,12.1 25.6,9.5 26.7,8.9 27.8,9.0 29.0,9.1 30.1,10.9 31.2,9.9 32.4,12.2 33.5,11.9 34.6,12.3 35.8,12.2 36.9,11.4 38.1,11.9 39.2,10.9 40.3,12.5 41.5,10.3 42.6,8.5 43.7,5.7 44.9,8.9 46.0,5.0 47.1,8.5 48.3,9.2 49.4,10.1 50.5,12.5 51.7,12.8 52.8,14.8 53.9,17.8 55.1,13.4 56.2,12.8 57.4,14.4 58.5,15.1 59.6,16.4 60.8,20.3 61.9,19.9 63.0,17.2 64.2,15.9 65.3,18.2 66.4,16.0 67.6,18.5 68.7,12.5 69.8,11.6 71.0,13.7 72.1,15.0 73.2,14.3 74.4,13.1 75.5,10.5 76.6,9.4 78.9,13.0 80.1,13.7 81.2,13.0 82.3,14.8 83.5,15.3 84.6,16.1 85.7,17.4 86.9,18.3 88.0,24.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,27.9 5.1,28.9 6.3,31.0 7.4,29.3 8.5,28.3 9.7,30.1 10.8,25.8 11.9,25.9 13.1,21.9 14.2,19.3 15.4,18.5 16.5,16.3 17.6,17.4 18.8,13.7 19.9,13.9 21.0,11.3 22.2,14.8 23.3,15.0 24.4,12.1 25.6,9.5 26.7,8.9 27.8,9.0 29.0,9.1 30.1,10.9 31.2,9.9 32.4,12.2 33.5,11.9 34.6,12.3 35.8,12.2 36.9,11.4 38.1,11.9 39.2,10.9 40.3,12.5 41.5,10.3 42.6,8.5 43.7,5.7 44.9,8.9 46.0,5.0 47.1,8.5 48.3,9.2 49.4,10.1 50.5,12.5 51.7,12.8 52.8,14.8 53.9,17.8 55.1,13.4 56.2,12.8 57.4,14.4 58.5,15.1 59.6,16.4 60.8,20.3 61.9,19.9 63.0,17.2 64.2,15.9 65.3,18.2 66.4,16.0 67.6,18.5 68.7,12.5 69.8,11.6 71.0,13.7 72.1,15.0 73.2,14.3 74.4,13.1 75.5,10.5 76.6,9.4 78.9,13.0 80.1,13.7 81.2,13.0 82.3,14.8 83.5,15.3 84.6,16.1 85.7,17.4 86.9,18.3 88.0,24.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="24.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+6.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="GAMBLING">GAMBLING</div>
+        <div class="sec-score" style="color:#f5a623">50.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,17.1 5.1,17.9 6.3,21.0 7.4,19.7 8.5,20.8 9.7,22.4 10.8,17.9 11.9,17.3 13.1,12.5 14.2,11.4 15.4,9.9 16.5,9.3 17.6,9.8 18.8,10.3 19.9,12.2 21.0,12.7 22.2,11.9 23.3,11.3 24.4,10.2 25.6,7.6 26.7,7.2 27.8,7.3 29.0,6.9 30.1,8.2 31.2,5.8 32.4,5.5 33.5,5.0 34.6,7.9 35.8,8.1 36.9,6.4 38.1,8.1 39.2,9.6 40.3,11.0 41.5,10.5 42.6,9.8 43.7,11.3 44.9,18.5 46.0,13.8 47.1,15.9 48.3,17.3 49.4,18.6 50.5,19.1 51.7,15.7 52.8,20.1 53.9,24.3 55.1,23.5 56.2,22.4 57.4,24.3 58.5,24.6 59.6,26.5 60.8,27.1 61.9,27.8 63.0,29.1 64.2,28.2 65.3,29.2 66.4,25.2 67.6,28.4 68.7,23.2 69.8,22.3 71.0,22.1 72.1,25.7 73.2,31.0 74.4,31.0 75.5,29.0 76.6,22.7 78.9,21.0 80.1,27.2 81.2,23.2 82.3,21.8 83.5,23.5 84.6,22.2 85.7,20.8 86.9,21.7 88.0,16.3 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,17.1 5.1,17.9 6.3,21.0 7.4,19.7 8.5,20.8 9.7,22.4 10.8,17.9 11.9,17.3 13.1,12.5 14.2,11.4 15.4,9.9 16.5,9.3 17.6,9.8 18.8,10.3 19.9,12.2 21.0,12.7 22.2,11.9 23.3,11.3 24.4,10.2 25.6,7.6 26.7,7.2 27.8,7.3 29.0,6.9 30.1,8.2 31.2,5.8 32.4,5.5 33.5,5.0 34.6,7.9 35.8,8.1 36.9,6.4 38.1,8.1 39.2,9.6 40.3,11.0 41.5,10.5 42.6,9.8 43.7,11.3 44.9,18.5 46.0,13.8 47.1,15.9 48.3,17.3 49.4,18.6 50.5,19.1 51.7,15.7 52.8,20.1 53.9,24.3 55.1,23.5 56.2,22.4 57.4,24.3 58.5,24.6 59.6,26.5 60.8,27.1 61.9,27.8 63.0,29.1 64.2,28.2 65.3,29.2 66.4,25.2 67.6,28.4 68.7,23.2 69.8,22.3 71.0,22.1 72.1,25.7 73.2,31.0 74.4,31.0 75.5,29.0 76.6,22.7 78.9,21.0 80.1,27.2 81.2,23.2 82.3,21.8 83.5,23.5 84.6,22.2 85.7,20.8 86.9,21.7 88.0,16.3" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="16.3" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+0.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="3D PRINTING">3D PRINTING</div>
+        <div class="sec-score" style="color:#f5a623">50.1</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,28.6 5.1,29.9 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,30.6 13.1,28.9 14.2,28.2 15.4,27.0 16.5,28.9 17.6,27.6 18.8,25.0 19.9,24.4 21.0,25.2 22.2,25.5 23.3,28.5 24.4,27.9 25.6,25.4 26.7,27.0 27.8,26.9 29.0,26.4 30.1,28.2 31.2,26.1 32.4,26.8 33.5,26.3 34.6,27.4 35.8,27.3 36.9,28.4 38.1,29.0 39.2,29.8 40.3,29.9 41.5,27.7 42.6,22.5 43.7,15.5 44.9,17.1 46.0,12.4 47.1,14.9 48.3,13.5 49.4,15.0 50.5,14.9 51.7,8.6 52.8,8.2 53.9,11.4 55.1,8.6 56.2,5.0 57.4,9.9 58.5,12.1 59.6,11.3 60.8,13.5 61.9,13.9 63.0,17.4 64.2,15.4 65.3,15.5 66.4,19.4 67.6,23.2 68.7,10.4 69.8,7.8 71.0,8.4 72.1,10.5 73.2,14.4 74.4,13.5 75.5,14.7 76.6,15.0 78.9,20.1 80.1,18.3 81.2,19.4 82.3,21.2 83.5,24.7 84.6,24.8 85.7,25.9 86.9,25.1 88.0,22.5 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,28.6 5.1,29.9 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,30.6 13.1,28.9 14.2,28.2 15.4,27.0 16.5,28.9 17.6,27.6 18.8,25.0 19.9,24.4 21.0,25.2 22.2,25.5 23.3,28.5 24.4,27.9 25.6,25.4 26.7,27.0 27.8,26.9 29.0,26.4 30.1,28.2 31.2,26.1 32.4,26.8 33.5,26.3 34.6,27.4 35.8,27.3 36.9,28.4 38.1,29.0 39.2,29.8 40.3,29.9 41.5,27.7 42.6,22.5 43.7,15.5 44.9,17.1 46.0,12.4 47.1,14.9 48.3,13.5 49.4,15.0 50.5,14.9 51.7,8.6 52.8,8.2 53.9,11.4 55.1,8.6 56.2,5.0 57.4,9.9 58.5,12.1 59.6,11.3 60.8,13.5 61.9,13.9 63.0,17.4 64.2,15.4 65.3,15.5 66.4,19.4 67.6,23.2 68.7,10.4 69.8,7.8 71.0,8.4 72.1,10.5 73.2,14.4 74.4,13.5 75.5,14.7 76.6,15.0 78.9,20.1 80.1,18.3 81.2,19.4 82.3,21.2 83.5,24.7 84.6,24.8 85.7,25.9 86.9,25.1 88.0,22.5" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="22.5" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+11.7</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="LITHIUM">LITHIUM</div>
+        <div class="sec-score" style="color:#ff4a6a">49.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.0 5.1,26.3 6.3,21.2 7.4,17.3 8.5,13.7 9.7,22.7 10.8,23.9 11.9,25.6 13.1,20.3 14.2,17.7 15.4,16.3 16.5,17.8 17.6,17.1 18.8,21.0 19.9,22.4 21.0,24.2 22.2,24.6 23.3,24.0 24.4,24.2 25.6,22.6 26.7,25.9 27.8,30.1 29.0,29.1 30.1,29.7 31.2,28.9 32.4,24.6 33.5,19.7 34.6,18.5 35.8,16.6 36.9,17.0 38.1,20.9 39.2,23.2 40.3,25.0 41.5,20.5 42.6,13.7 43.7,6.7 44.9,6.6 46.0,7.6 47.1,6.5 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,8.8 63.0,19.7 64.2,23.9 65.3,18.3 66.4,21.7 67.6,31.0 68.7,25.7 69.8,23.1 71.0,24.5 72.1,22.4 73.2,30.2 74.4,25.9 75.5,26.7 76.6,25.2 78.9,26.6 80.1,22.4 81.2,16.6 82.3,23.3 83.5,24.0 84.6,23.4 85.7,24.1 86.9,22.0 88.0,24.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,26.0 5.1,26.3 6.3,21.2 7.4,17.3 8.5,13.7 9.7,22.7 10.8,23.9 11.9,25.6 13.1,20.3 14.2,17.7 15.4,16.3 16.5,17.8 17.6,17.1 18.8,21.0 19.9,22.4 21.0,24.2 22.2,24.6 23.3,24.0 24.4,24.2 25.6,22.6 26.7,25.9 27.8,30.1 29.0,29.1 30.1,29.7 31.2,28.9 32.4,24.6 33.5,19.7 34.6,18.5 35.8,16.6 36.9,17.0 38.1,20.9 39.2,23.2 40.3,25.0 41.5,20.5 42.6,13.7 43.7,6.7 44.9,6.6 46.0,7.6 47.1,6.5 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,8.8 63.0,19.7 64.2,23.9 65.3,18.3 66.4,21.7 67.6,31.0 68.7,25.7 69.8,23.1 71.0,24.5 72.1,22.4 73.2,30.2 74.4,25.9 75.5,26.7 76.6,25.2 78.9,26.6 80.1,22.4 81.2,16.6 82.3,23.3 83.5,24.0 84.6,23.4 85.7,24.1 86.9,22.0 88.0,24.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="24.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+2.7</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CRUISE">CRUISE</div>
+        <div class="sec-score" style="color:#ff4a6a">49.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,30.9 9.7,31.0 10.8,28.0 11.9,30.5 13.1,26.7 14.2,27.4 15.4,26.3 16.5,25.8 17.6,26.4 18.8,24.9 19.9,25.4 21.0,24.9 22.2,24.4 23.3,25.0 24.4,22.3 25.6,17.1 26.7,17.1 27.8,13.8 29.0,14.9 30.1,15.0 31.2,14.5 32.4,7.1 33.5,5.0 34.6,7.3 35.8,8.0 36.9,9.6 38.1,10.7 39.2,10.7 40.3,11.7 41.5,10.5 42.6,10.2 43.7,7.2 44.9,6.4 46.0,7.5 47.1,6.7 48.3,6.0 49.4,8.2 50.5,11.0 51.7,12.6 52.8,15.1 53.9,18.9 55.1,17.1 56.2,16.5 57.4,17.4 58.5,16.8 59.6,17.2 60.8,17.3 61.9,8.7 63.0,13.1 64.2,7.8 65.3,10.3 66.4,10.1 67.6,12.1 68.7,5.0 69.8,6.8 71.0,6.1 72.1,8.7 73.2,9.8 74.4,13.2 75.5,9.9 76.6,10.0 78.9,13.9 80.1,16.5 81.2,14.1 82.3,14.9 83.5,14.8 84.6,15.6 85.7,16.1 86.9,16.4 88.0,23.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,30.9 9.7,31.0 10.8,28.0 11.9,30.5 13.1,26.7 14.2,27.4 15.4,26.3 16.5,25.8 17.6,26.4 18.8,24.9 19.9,25.4 21.0,24.9 22.2,24.4 23.3,25.0 24.4,22.3 25.6,17.1 26.7,17.1 27.8,13.8 29.0,14.9 30.1,15.0 31.2,14.5 32.4,7.1 33.5,5.0 34.6,7.3 35.8,8.0 36.9,9.6 38.1,10.7 39.2,10.7 40.3,11.7 41.5,10.5 42.6,10.2 43.7,7.2 44.9,6.4 46.0,7.5 47.1,6.7 48.3,6.0 49.4,8.2 50.5,11.0 51.7,12.6 52.8,15.1 53.9,18.9 55.1,17.1 56.2,16.5 57.4,17.4 58.5,16.8 59.6,17.2 60.8,17.3 61.9,8.7 63.0,13.1 64.2,7.8 65.3,10.3 66.4,10.1 67.6,12.1 68.7,5.0 69.8,6.8 71.0,6.1 72.1,8.7 73.2,9.8 74.4,13.2 75.5,9.9 76.6,10.0 78.9,13.9 80.1,16.5 81.2,14.1 82.3,14.9 83.5,14.8 84.6,15.6 85.7,16.1 86.9,16.4 88.0,23.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="23.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+15.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="EV">EV</div>
+        <div class="sec-score" style="color:#ff4a6a">48.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,31.0 43.7,26.8 44.9,29.4 46.0,25.7 47.1,25.5 48.3,19.2 49.4,20.5 50.5,16.8 51.7,20.6 52.8,19.6 53.9,24.6 55.1,18.0 56.2,12.5 57.4,15.4 58.5,10.4 59.6,10.8 60.8,10.9 61.9,12.7 63.0,19.1 64.2,24.3 65.3,24.7 66.4,21.0 67.6,30.8 68.7,16.9 69.8,14.7 71.0,14.6 72.1,17.2 73.2,18.6 74.4,8.7 75.5,14.5 76.6,10.9 78.9,17.9 80.1,9.7 81.2,5.0 82.3,17.1 83.5,19.8 84.6,20.7 85.7,20.4 86.9,19.2 88.0,15.8 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,31.0 43.7,26.8 44.9,29.4 46.0,25.7 47.1,25.5 48.3,19.2 49.4,20.5 50.5,16.8 51.7,20.6 52.8,19.6 53.9,24.6 55.1,18.0 56.2,12.5 57.4,15.4 58.5,10.4 59.6,10.8 60.8,10.9 61.9,12.7 63.0,19.1 64.2,24.3 65.3,24.7 66.4,21.0 67.6,30.8 68.7,16.9 69.8,14.7 71.0,14.6 72.1,17.2 73.2,18.6 74.4,8.7 75.5,14.5 76.6,10.9 78.9,17.9 80.1,9.7 81.2,5.0 82.3,17.1 83.5,19.8 84.6,20.7 85.7,20.4 86.9,19.2 88.0,15.8" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="15.8" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+14.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="REGIONAL BANK">REGIONAL BANK</div>
+        <div class="sec-score" style="color:#ff4a6a">48.1</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,25.2 5.1,24.9 6.3,31.0 7.4,29.2 8.5,27.0 9.7,27.5 10.8,21.8 11.9,21.4 13.1,16.7 14.2,17.5 15.4,17.7 16.5,15.7 17.6,16.8 18.8,13.4 19.9,12.7 21.0,12.8 22.2,12.5 23.3,12.9 24.4,7.0 25.6,6.3 26.7,7.2 27.8,7.1 29.0,7.8 30.1,7.1 31.2,6.8 32.4,7.2 33.5,6.5 34.6,8.3 35.8,8.2 36.9,9.0 38.1,11.1 39.2,12.8 40.3,14.9 41.5,13.6 42.6,10.3 43.7,8.9 44.9,10.5 46.0,7.8 47.1,9.7 48.3,12.4 49.4,14.0 50.5,12.5 51.7,9.8 52.8,11.3 53.9,14.3 55.1,7.0 56.2,7.8 57.4,14.4 58.5,13.6 59.6,13.2 60.8,14.5 61.9,12.1 63.0,13.6 64.2,11.5 65.3,8.8 66.4,7.0 67.6,7.8 68.7,5.0 69.8,6.0 71.0,8.6 72.1,11.5 73.2,14.8 74.4,14.1 75.5,13.8 76.6,14.0 78.9,6.1 80.1,21.8 81.2,22.1 82.3,11.8 83.5,14.2 84.6,13.9 85.7,17.0 86.9,17.7 88.0,25.9 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,25.2 5.1,24.9 6.3,31.0 7.4,29.2 8.5,27.0 9.7,27.5 10.8,21.8 11.9,21.4 13.1,16.7 14.2,17.5 15.4,17.7 16.5,15.7 17.6,16.8 18.8,13.4 19.9,12.7 21.0,12.8 22.2,12.5 23.3,12.9 24.4,7.0 25.6,6.3 26.7,7.2 27.8,7.1 29.0,7.8 30.1,7.1 31.2,6.8 32.4,7.2 33.5,6.5 34.6,8.3 35.8,8.2 36.9,9.0 38.1,11.1 39.2,12.8 40.3,14.9 41.5,13.6 42.6,10.3 43.7,8.9 44.9,10.5 46.0,7.8 47.1,9.7 48.3,12.4 49.4,14.0 50.5,12.5 51.7,9.8 52.8,11.3 53.9,14.3 55.1,7.0 56.2,7.8 57.4,14.4 58.5,13.6 59.6,13.2 60.8,14.5 61.9,12.1 63.0,13.6 64.2,11.5 65.3,8.8 66.4,7.0 67.6,7.8 68.7,5.0 69.8,6.0 71.0,8.6 72.1,11.5 73.2,14.8 74.4,14.1 75.5,13.8 76.6,14.0 78.9,6.1 80.1,21.8 81.2,22.1 82.3,11.8 83.5,14.2 84.6,13.9 85.7,17.0 86.9,17.7 88.0,25.9" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="25.9" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-0.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CHINA EV">CHINA EV</div>
+        <div class="sec-score" style="color:#ff4a6a">47.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.3 5.1,26.1 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,28.8 38.1,29.3 39.2,27.1 40.3,31.0 41.5,29.7 42.6,29.3 43.7,30.9 44.9,30.3 46.0,27.3 47.1,29.3 48.3,24.8 49.4,27.9 50.5,28.6 51.7,27.7 52.8,27.5 53.9,31.0 55.1,28.4 56.2,25.1 57.4,28.0 58.5,26.2 59.6,25.0 60.8,23.3 61.9,20.3 63.0,22.8 64.2,29.3 65.3,25.4 66.4,26.0 67.6,22.8 68.7,12.7 69.8,12.8 71.0,12.4 72.1,9.2 73.2,13.2 74.4,12.9 75.5,13.8 76.6,14.4 78.9,20.1 80.1,10.0 81.2,5.0 82.3,15.2 83.5,17.8 84.6,18.7 85.7,20.5 86.9,18.7 88.0,20.9 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,22.3 5.1,26.1 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,28.8 38.1,29.3 39.2,27.1 40.3,31.0 41.5,29.7 42.6,29.3 43.7,30.9 44.9,30.3 46.0,27.3 47.1,29.3 48.3,24.8 49.4,27.9 50.5,28.6 51.7,27.7 52.8,27.5 53.9,31.0 55.1,28.4 56.2,25.1 57.4,28.0 58.5,26.2 59.6,25.0 60.8,23.3 61.9,20.3 63.0,22.8 64.2,29.3 65.3,25.4 66.4,26.0 67.6,22.8 68.7,12.7 69.8,12.8 71.0,12.4 72.1,9.2 73.2,13.2 74.4,12.9 75.5,13.8 76.6,14.4 78.9,20.1 80.1,10.0 81.2,5.0 82.3,15.2 83.5,17.8 84.6,18.7 85.7,20.5 86.9,18.7 88.0,20.9" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="20.9" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+1.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="AUTOMOTIVE & EV">AUTOMOTIVE & EV</div>
+        <div class="sec-score" style="color:#ff4a6a">46.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,13.9 5.1,16.9 6.3,23.5 7.4,23.9 8.5,26.3 9.7,31.0 10.8,23.8 11.9,23.0 13.1,18.9 14.2,19.2 15.4,17.4 16.5,18.8 17.6,19.0 18.8,16.4 19.9,17.1 21.0,17.5 22.2,19.1 23.3,19.1 24.4,13.8 25.6,11.4 26.7,11.7 27.8,11.2 29.0,11.4 30.1,14.1 31.2,12.5 32.4,10.4 33.5,11.8 34.6,13.9 35.8,14.1 36.9,14.2 38.1,15.3 39.2,16.5 40.3,19.2 41.5,16.0 42.6,12.0 43.7,10.7 44.9,12.7 46.0,5.0 47.1,6.1 48.3,8.0 49.4,9.3 50.5,14.5 51.7,14.9 52.8,20.4 53.9,25.3 55.1,18.9 56.2,21.2 57.4,23.6 58.5,23.4 59.6,18.1 60.8,20.2 61.9,17.6 63.0,22.7 64.2,21.2 65.3,21.0 66.4,14.1 67.6,16.2 68.7,13.1 69.8,15.6 71.0,12.5 72.1,10.7 73.2,10.8 74.4,9.7 75.5,12.1 76.6,12.4 78.9,11.5 80.1,21.7 81.2,16.8 82.3,12.0 83.5,16.9 84.6,19.2 85.7,20.5 86.9,21.8 88.0,29.1 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,13.9 5.1,16.9 6.3,23.5 7.4,23.9 8.5,26.3 9.7,31.0 10.8,23.8 11.9,23.0 13.1,18.9 14.2,19.2 15.4,17.4 16.5,18.8 17.6,19.0 18.8,16.4 19.9,17.1 21.0,17.5 22.2,19.1 23.3,19.1 24.4,13.8 25.6,11.4 26.7,11.7 27.8,11.2 29.0,11.4 30.1,14.1 31.2,12.5 32.4,10.4 33.5,11.8 34.6,13.9 35.8,14.1 36.9,14.2 38.1,15.3 39.2,16.5 40.3,19.2 41.5,16.0 42.6,12.0 43.7,10.7 44.9,12.7 46.0,5.0 47.1,6.1 48.3,8.0 49.4,9.3 50.5,14.5 51.7,14.9 52.8,20.4 53.9,25.3 55.1,18.9 56.2,21.2 57.4,23.6 58.5,23.4 59.6,18.1 60.8,20.2 61.9,17.6 63.0,22.7 64.2,21.2 65.3,21.0 66.4,14.1 67.6,16.2 68.7,13.1 69.8,15.6 71.0,12.5 72.1,10.7 73.2,10.8 74.4,9.7 75.5,12.1 76.6,12.4 78.9,11.5 80.1,21.7 81.2,16.8 82.3,12.0 83.5,16.9 84.6,19.2 85.7,20.5 86.9,21.8 88.0,29.1" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.1" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-14.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="SPACE">SPACE</div>
+        <div class="sec-score" style="color:#ff4a6a">46.5</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.7 21.0,27.1 22.2,24.1 23.3,23.7 24.4,16.7 25.6,12.9 26.7,18.1 27.8,23.2 29.0,23.8 30.1,27.2 31.2,23.4 32.4,10.0 33.5,5.0 34.6,5.0 35.8,5.0 36.9,5.0 38.1,5.0 39.2,5.0 40.3,5.0 41.5,5.0 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,5.0 64.2,7.6 65.3,5.0 66.4,13.8 67.6,22.5 68.7,14.8 69.8,12.4 71.0,17.6 72.1,23.7 73.2,28.1 74.4,26.2 75.5,27.2 76.6,24.2 78.9,19.1 80.1,28.0 81.2,26.2 82.3,19.3 83.5,21.2 84.6,20.8 85.7,21.2 86.9,20.6 88.0,24.9 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.7 21.0,27.1 22.2,24.1 23.3,23.7 24.4,16.7 25.6,12.9 26.7,18.1 27.8,23.2 29.0,23.8 30.1,27.2 31.2,23.4 32.4,10.0 33.5,5.0 34.6,5.0 35.8,5.0 36.9,5.0 38.1,5.0 39.2,5.0 40.3,5.0 41.5,5.0 42.6,5.0 43.7,5.0 44.9,5.0 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.0 63.0,5.0 64.2,7.6 65.3,5.0 66.4,13.8 67.6,22.5 68.7,14.8 69.8,12.4 71.0,17.6 72.1,23.7 73.2,28.1 74.4,26.2 75.5,27.2 76.6,24.2 78.9,19.1 80.1,28.0 81.2,26.2 82.3,19.3 83.5,21.2 84.6,20.8 85.7,21.2 86.9,20.6 88.0,24.9" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="24.9" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+12.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="RARE EARTH">RARE EARTH</div>
+        <div class="sec-score" style="color:#ff4a6a">45.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,30.4 21.0,31.0 22.2,31.0 23.3,30.7 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,28.4 42.6,18.9 43.7,11.1 44.9,5.0 46.0,7.1 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.6 63.0,13.5 64.2,13.1 65.3,5.0 66.4,10.8 67.6,23.9 68.7,16.7 69.8,13.8 71.0,18.1 72.1,19.4 73.2,27.5 74.4,27.2 75.5,29.8 76.6,29.4 78.9,25.1 80.1,27.1 81.2,23.0 82.3,22.9 83.5,24.8 84.6,24.0 85.7,24.3 86.9,22.0 88.0,25.4 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,30.4 21.0,31.0 22.2,31.0 23.3,30.7 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,28.4 42.6,18.9 43.7,11.1 44.9,5.0 46.0,7.1 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,5.0 59.6,5.0 60.8,5.0 61.9,5.6 63.0,13.5 64.2,13.1 65.3,5.0 66.4,10.8 67.6,23.9 68.7,16.7 69.8,13.8 71.0,18.1 72.1,19.4 73.2,27.5 74.4,27.2 75.5,29.8 76.6,29.4 78.9,25.1 80.1,27.1 81.2,23.0 82.3,22.9 83.5,24.8 84.6,24.0 85.7,24.3 86.9,22.0 88.0,25.4" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="25.4" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+11.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="SEMICONDUCTORS">SEMICONDUCTORS</div>
+        <div class="sec-score" style="color:#ff4a6a">44.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,24.5 5.1,26.3 6.3,30.3 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,30.7 14.2,28.3 15.4,25.5 16.5,25.2 17.6,20.1 18.8,15.3 19.9,17.0 21.0,15.6 22.2,15.4 23.3,15.8 24.4,14.8 25.6,15.3 26.7,18.5 27.8,18.3 29.0,19.4 30.1,22.4 31.2,22.0 32.4,19.8 33.5,18.8 34.6,19.3 35.8,19.2 36.9,19.3 38.1,19.4 39.2,18.8 40.3,20.2 41.5,15.4 42.6,14.2 43.7,8.4 44.9,12.0 46.0,13.1 47.1,10.2 48.3,12.0 49.4,9.7 50.5,9.0 51.7,9.6 52.8,10.8 53.9,11.8 55.1,5.8 56.2,5.0 57.4,9.2 58.5,11.3 59.6,10.3 60.8,8.2 61.9,10.3 63.0,14.8 64.2,11.1 65.3,13.8 66.4,14.6 67.6,16.1 68.7,12.7 69.8,10.8 71.0,10.0 72.1,6.3 73.2,11.8 74.4,11.3 75.5,12.9 76.6,13.7 78.9,13.7 80.1,18.9 81.2,15.7 82.3,13.2 83.5,15.8 84.6,16.9 85.7,17.5 86.9,19.5 88.0,23.7 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,24.5 5.1,26.3 6.3,30.3 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,30.7 14.2,28.3 15.4,25.5 16.5,25.2 17.6,20.1 18.8,15.3 19.9,17.0 21.0,15.6 22.2,15.4 23.3,15.8 24.4,14.8 25.6,15.3 26.7,18.5 27.8,18.3 29.0,19.4 30.1,22.4 31.2,22.0 32.4,19.8 33.5,18.8 34.6,19.3 35.8,19.2 36.9,19.3 38.1,19.4 39.2,18.8 40.3,20.2 41.5,15.4 42.6,14.2 43.7,8.4 44.9,12.0 46.0,13.1 47.1,10.2 48.3,12.0 49.4,9.7 50.5,9.0 51.7,9.6 52.8,10.8 53.9,11.8 55.1,5.8 56.2,5.0 57.4,9.2 58.5,11.3 59.6,10.3 60.8,8.2 61.9,10.3 63.0,14.8 64.2,11.1 65.3,13.8 66.4,14.6 67.6,16.1 68.7,12.7 69.8,10.8 71.0,10.0 72.1,6.3 73.2,11.8 74.4,11.3 75.5,12.9 76.6,13.7 78.9,13.7 80.1,18.9 81.2,15.7 82.3,13.2 83.5,15.8 84.6,16.9 85.7,17.5 86.9,19.5 88.0,23.7" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="23.7" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+1.2</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="URANIUM AND NUCLEAR">URANIUM AND NUCLEAR</div>
+        <div class="sec-score" style="color:#ff4a6a">44.0</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,25.8 21.0,28.6 22.2,29.1 23.3,28.7 24.4,28.8 25.6,26.1 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,30.2 33.5,29.7 34.6,29.4 35.8,28.9 36.9,30.3 38.1,30.4 39.2,31.0 40.3,31.0 41.5,24.0 42.6,18.3 43.7,16.2 44.9,16.7 46.0,17.8 47.1,14.2 48.3,11.5 49.4,12.3 50.5,9.7 51.7,8.2 52.8,5.9 53.9,7.6 55.1,6.5 56.2,5.0 57.4,6.0 58.5,10.5 59.6,5.6 60.8,5.0 61.9,6.9 63.0,14.1 64.2,17.7 65.3,12.7 66.4,22.1 67.6,27.4 68.7,21.5 69.8,18.0 71.0,20.7 72.1,22.1 73.2,25.9 74.4,24.9 75.5,24.6 76.6,23.4 78.9,22.6 80.1,24.3 81.2,20.9 82.3,21.4 83.5,23.6 84.6,23.1 85.7,23.4 86.9,21.5 88.0,26.1 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,25.8 21.0,28.6 22.2,29.1 23.3,28.7 24.4,28.8 25.6,26.1 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,30.2 33.5,29.7 34.6,29.4 35.8,28.9 36.9,30.3 38.1,30.4 39.2,31.0 40.3,31.0 41.5,24.0 42.6,18.3 43.7,16.2 44.9,16.7 46.0,17.8 47.1,14.2 48.3,11.5 49.4,12.3 50.5,9.7 51.7,8.2 52.8,5.9 53.9,7.6 55.1,6.5 56.2,5.0 57.4,6.0 58.5,10.5 59.6,5.6 60.8,5.0 61.9,6.9 63.0,14.1 64.2,17.7 65.3,12.7 66.4,22.1 67.6,27.4 68.7,21.5 69.8,18.0 71.0,20.7 72.1,22.1 73.2,25.9 74.4,24.9 75.5,24.6 76.6,23.4 78.9,22.6 80.1,24.3 81.2,20.9 82.3,21.4 83.5,23.6 84.6,23.1 85.7,23.4 86.9,21.5 88.0,26.1" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="26.1" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+10.3</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="MAG7">MAG7</div>
+        <div class="sec-score" style="color:#ff4a6a">43.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,10.0 5.1,10.2 6.3,10.1 7.4,12.2 8.5,11.3 9.7,13.8 10.8,11.6 11.9,6.6 13.1,5.4 14.2,5.5 15.4,5.0 16.5,6.2 17.6,5.4 18.8,6.7 19.9,8.0 21.0,7.8 22.2,9.1 23.3,8.8 24.4,9.8 25.6,11.2 26.7,12.7 27.8,14.5 29.0,14.8 30.1,17.6 31.2,15.7 32.4,14.4 33.5,15.0 34.6,13.9 35.8,13.8 36.9,14.4 38.1,14.9 39.2,15.2 40.3,16.3 41.5,17.7 42.6,18.3 43.7,19.4 44.9,17.9 46.0,18.1 47.1,17.4 48.3,16.8 49.4,16.8 50.5,18.5 51.7,19.8 52.8,20.5 53.9,24.6 55.1,24.5 56.2,23.0 57.4,21.7 58.5,18.6 59.6,16.5 60.8,16.6 61.9,21.7 63.0,21.8 64.2,19.4 65.3,21.7 66.4,21.3 67.6,24.3 68.7,24.2 69.8,23.0 71.0,24.1 72.1,26.0 73.2,29.3 74.4,31.0 75.5,30.0 76.6,29.1 78.9,26.3 80.1,28.2 81.2,26.2 82.3,27.2 83.5,29.2 84.6,29.7 85.7,28.0 86.9,29.9 88.0,26.8 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,10.0 5.1,10.2 6.3,10.1 7.4,12.2 8.5,11.3 9.7,13.8 10.8,11.6 11.9,6.6 13.1,5.4 14.2,5.5 15.4,5.0 16.5,6.2 17.6,5.4 18.8,6.7 19.9,8.0 21.0,7.8 22.2,9.1 23.3,8.8 24.4,9.8 25.6,11.2 26.7,12.7 27.8,14.5 29.0,14.8 30.1,17.6 31.2,15.7 32.4,14.4 33.5,15.0 34.6,13.9 35.8,13.8 36.9,14.4 38.1,14.9 39.2,15.2 40.3,16.3 41.5,17.7 42.6,18.3 43.7,19.4 44.9,17.9 46.0,18.1 47.1,17.4 48.3,16.8 49.4,16.8 50.5,18.5 51.7,19.8 52.8,20.5 53.9,24.6 55.1,24.5 56.2,23.0 57.4,21.7 58.5,18.6 59.6,16.5 60.8,16.6 61.9,21.7 63.0,21.8 64.2,19.4 65.3,21.7 66.4,21.3 67.6,24.3 68.7,24.2 69.8,23.0 71.0,24.1 72.1,26.0 73.2,29.3 74.4,31.0 75.5,30.0 76.6,29.1 78.9,26.3 80.1,28.2 81.2,26.2 82.3,27.2 83.5,29.2 84.6,29.7 85.7,28.0 86.9,29.9 88.0,26.8" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="26.8" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-19.0</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="AI">AI</div>
+        <div class="sec-score" style="color:#ff4a6a">43.2</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,25.3 5.1,26.1 6.3,28.9 7.4,30.7 8.5,29.3 9.7,31.0 10.8,31.0 11.9,26.1 13.1,25.6 14.2,23.1 15.4,20.2 16.5,21.0 17.6,19.0 18.8,14.4 19.9,11.2 21.0,10.9 22.2,10.2 23.3,10.8 24.4,8.9 25.6,9.5 26.7,16.7 27.8,20.1 29.0,19.6 30.1,24.6 31.2,21.2 32.4,17.0 33.5,14.5 34.6,15.3 35.8,14.6 36.9,15.1 38.1,16.0 39.2,16.8 40.3,18.2 41.5,13.0 42.6,10.3 43.7,5.9 44.9,7.2 46.0,10.5 47.1,7.4 48.3,6.2 49.4,8.0 50.5,9.9 51.7,8.9 52.8,7.3 53.9,11.1 55.1,8.9 56.2,6.7 57.4,8.5 58.5,8.8 59.6,5.9 60.8,5.0 61.9,8.3 63.0,15.1 64.2,14.4 65.3,18.0 66.4,23.7 67.6,27.8 68.7,18.4 69.8,15.9 71.0,17.8 72.1,18.8 73.2,23.4 74.4,21.4 75.5,22.4 76.6,20.0 78.9,15.4 80.1,22.4 81.2,20.0 82.3,15.2 83.5,16.7 84.6,17.2 85.7,17.1 86.9,16.4 88.0,23.5 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,25.3 5.1,26.1 6.3,28.9 7.4,30.7 8.5,29.3 9.7,31.0 10.8,31.0 11.9,26.1 13.1,25.6 14.2,23.1 15.4,20.2 16.5,21.0 17.6,19.0 18.8,14.4 19.9,11.2 21.0,10.9 22.2,10.2 23.3,10.8 24.4,8.9 25.6,9.5 26.7,16.7 27.8,20.1 29.0,19.6 30.1,24.6 31.2,21.2 32.4,17.0 33.5,14.5 34.6,15.3 35.8,14.6 36.9,15.1 38.1,16.0 39.2,16.8 40.3,18.2 41.5,13.0 42.6,10.3 43.7,5.9 44.9,7.2 46.0,10.5 47.1,7.4 48.3,6.2 49.4,8.0 50.5,9.9 51.7,8.9 52.8,7.3 53.9,11.1 55.1,8.9 56.2,6.7 57.4,8.5 58.5,8.8 59.6,5.9 60.8,5.0 61.9,8.3 63.0,15.1 64.2,14.4 65.3,18.0 66.4,23.7 67.6,27.8 68.7,18.4 69.8,15.9 71.0,17.8 72.1,18.8 73.2,23.4 74.4,21.4 75.5,22.4 76.6,20.0 78.9,15.4 80.1,22.4 81.2,20.0 82.3,15.2 83.5,16.7 84.6,17.2 85.7,17.1 86.9,16.4 88.0,23.5" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="23.5" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+2.3</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="DRONES">DRONES</div>
+        <div class="sec-score" style="color:#ff4a6a">43.1</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,27.9 21.0,30.1 22.2,30.0 23.3,28.7 24.4,31.0 25.6,29.1 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,26.8 33.5,21.5 34.6,21.2 35.8,20.9 36.9,26.3 38.1,28.9 39.2,26.6 40.3,25.8 41.5,16.4 42.6,7.0 43.7,6.2 44.9,9.1 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,9.8 59.6,5.2 60.8,7.0 61.9,13.7 63.0,21.5 64.2,21.7 65.3,18.3 66.4,27.6 67.6,31.0 68.7,27.5 69.8,23.9 71.0,28.4 72.1,31.0 73.2,31.0 74.4,31.0 75.5,30.9 76.6,26.6 78.9,24.8 80.1,26.2 81.2,25.3 82.3,23.9 83.5,25.2 84.6,24.8 85.7,25.4 86.9,22.5 88.0,26.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,27.9 21.0,30.1 22.2,30.0 23.3,28.7 24.4,31.0 25.6,29.1 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,26.8 33.5,21.5 34.6,21.2 35.8,20.9 36.9,26.3 38.1,28.9 39.2,26.6 40.3,25.8 41.5,16.4 42.6,7.0 43.7,6.2 44.9,9.1 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,5.0 55.1,5.0 56.2,5.0 57.4,5.0 58.5,9.8 59.6,5.2 60.8,7.0 61.9,13.7 63.0,21.5 64.2,21.7 65.3,18.3 66.4,27.6 67.6,31.0 68.7,27.5 69.8,23.9 71.0,28.4 72.1,31.0 73.2,31.0 74.4,31.0 75.5,30.9 76.6,26.6 78.9,24.8 80.1,26.2 81.2,25.3 82.3,23.9 83.5,25.2 84.6,24.8 85.7,25.4 86.9,22.5 88.0,26.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="26.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+9.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="BIG BANKS & FINANCIALS">BIG BANKS & FINANCIALS</div>
+        <div class="sec-score" style="color:#ff4a6a">42.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,19.6 5.1,20.7 6.3,23.7 7.4,23.6 8.5,22.6 9.7,24.5 10.8,23.0 11.9,22.1 13.1,20.1 14.2,18.3 15.4,16.9 16.5,18.1 17.6,17.7 18.8,13.9 19.9,13.4 21.0,13.2 22.2,13.1 23.3,12.9 24.4,11.5 25.6,8.9 26.7,9.5 27.8,9.5 29.0,11.0 30.1,11.2 31.2,11.9 32.4,10.3 33.5,7.5 34.6,7.3 35.8,6.4 36.9,6.9 38.1,8.6 39.2,9.6 40.3,11.2 41.5,9.2 42.6,5.0 43.7,5.4 44.9,9.6 46.0,8.7 47.1,8.9 48.3,9.8 49.4,13.2 50.5,15.1 51.7,11.9 52.8,12.0 53.9,17.6 55.1,16.8 56.2,15.3 57.4,18.4 58.5,17.3 59.6,17.8 60.8,17.7 61.9,17.2 63.0,17.5 64.2,16.8 65.3,20.0 66.4,19.3 67.6,22.6 68.7,19.6 69.8,18.4 71.0,21.9 72.1,24.5 73.2,28.4 74.4,28.1 75.5,26.5 76.6,24.5 78.9,21.7 80.1,31.0 81.2,29.8 82.3,23.3 83.5,24.2 84.6,24.4 85.7,26.0 86.9,26.9 88.0,29.4 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,19.6 5.1,20.7 6.3,23.7 7.4,23.6 8.5,22.6 9.7,24.5 10.8,23.0 11.9,22.1 13.1,20.1 14.2,18.3 15.4,16.9 16.5,18.1 17.6,17.7 18.8,13.9 19.9,13.4 21.0,13.2 22.2,13.1 23.3,12.9 24.4,11.5 25.6,8.9 26.7,9.5 27.8,9.5 29.0,11.0 30.1,11.2 31.2,11.9 32.4,10.3 33.5,7.5 34.6,7.3 35.8,6.4 36.9,6.9 38.1,8.6 39.2,9.6 40.3,11.2 41.5,9.2 42.6,5.0 43.7,5.4 44.9,9.6 46.0,8.7 47.1,8.9 48.3,9.8 49.4,13.2 50.5,15.1 51.7,11.9 52.8,12.0 53.9,17.6 55.1,16.8 56.2,15.3 57.4,18.4 58.5,17.3 59.6,17.8 60.8,17.7 61.9,17.2 63.0,17.5 64.2,16.8 65.3,20.0 66.4,19.3 67.6,22.6 68.7,19.6 69.8,18.4 71.0,21.9 72.1,24.5 73.2,28.4 74.4,28.1 75.5,26.5 76.6,24.5 78.9,21.7 80.1,31.0 81.2,29.8 82.3,23.3 83.5,24.2 84.6,24.4 85.7,26.0 86.9,26.9 88.0,29.4" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.4" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-11.1</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="ROBOTICS">ROBOTICS</div>
+        <div class="sec-score" style="color:#ff4a6a">42.0</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,20.5 5.1,21.8 6.3,27.3 7.4,28.5 8.5,27.8 9.7,31.0 10.8,26.3 11.9,23.0 13.1,15.8 14.2,14.9 15.4,14.2 16.5,16.6 17.6,16.8 18.8,10.6 19.9,9.3 21.0,7.7 22.2,8.5 23.3,7.9 24.4,7.5 25.6,7.4 26.7,12.1 27.8,15.4 29.0,15.1 30.1,19.4 31.2,17.3 32.4,15.6 33.5,14.2 34.6,16.4 35.8,16.5 36.9,16.8 38.1,16.9 39.2,17.5 40.3,18.4 41.5,16.1 42.6,10.7 43.7,5.6 44.9,8.1 46.0,5.3 47.1,5.0 48.3,5.3 49.4,8.1 50.5,7.8 51.7,9.3 52.8,9.9 53.9,17.0 55.1,12.9 56.2,6.9 57.4,10.7 58.5,12.8 59.6,13.0 60.8,15.2 61.9,19.4 63.0,24.1 64.2,23.8 65.3,26.7 66.4,27.3 67.6,31.0 68.7,24.0 69.8,20.5 71.0,19.6 72.1,22.1 73.2,21.6 74.4,19.0 75.5,21.0 76.6,19.7 78.9,16.9 80.1,23.7 81.2,20.5 82.3,16.4 83.5,18.6 84.6,17.9 85.7,18.3 86.9,19.1 88.0,23.2 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,20.5 5.1,21.8 6.3,27.3 7.4,28.5 8.5,27.8 9.7,31.0 10.8,26.3 11.9,23.0 13.1,15.8 14.2,14.9 15.4,14.2 16.5,16.6 17.6,16.8 18.8,10.6 19.9,9.3 21.0,7.7 22.2,8.5 23.3,7.9 24.4,7.5 25.6,7.4 26.7,12.1 27.8,15.4 29.0,15.1 30.1,19.4 31.2,17.3 32.4,15.6 33.5,14.2 34.6,16.4 35.8,16.5 36.9,16.8 38.1,16.9 39.2,17.5 40.3,18.4 41.5,16.1 42.6,10.7 43.7,5.6 44.9,8.1 46.0,5.3 47.1,5.0 48.3,5.3 49.4,8.1 50.5,7.8 51.7,9.3 52.8,9.9 53.9,17.0 55.1,12.9 56.2,6.9 57.4,10.7 58.5,12.8 59.6,13.0 60.8,15.2 61.9,19.4 63.0,24.1 64.2,23.8 65.3,26.7 66.4,27.3 67.6,31.0 68.7,24.0 69.8,20.5 71.0,19.6 72.1,22.1 73.2,21.6 74.4,19.0 75.5,21.0 76.6,19.7 78.9,16.9 80.1,23.7 81.2,20.5 82.3,16.4 83.5,18.6 84.6,17.9 85.7,18.3 86.9,19.1 88.0,23.2" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="23.2" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-2.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="AIRLINES US">AIRLINES US</div>
+        <div class="sec-score" style="color:#ff4a6a">41.9</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,25.2 5.1,27.0 6.3,31.0 7.4,29.6 8.5,30.2 9.7,30.8 10.8,26.9 11.9,24.4 13.1,20.7 14.2,17.3 15.4,16.6 16.5,17.2 17.6,15.2 18.8,12.0 19.9,12.6 21.0,9.7 22.2,8.7 23.3,8.6 24.4,5.1 25.6,5.4 26.7,6.5 27.8,6.3 29.0,6.8 30.1,9.6 31.2,9.5 32.4,9.4 33.5,7.3 34.6,11.3 35.8,11.2 36.9,12.1 38.1,14.3 39.2,14.3 40.3,14.5 41.5,14.4 42.6,11.3 43.7,11.3 44.9,12.4 46.0,13.0 47.1,10.0 48.3,11.1 49.4,14.0 50.5,15.5 51.7,12.6 52.8,12.3 53.9,16.7 55.1,13.3 56.2,14.6 57.4,15.9 58.5,17.8 59.6,20.7 60.8,20.3 61.9,17.1 63.0,20.9 64.2,16.4 65.3,13.7 66.4,10.5 67.6,12.4 68.7,5.0 69.8,6.3 71.0,8.1 72.1,13.1 73.2,16.0 74.4,15.6 75.5,12.6 76.6,13.1 78.9,15.7 80.1,21.6 81.2,20.4 82.3,16.6 83.5,17.8 84.6,18.4 85.7,20.6 86.9,21.4 88.0,28.4 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,25.2 5.1,27.0 6.3,31.0 7.4,29.6 8.5,30.2 9.7,30.8 10.8,26.9 11.9,24.4 13.1,20.7 14.2,17.3 15.4,16.6 16.5,17.2 17.6,15.2 18.8,12.0 19.9,12.6 21.0,9.7 22.2,8.7 23.3,8.6 24.4,5.1 25.6,5.4 26.7,6.5 27.8,6.3 29.0,6.8 30.1,9.6 31.2,9.5 32.4,9.4 33.5,7.3 34.6,11.3 35.8,11.2 36.9,12.1 38.1,14.3 39.2,14.3 40.3,14.5 41.5,14.4 42.6,11.3 43.7,11.3 44.9,12.4 46.0,13.0 47.1,10.0 48.3,11.1 49.4,14.0 50.5,15.5 51.7,12.6 52.8,12.3 53.9,16.7 55.1,13.3 56.2,14.6 57.4,15.9 58.5,17.8 59.6,20.7 60.8,20.3 61.9,17.1 63.0,20.9 64.2,16.4 65.3,13.7 66.4,10.5 67.6,12.4 68.7,5.0 69.8,6.3 71.0,8.1 72.1,13.1 73.2,16.0 74.4,15.6 75.5,12.6 76.6,13.1 78.9,15.7 80.1,21.6 81.2,20.4 82.3,16.6 83.5,17.8 84.6,18.4 85.7,20.6 86.9,21.4 88.0,28.4" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="28.4" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-6.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="HEALTHCARE">HEALTHCARE</div>
+        <div class="sec-score" style="color:#ff4a6a">41.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,21.0 5.1,20.8 6.3,22.6 7.4,22.6 8.5,24.4 9.7,26.3 10.8,21.3 11.9,17.0 13.1,14.9 14.2,13.9 15.4,13.1 16.5,18.7 17.6,19.6 18.8,14.6 19.9,13.1 21.0,15.8 22.2,14.7 23.3,16.0 24.4,14.7 25.6,15.0 26.7,16.1 27.8,16.9 29.0,18.6 30.1,20.4 31.2,20.7 32.4,18.9 33.5,16.6 34.6,17.3 35.8,16.4 36.9,17.9 38.1,20.4 39.2,21.1 40.3,21.1 41.5,20.3 42.6,18.3 43.7,13.2 44.9,10.8 46.0,13.7 47.1,13.7 48.3,11.9 49.4,11.6 50.5,9.9 51.7,12.6 52.8,13.5 53.9,13.3 55.1,9.6 56.2,5.0 57.4,9.1 58.5,10.0 59.6,11.9 60.8,16.5 61.9,16.0 63.0,19.0 64.2,18.7 65.3,21.9 66.4,24.4 67.6,31.0 68.7,26.4 69.8,26.2 71.0,26.9 72.1,28.1 73.2,30.7 74.4,28.9 75.5,28.2 76.6,25.9 78.9,21.2 80.1,26.5 81.2,22.9 82.3,20.5 83.5,23.1 84.6,22.6 85.7,22.8 86.9,22.8 88.0,27.4 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,21.0 5.1,20.8 6.3,22.6 7.4,22.6 8.5,24.4 9.7,26.3 10.8,21.3 11.9,17.0 13.1,14.9 14.2,13.9 15.4,13.1 16.5,18.7 17.6,19.6 18.8,14.6 19.9,13.1 21.0,15.8 22.2,14.7 23.3,16.0 24.4,14.7 25.6,15.0 26.7,16.1 27.8,16.9 29.0,18.6 30.1,20.4 31.2,20.7 32.4,18.9 33.5,16.6 34.6,17.3 35.8,16.4 36.9,17.9 38.1,20.4 39.2,21.1 40.3,21.1 41.5,20.3 42.6,18.3 43.7,13.2 44.9,10.8 46.0,13.7 47.1,13.7 48.3,11.9 49.4,11.6 50.5,9.9 51.7,12.6 52.8,13.5 53.9,13.3 55.1,9.6 56.2,5.0 57.4,9.1 58.5,10.0 59.6,11.9 60.8,16.5 61.9,16.0 63.0,19.0 64.2,18.7 65.3,21.9 66.4,24.4 67.6,31.0 68.7,26.4 69.8,26.2 71.0,26.9 72.1,28.1 73.2,30.7 74.4,28.9 75.5,28.2 76.6,25.9 78.9,21.2 80.1,26.5 81.2,22.9 82.3,20.5 83.5,23.1 84.6,22.6 85.7,22.8 86.9,22.8 88.0,27.4" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="27.4" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-8.4</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="RESTAURANTS">RESTAURANTS</div>
+        <div class="sec-score" style="color:#ff4a6a">40.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.7 5.1,27.6 6.3,29.8 7.4,29.1 8.5,29.8 9.7,31.0 10.8,25.6 11.9,26.3 13.1,20.6 14.2,18.6 15.4,18.0 16.5,19.3 17.6,18.2 18.8,16.6 19.9,17.0 21.0,18.2 22.2,19.4 23.3,18.8 24.4,17.9 25.6,16.7 26.7,16.7 27.8,17.1 29.0,18.7 30.1,17.8 31.2,16.3 32.4,17.3 33.5,18.2 34.6,19.3 35.8,17.9 36.9,16.7 38.1,19.0 39.2,20.6 40.3,20.5 41.5,17.8 42.6,16.6 43.7,13.0 44.9,14.0 46.0,10.9 47.1,9.8 48.3,6.2 49.4,7.9 50.5,6.7 51.7,5.0 52.8,6.9 53.9,10.4 55.1,9.2 56.2,9.3 57.4,10.3 58.5,16.4 59.6,17.3 60.8,19.5 61.9,20.3 63.0,21.5 64.2,20.3 65.3,20.4 66.4,17.8 67.6,20.3 68.7,17.2 69.8,18.3 71.0,20.6 72.1,22.0 73.2,26.4 74.4,26.5 75.5,24.5 76.6,22.0 78.9,18.2 80.1,26.6 81.2,27.3 82.3,18.9 83.5,20.3 84.6,20.3 85.7,20.9 86.9,20.8 88.0,27.4 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,26.7 5.1,27.6 6.3,29.8 7.4,29.1 8.5,29.8 9.7,31.0 10.8,25.6 11.9,26.3 13.1,20.6 14.2,18.6 15.4,18.0 16.5,19.3 17.6,18.2 18.8,16.6 19.9,17.0 21.0,18.2 22.2,19.4 23.3,18.8 24.4,17.9 25.6,16.7 26.7,16.7 27.8,17.1 29.0,18.7 30.1,17.8 31.2,16.3 32.4,17.3 33.5,18.2 34.6,19.3 35.8,17.9 36.9,16.7 38.1,19.0 39.2,20.6 40.3,20.5 41.5,17.8 42.6,16.6 43.7,13.0 44.9,14.0 46.0,10.9 47.1,9.8 48.3,6.2 49.4,7.9 50.5,6.7 51.7,5.0 52.8,6.9 53.9,10.4 55.1,9.2 56.2,9.3 57.4,10.3 58.5,16.4 59.6,17.3 60.8,19.5 61.9,20.3 63.0,21.5 64.2,20.3 65.3,20.4 66.4,17.8 67.6,20.3 68.7,17.2 69.8,18.3 71.0,20.6 72.1,22.0 73.2,26.4 74.4,26.5 75.5,24.5 76.6,22.0 78.9,18.2 80.1,26.6 81.2,27.3 82.3,18.9 83.5,20.3 84.6,20.3 85.7,20.9 86.9,20.8 88.0,27.4" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="27.4" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-1.1</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="TRAVEL & LEISURE">TRAVEL & LEISURE</div>
+        <div class="sec-score" style="color:#ff4a6a">40.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,7.1 5.1,8.5 6.3,14.8 7.4,15.8 8.5,17.2 9.7,22.1 10.8,17.2 11.9,16.4 13.1,13.3 14.2,12.5 15.4,11.3 16.5,10.9 17.6,8.3 18.8,7.7 19.9,9.4 21.0,7.4 22.2,8.7 23.3,10.4 24.4,10.9 25.6,8.3 26.7,8.8 27.8,7.7 29.0,8.1 30.1,8.2 31.2,7.9 32.4,7.4 33.5,5.9 34.6,6.8 35.8,6.9 36.9,7.0 38.1,8.1 39.2,8.5 40.3,10.1 41.5,9.4 42.6,10.5 43.7,5.9 44.9,6.4 46.0,5.0 47.1,5.9 48.3,7.3 49.4,7.2 50.5,11.0 51.7,10.5 52.8,12.8 53.9,16.7 55.1,14.4 56.2,14.5 57.4,16.1 58.5,16.2 59.6,17.4 60.8,18.7 61.9,16.0 63.0,19.5 64.2,16.4 65.3,25.1 66.4,25.7 67.6,27.3 68.7,25.1 69.8,26.4 71.0,22.8 72.1,27.5 73.2,30.8 74.4,31.0 75.5,31.0 76.6,29.3 78.9,18.0 80.1,31.0 81.2,31.0 82.3,18.7 83.5,19.1 84.6,19.3 85.7,20.2 86.9,20.2 88.0,25.5 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,7.1 5.1,8.5 6.3,14.8 7.4,15.8 8.5,17.2 9.7,22.1 10.8,17.2 11.9,16.4 13.1,13.3 14.2,12.5 15.4,11.3 16.5,10.9 17.6,8.3 18.8,7.7 19.9,9.4 21.0,7.4 22.2,8.7 23.3,10.4 24.4,10.9 25.6,8.3 26.7,8.8 27.8,7.7 29.0,8.1 30.1,8.2 31.2,7.9 32.4,7.4 33.5,5.9 34.6,6.8 35.8,6.9 36.9,7.0 38.1,8.1 39.2,8.5 40.3,10.1 41.5,9.4 42.6,10.5 43.7,5.9 44.9,6.4 46.0,5.0 47.1,5.9 48.3,7.3 49.4,7.2 50.5,11.0 51.7,10.5 52.8,12.8 53.9,16.7 55.1,14.4 56.2,14.5 57.4,16.1 58.5,16.2 59.6,17.4 60.8,18.7 61.9,16.0 63.0,19.5 64.2,16.4 65.3,25.1 66.4,25.7 67.6,27.3 68.7,25.1 69.8,26.4 71.0,22.8 72.1,27.5 73.2,30.8 74.4,31.0 75.5,31.0 76.6,29.3 78.9,18.0 80.1,31.0 81.2,31.0 82.3,18.7 83.5,19.1 84.6,19.3 85.7,20.2 86.9,20.2 88.0,25.5" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="25.5" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-22.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CRM">CRM</div>
+        <div class="sec-score" style="color:#ff4a6a">38.6</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,23.6 5.1,22.9 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,29.0 18.8,25.4 19.9,18.2 21.0,13.5 22.2,13.1 23.3,9.9 24.4,6.9 25.6,6.7 26.7,10.6 27.8,19.7 29.0,17.5 30.1,16.9 31.2,14.6 32.4,12.8 33.5,8.1 34.6,10.3 35.8,9.5 36.9,8.3 38.1,8.8 39.2,8.4 40.3,11.9 41.5,22.2 42.6,15.5 43.7,7.3 44.9,5.0 46.0,8.8 47.1,8.8 48.3,8.6 49.4,16.7 50.5,23.8 51.7,31.0 52.8,31.0 53.9,31.0 55.1,31.0 56.2,30.1 57.4,28.3 58.5,24.9 59.6,30.5 60.8,31.0 61.9,31.0 63.0,31.0 64.2,31.0 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,22.1 80.1,31.0 81.2,31.0 82.3,21.4 83.5,19.1 84.6,18.9 85.7,19.4 86.9,18.0 88.0,23.3 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,23.6 5.1,22.9 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,29.0 18.8,25.4 19.9,18.2 21.0,13.5 22.2,13.1 23.3,9.9 24.4,6.9 25.6,6.7 26.7,10.6 27.8,19.7 29.0,17.5 30.1,16.9 31.2,14.6 32.4,12.8 33.5,8.1 34.6,10.3 35.8,9.5 36.9,8.3 38.1,8.8 39.2,8.4 40.3,11.9 41.5,22.2 42.6,15.5 43.7,7.3 44.9,5.0 46.0,8.8 47.1,8.8 48.3,8.6 49.4,16.7 50.5,23.8 51.7,31.0 52.8,31.0 53.9,31.0 55.1,31.0 56.2,30.1 57.4,28.3 58.5,24.9 59.6,30.5 60.8,31.0 61.9,31.0 63.0,31.0 64.2,31.0 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,22.1 80.1,31.0 81.2,31.0 82.3,21.4 83.5,19.1 84.6,18.9 85.7,19.4 86.9,18.0 88.0,23.3" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="23.3" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#505068">—</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="FINTECH">FINTECH</div>
+        <div class="sec-score" style="color:#ff4a6a">38.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,23.9 5.1,25.7 6.3,29.7 7.4,30.5 8.5,29.4 9.7,31.0 10.8,27.1 11.9,25.1 13.1,20.2 14.2,18.2 15.4,14.9 16.5,16.4 17.6,16.1 18.8,13.3 19.9,11.7 21.0,12.6 22.2,13.8 23.3,14.1 24.4,10.6 25.6,8.8 26.7,9.7 27.8,13.6 29.0,11.8 30.1,13.4 31.2,11.0 32.4,10.3 33.5,8.6 34.6,9.7 35.8,8.6 36.9,9.0 38.1,10.1 39.2,11.6 40.3,13.8 41.5,14.9 42.6,8.2 43.7,6.9 44.9,7.1 46.0,5.3 47.1,5.0 48.3,8.2 49.4,10.7 50.5,11.3 51.7,11.9 52.8,12.5 53.9,17.5 55.1,14.6 56.2,8.8 57.4,11.0 58.5,11.0 59.6,12.9 60.8,15.7 61.9,17.1 63.0,20.2 64.2,20.5 65.3,28.3 66.4,28.4 67.6,31.0 68.7,24.6 69.8,24.3 71.0,23.6 72.1,29.2 73.2,31.0 74.4,31.0 75.5,31.0 76.6,29.7 78.9,19.2 80.1,31.0 81.2,31.0 82.3,19.9 83.5,22.2 84.6,22.2 85.7,22.5 86.9,22.1 88.0,26.6 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,23.9 5.1,25.7 6.3,29.7 7.4,30.5 8.5,29.4 9.7,31.0 10.8,27.1 11.9,25.1 13.1,20.2 14.2,18.2 15.4,14.9 16.5,16.4 17.6,16.1 18.8,13.3 19.9,11.7 21.0,12.6 22.2,13.8 23.3,14.1 24.4,10.6 25.6,8.8 26.7,9.7 27.8,13.6 29.0,11.8 30.1,13.4 31.2,11.0 32.4,10.3 33.5,8.6 34.6,9.7 35.8,8.6 36.9,9.0 38.1,10.1 39.2,11.6 40.3,13.8 41.5,14.9 42.6,8.2 43.7,6.9 44.9,7.1 46.0,5.3 47.1,5.0 48.3,8.2 49.4,10.7 50.5,11.3 51.7,11.9 52.8,12.5 53.9,17.5 55.1,14.6 56.2,8.8 57.4,11.0 58.5,11.0 59.6,12.9 60.8,15.7 61.9,17.1 63.0,20.2 64.2,20.5 65.3,28.3 66.4,28.4 67.6,31.0 68.7,24.6 69.8,24.3 71.0,23.6 72.1,29.2 73.2,31.0 74.4,31.0 75.5,31.0 76.6,29.7 78.9,19.2 80.1,31.0 81.2,31.0 82.3,19.9 83.5,22.2 84.6,22.2 85.7,22.5 86.9,22.1 88.0,26.6" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="26.6" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-2.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CYBER SECURITY">CYBER SECURITY</div>
+        <div class="sec-score" style="color:#ff4a6a">36.4</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,9.2 5.1,10.3 6.3,17.5 7.4,19.8 8.5,22.3 9.7,30.0 10.8,28.9 11.9,27.0 13.1,22.7 14.2,25.9 15.4,22.7 16.5,23.8 17.6,19.8 18.8,14.1 19.9,13.0 21.0,15.0 22.2,13.2 23.3,10.3 24.4,7.2 25.6,6.8 26.7,9.8 27.8,16.7 29.0,14.1 30.1,18.8 31.2,13.8 32.4,13.8 33.5,10.0 34.6,12.4 35.8,11.9 36.9,11.6 38.1,13.8 39.2,15.1 40.3,17.8 41.5,23.5 42.6,17.5 43.7,13.7 44.9,6.1 46.0,10.6 47.1,11.3 48.3,10.0 49.4,11.6 50.5,13.3 51.7,14.1 52.8,17.2 53.9,23.6 55.1,22.8 56.2,17.0 57.4,15.4 58.5,7.2 59.6,5.0 60.8,8.0 61.9,20.2 63.0,22.3 64.2,19.4 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,26.5 71.0,19.8 72.1,21.2 73.2,30.5 74.4,21.9 75.5,28.3 76.6,28.3 78.9,21.9 80.1,31.0 81.2,31.0 82.3,25.4 83.5,27.6 84.6,29.1 85.7,28.3 86.9,25.5 88.0,26.7 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,9.2 5.1,10.3 6.3,17.5 7.4,19.8 8.5,22.3 9.7,30.0 10.8,28.9 11.9,27.0 13.1,22.7 14.2,25.9 15.4,22.7 16.5,23.8 17.6,19.8 18.8,14.1 19.9,13.0 21.0,15.0 22.2,13.2 23.3,10.3 24.4,7.2 25.6,6.8 26.7,9.8 27.8,16.7 29.0,14.1 30.1,18.8 31.2,13.8 32.4,13.8 33.5,10.0 34.6,12.4 35.8,11.9 36.9,11.6 38.1,13.8 39.2,15.1 40.3,17.8 41.5,23.5 42.6,17.5 43.7,13.7 44.9,6.1 46.0,10.6 47.1,11.3 48.3,10.0 49.4,11.6 50.5,13.3 51.7,14.1 52.8,17.2 53.9,23.6 55.1,22.8 56.2,17.0 57.4,15.4 58.5,7.2 59.6,5.0 60.8,8.0 61.9,20.2 63.0,22.3 64.2,19.4 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,26.5 71.0,19.8 72.1,21.2 73.2,30.5 74.4,21.9 75.5,28.3 76.6,28.3 78.9,21.9 80.1,31.0 81.2,31.0 82.3,25.4 83.5,27.6 84.6,29.1 85.7,28.3 86.9,25.5 88.0,26.7" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="26.7" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-10.9</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="LIDAR">LIDAR</div>
+        <div class="sec-score" style="color:#ff4a6a">36.3</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.7 21.0,29.6 22.2,29.2 23.3,28.5 24.4,27.1 25.6,25.5 26.7,30.2 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,29.9 33.5,30.1 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,28.0 42.6,20.5 43.7,11.1 44.9,11.8 46.0,10.4 47.1,5.0 48.3,7.7 49.4,9.9 50.5,7.0 51.7,6.7 52.8,10.1 53.9,12.1 55.1,12.0 56.2,9.7 57.4,17.8 58.5,24.2 59.6,22.8 60.8,25.5 61.9,29.6 63.0,31.0 64.2,31.0 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,30.0 71.0,30.4 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,25.1 80.1,31.0 81.2,31.0 82.3,24.2 83.5,24.7 84.6,24.4 85.7,25.0 86.9,22.6 88.0,29.5 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,26.7 21.0,29.6 22.2,29.2 23.3,28.5 24.4,27.1 25.6,25.5 26.7,30.2 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,29.9 33.5,30.1 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,28.0 42.6,20.5 43.7,11.1 44.9,11.8 46.0,10.4 47.1,5.0 48.3,7.7 49.4,9.9 50.5,7.0 51.7,6.7 52.8,10.1 53.9,12.1 55.1,12.0 56.2,9.7 57.4,17.8 58.5,24.2 59.6,22.8 60.8,25.5 61.9,29.6 63.0,31.0 64.2,31.0 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,30.0 71.0,30.4 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,25.1 80.1,31.0 81.2,31.0 82.3,24.2 83.5,24.7 84.6,24.4 85.7,25.0 86.9,22.6 88.0,29.5" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.5" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#00d4aa">+2.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="ENTERPRISE IT & HARDWARE">ENTERPRISE IT & HARD…</div>
+        <div class="sec-score" style="color:#ff4a6a">34.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,14.2 5.1,14.2 6.3,19.3 7.4,21.0 8.5,19.8 9.7,23.3 10.8,19.6 11.9,19.1 13.1,18.5 14.2,18.3 15.4,16.4 16.5,16.2 17.6,14.3 18.8,10.3 19.9,8.0 21.0,7.9 22.2,8.2 23.3,6.6 24.4,5.0 25.6,10.0 26.7,13.4 27.8,14.1 29.0,14.4 30.1,17.3 31.2,18.9 32.4,15.5 33.5,14.7 34.6,15.4 35.8,14.5 36.9,13.6 38.1,14.9 39.2,15.1 40.3,17.7 41.5,19.8 42.6,20.0 43.7,15.9 44.9,19.0 46.0,16.9 47.1,14.5 48.3,12.2 49.4,13.7 50.5,13.6 51.7,15.7 52.8,14.8 53.9,23.0 55.1,22.0 56.2,19.7 57.4,21.2 58.5,17.9 59.6,19.6 60.8,21.1 61.9,20.6 63.0,21.3 64.2,18.5 65.3,26.5 66.4,28.3 67.6,31.0 68.7,25.7 69.8,22.6 71.0,21.0 72.1,26.1 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,23.9 80.1,31.0 81.2,31.0 82.3,25.4 83.5,26.4 84.6,27.5 85.7,25.5 86.9,25.4 88.0,29.9 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,14.2 5.1,14.2 6.3,19.3 7.4,21.0 8.5,19.8 9.7,23.3 10.8,19.6 11.9,19.1 13.1,18.5 14.2,18.3 15.4,16.4 16.5,16.2 17.6,14.3 18.8,10.3 19.9,8.0 21.0,7.9 22.2,8.2 23.3,6.6 24.4,5.0 25.6,10.0 26.7,13.4 27.8,14.1 29.0,14.4 30.1,17.3 31.2,18.9 32.4,15.5 33.5,14.7 34.6,15.4 35.8,14.5 36.9,13.6 38.1,14.9 39.2,15.1 40.3,17.7 41.5,19.8 42.6,20.0 43.7,15.9 44.9,19.0 46.0,16.9 47.1,14.5 48.3,12.2 49.4,13.7 50.5,13.6 51.7,15.7 52.8,14.8 53.9,23.0 55.1,22.0 56.2,19.7 57.4,21.2 58.5,17.9 59.6,19.6 60.8,21.1 61.9,20.6 63.0,21.3 64.2,18.5 65.3,26.5 66.4,28.3 67.6,31.0 68.7,25.7 69.8,22.6 71.0,21.0 72.1,26.1 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,23.9 80.1,31.0 81.2,31.0 82.3,25.4 83.5,26.4 84.6,27.5 85.7,25.5 86.9,25.4 88.0,29.9" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.9" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-14.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="INTERNET B2C">INTERNET B2C</div>
+        <div class="sec-score" style="color:#ff4a6a">34.5</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.9 5.1,24.3 6.3,27.9 7.4,28.3 8.5,29.8 9.7,31.0 10.8,29.5 11.9,24.3 13.1,18.7 14.2,17.7 15.4,14.6 16.5,15.4 17.6,12.7 18.8,10.9 19.9,9.2 21.0,7.7 22.2,8.1 23.3,5.9 24.4,5.4 25.6,6.6 26.7,8.2 27.8,11.6 29.0,11.5 30.1,14.4 31.2,10.9 32.4,9.2 33.5,9.2 34.6,9.6 35.8,8.0 36.9,7.4 38.1,8.0 39.2,8.6 40.3,9.6 41.5,11.3 42.6,8.5 43.7,5.0 44.9,5.1 46.0,7.4 47.1,7.2 48.3,7.4 49.4,9.8 50.5,13.5 51.7,13.9 52.8,17.8 53.9,22.1 55.1,21.2 56.2,16.9 57.4,16.6 58.5,14.0 59.6,16.0 60.8,18.2 61.9,17.5 63.0,19.8 64.2,17.8 65.3,27.8 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,24.5 80.1,31.0 81.2,31.0 82.3,26.7 83.5,28.7 84.6,28.4 85.7,27.5 86.9,28.4 88.0,29.9 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,22.9 5.1,24.3 6.3,27.9 7.4,28.3 8.5,29.8 9.7,31.0 10.8,29.5 11.9,24.3 13.1,18.7 14.2,17.7 15.4,14.6 16.5,15.4 17.6,12.7 18.8,10.9 19.9,9.2 21.0,7.7 22.2,8.1 23.3,5.9 24.4,5.4 25.6,6.6 26.7,8.2 27.8,11.6 29.0,11.5 30.1,14.4 31.2,10.9 32.4,9.2 33.5,9.2 34.6,9.6 35.8,8.0 36.9,7.4 38.1,8.0 39.2,8.6 40.3,9.6 41.5,11.3 42.6,8.5 43.7,5.0 44.9,5.1 46.0,7.4 47.1,7.2 48.3,7.4 49.4,9.8 50.5,13.5 51.7,13.9 52.8,17.8 53.9,22.1 55.1,21.2 56.2,16.9 57.4,16.6 58.5,14.0 59.6,16.0 60.8,18.2 61.9,17.5 63.0,19.8 64.2,17.8 65.3,27.8 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,24.5 80.1,31.0 81.2,31.0 82.3,26.7 83.5,28.7 84.6,28.4 85.7,27.5 86.9,28.4 88.0,29.9" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="29.9" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-5.2</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="SOFTWARE">SOFTWARE</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,19.7 5.1,19.7 6.3,23.7 7.4,22.9 8.5,24.2 9.7,28.1 10.8,27.7 11.9,24.7 13.1,21.8 14.2,23.9 15.4,22.4 16.5,23.8 17.6,19.4 18.8,17.4 19.9,18.4 21.0,15.3 22.2,11.7 23.3,10.2 24.4,9.3 25.6,7.1 26.7,8.3 27.8,11.4 29.0,10.6 30.1,12.3 31.2,9.6 32.4,7.1 33.5,5.0 34.6,7.2 35.8,7.5 36.9,7.7 38.1,8.3 39.2,9.4 40.3,11.4 41.5,14.8 42.6,11.5 43.7,8.8 44.9,7.2 46.0,11.1 47.1,12.5 48.3,10.8 49.4,14.3 50.5,17.9 51.7,18.6 52.8,20.7 53.9,24.2 55.1,25.7 56.2,20.4 57.4,19.1 58.5,15.5 59.6,16.7 60.8,16.1 61.9,23.9 63.0,27.2 64.2,28.2 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,30.2 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,24.8 80.1,31.0 81.2,31.0 82.3,25.0 83.5,26.3 84.6,26.7 85.7,26.4 86.9,26.0 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,19.7 5.1,19.7 6.3,23.7 7.4,22.9 8.5,24.2 9.7,28.1 10.8,27.7 11.9,24.7 13.1,21.8 14.2,23.9 15.4,22.4 16.5,23.8 17.6,19.4 18.8,17.4 19.9,18.4 21.0,15.3 22.2,11.7 23.3,10.2 24.4,9.3 25.6,7.1 26.7,8.3 27.8,11.4 29.0,10.6 30.1,12.3 31.2,9.6 32.4,7.1 33.5,5.0 34.6,7.2 35.8,7.5 36.9,7.7 38.1,8.3 39.2,9.4 40.3,11.4 41.5,14.8 42.6,11.5 43.7,8.8 44.9,7.2 46.0,11.1 47.1,12.5 48.3,10.8 49.4,14.3 50.5,17.9 51.7,18.6 52.8,20.7 53.9,24.2 55.1,25.7 56.2,20.4 57.4,19.1 58.5,15.5 59.6,16.7 60.8,16.1 61.9,23.9 63.0,27.2 64.2,28.2 65.3,31.0 66.4,31.0 67.6,31.0 68.7,31.0 69.8,31.0 71.0,30.2 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,24.8 80.1,31.0 81.2,31.0 82.3,25.0 83.5,26.3 84.6,26.7 85.7,26.4 86.9,26.0 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-14.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="SOLAR">SOLAR</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,9.7 5.1,5.0 6.3,9.3 7.4,12.0 8.5,14.6 9.7,22.1 10.8,20.2 11.9,17.8 13.1,15.9 14.2,13.8 15.4,12.3 16.5,15.9 17.6,17.5 18.8,20.3 19.9,18.1 21.0,20.1 22.2,19.7 23.3,19.7 24.4,16.2 25.6,13.3 26.7,19.8 27.8,23.1 29.0,22.6 30.1,23.3 31.2,20.8 32.4,19.0 33.5,13.7 34.6,18.2 35.8,16.9 36.9,16.8 38.1,18.7 39.2,21.6 40.3,22.8 41.5,16.9 42.6,19.1 43.7,18.7 44.9,23.0 46.0,24.8 47.1,23.9 48.3,17.7 49.4,17.3 50.5,20.0 51.7,18.1 52.8,18.7 53.9,22.1 55.1,20.0 56.2,15.2 57.4,14.1 58.5,12.6 59.6,11.5 60.8,8.6 61.9,13.4 63.0,17.4 64.2,18.7 65.3,16.2 66.4,8.4 67.6,14.2 68.7,10.0 69.8,7.7 71.0,7.8 72.1,10.5 73.2,15.3 74.4,12.8 75.5,11.0 76.6,10.5 78.9,14.9 80.1,12.0 81.2,12.4 82.3,15.2 83.5,19.5 84.6,19.5 85.7,21.1 86.9,21.3 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,9.7 5.1,5.0 6.3,9.3 7.4,12.0 8.5,14.6 9.7,22.1 10.8,20.2 11.9,17.8 13.1,15.9 14.2,13.8 15.4,12.3 16.5,15.9 17.6,17.5 18.8,20.3 19.9,18.1 21.0,20.1 22.2,19.7 23.3,19.7 24.4,16.2 25.6,13.3 26.7,19.8 27.8,23.1 29.0,22.6 30.1,23.3 31.2,20.8 32.4,19.0 33.5,13.7 34.6,18.2 35.8,16.9 36.9,16.8 38.1,18.7 39.2,21.6 40.3,22.8 41.5,16.9 42.6,19.1 43.7,18.7 44.9,23.0 46.0,24.8 47.1,23.9 48.3,17.7 49.4,17.3 50.5,20.0 51.7,18.1 52.8,18.7 53.9,22.1 55.1,20.0 56.2,15.2 57.4,14.1 58.5,12.6 59.6,11.5 60.8,8.6 61.9,13.4 63.0,17.4 64.2,18.7 65.3,16.2 66.4,8.4 67.6,14.2 68.7,10.0 69.8,7.7 71.0,7.8 72.1,10.5 73.2,15.3 74.4,12.8 75.5,11.0 76.6,10.5 78.9,14.9 80.1,12.0 81.2,12.4 82.3,15.2 83.5,19.5 84.6,19.5 85.7,21.1 86.9,21.3 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-34.5</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="BATTERIES">BATTERIES</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,21.7 5.1,25.1 6.3,30.4 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,28.2 16.5,31.0 17.6,31.0 18.8,27.6 19.9,19.6 21.0,20.0 22.2,21.2 23.3,19.3 24.4,23.0 25.6,21.2 26.7,28.9 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,29.8 33.5,26.5 34.6,28.0 35.8,28.1 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,24.4 42.6,16.9 43.7,18.2 44.9,20.1 46.0,17.6 47.1,17.4 48.3,13.9 49.4,12.2 50.5,10.0 51.7,12.1 52.8,8.1 53.9,11.2 55.1,10.0 56.2,5.0 57.4,8.8 58.5,15.2 59.6,11.8 60.8,10.6 61.9,11.1 63.0,20.0 64.2,19.6 65.3,15.7 66.4,26.5 67.6,31.0 68.7,26.5 69.8,24.0 71.0,27.9 72.1,30.9 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,25.6 80.1,31.0 81.2,31.0 82.3,24.8 83.5,27.3 84.6,26.8 85.7,27.8 86.9,26.5 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,21.7 5.1,25.1 6.3,30.4 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,28.2 16.5,31.0 17.6,31.0 18.8,27.6 19.9,19.6 21.0,20.0 22.2,21.2 23.3,19.3 24.4,23.0 25.6,21.2 26.7,28.9 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,29.8 33.5,26.5 34.6,28.0 35.8,28.1 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,24.4 42.6,16.9 43.7,18.2 44.9,20.1 46.0,17.6 47.1,17.4 48.3,13.9 49.4,12.2 50.5,10.0 51.7,12.1 52.8,8.1 53.9,11.2 55.1,10.0 56.2,5.0 57.4,8.8 58.5,15.2 59.6,11.8 60.8,10.6 61.9,11.1 63.0,20.0 64.2,19.6 65.3,15.7 66.4,26.5 67.6,31.0 68.7,26.5 69.8,24.0 71.0,27.9 72.1,30.9 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,25.6 80.1,31.0 81.2,31.0 82.3,24.8 83.5,27.3 84.6,26.8 85.7,27.8 86.9,26.5 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-14.6</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CHINA INTERNET">CHINA INTERNET</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,26.3 5.1,29.4 6.3,29.1 7.4,27.6 8.5,30.1 9.7,31.0 10.8,31.0 11.9,28.2 13.1,25.9 14.2,26.6 15.4,25.3 16.5,23.7 17.6,24.8 18.8,25.8 19.9,25.1 21.0,21.6 22.2,21.6 23.3,23.2 24.4,21.8 25.6,22.6 26.7,22.3 27.8,25.2 29.0,25.6 30.1,26.0 31.2,23.9 32.4,22.5 33.5,20.5 34.6,20.6 35.8,20.4 36.9,19.1 38.1,19.8 39.2,20.6 40.3,21.7 41.5,14.4 42.6,11.1 43.7,12.7 44.9,14.8 46.0,12.2 47.1,14.3 48.3,5.0 49.4,8.9 50.5,10.2 51.7,12.2 52.8,14.5 53.9,17.5 55.1,13.3 56.2,10.7 57.4,10.5 58.5,10.4 59.6,8.9 60.8,7.9 61.9,7.2 63.0,11.9 64.2,13.3 65.3,17.2 66.4,22.5 67.6,22.3 68.7,15.7 69.8,15.6 71.0,14.1 72.1,14.8 73.2,20.9 74.4,21.1 75.5,20.5 76.6,20.9 78.9,19.3 80.1,25.7 81.2,24.4 82.3,19.8 83.5,24.4 84.6,24.4 85.7,24.8 86.9,24.7 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,26.3 5.1,29.4 6.3,29.1 7.4,27.6 8.5,30.1 9.7,31.0 10.8,31.0 11.9,28.2 13.1,25.9 14.2,26.6 15.4,25.3 16.5,23.7 17.6,24.8 18.8,25.8 19.9,25.1 21.0,21.6 22.2,21.6 23.3,23.2 24.4,21.8 25.6,22.6 26.7,22.3 27.8,25.2 29.0,25.6 30.1,26.0 31.2,23.9 32.4,22.5 33.5,20.5 34.6,20.6 35.8,20.4 36.9,19.1 38.1,19.8 39.2,20.6 40.3,21.7 41.5,14.4 42.6,11.1 43.7,12.7 44.9,14.8 46.0,12.2 47.1,14.3 48.3,5.0 49.4,8.9 50.5,10.2 51.7,12.2 52.8,14.5 53.9,17.5 55.1,13.3 56.2,10.7 57.4,10.5 58.5,10.4 59.6,8.9 60.8,7.9 61.9,7.2 63.0,11.9 64.2,13.3 65.3,17.2 66.4,22.5 67.6,22.3 68.7,15.7 69.8,15.6 71.0,14.1 72.1,14.8 73.2,20.9 74.4,21.1 75.5,20.5 76.6,20.9 78.9,19.3 80.1,25.7 81.2,24.4 82.3,19.8 83.5,24.4 84.6,24.4 85.7,24.8 86.9,24.7 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-5.1</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CRYPTO MINING">CRYPTO MINING</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,25.3 43.7,26.4 44.9,28.6 46.0,24.9 47.1,24.5 48.3,17.7 49.4,12.6 50.5,10.2 51.7,12.6 52.8,5.0 53.9,12.9 55.1,12.3 56.2,14.1 57.4,9.5 58.5,15.8 59.6,7.4 60.8,7.3 61.9,15.0 63.0,22.3 64.2,26.6 65.3,25.7 66.4,31.0 67.6,31.0 68.7,31.0 69.8,29.2 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,23.3 80.1,31.0 81.2,30.4 82.3,21.3 83.5,24.7 84.6,24.9 85.7,26.0 86.9,25.1 88.0,31.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,31.0 11.9,31.0 13.1,31.0 14.2,31.0 15.4,31.0 16.5,31.0 17.6,31.0 18.8,31.0 19.9,31.0 21.0,31.0 22.2,31.0 23.3,31.0 24.4,31.0 25.6,31.0 26.7,31.0 27.8,31.0 29.0,31.0 30.1,31.0 31.2,31.0 32.4,31.0 33.5,31.0 34.6,31.0 35.8,31.0 36.9,31.0 38.1,31.0 39.2,31.0 40.3,31.0 41.5,31.0 42.6,25.3 43.7,26.4 44.9,28.6 46.0,24.9 47.1,24.5 48.3,17.7 49.4,12.6 50.5,10.2 51.7,12.6 52.8,5.0 53.9,12.9 55.1,12.3 56.2,14.1 57.4,9.5 58.5,15.8 59.6,7.4 60.8,7.3 61.9,15.0 63.0,22.3 64.2,26.6 65.3,25.7 66.4,31.0 67.6,31.0 68.7,31.0 69.8,29.2 71.0,31.0 72.1,31.0 73.2,31.0 74.4,31.0 75.5,31.0 76.6,31.0 78.9,23.3 80.1,31.0 81.2,30.4 82.3,21.3 83.5,24.7 84.6,24.9 85.7,26.0 86.9,25.1 88.0,31.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#505068">—</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CAR DEALERS">CAR DEALERS</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,28.1 11.9,26.8 13.1,21.3 14.2,20.8 15.4,19.5 16.5,19.0 17.6,18.7 18.8,15.1 19.9,14.9 21.0,14.0 22.2,12.6 23.3,11.0 24.4,6.0 25.6,5.1 26.7,8.7 27.8,9.4 29.0,8.3 30.1,8.9 31.2,9.7 32.4,10.8 33.5,10.8 34.6,11.1 35.8,9.8 36.9,10.0 38.1,10.9 39.2,12.4 40.3,14.5 41.5,15.0 42.6,11.5 43.7,9.9 44.9,9.8 46.0,6.9 47.1,5.0 48.3,6.6 49.4,6.6 50.5,7.5 51.7,5.7 52.8,7.5 53.9,9.6 55.1,6.6 56.2,7.1 57.4,11.4 58.5,11.9 59.6,12.3 60.8,14.6 61.9,17.9 63.0,20.4 64.2,20.5 65.3,21.5 66.4,18.4 67.6,23.7 68.7,19.2 69.8,20.9 71.0,22.5 72.1,23.0 73.2,27.5 74.4,28.1 75.5,28.9 76.6,24.6 78.9,21.4 80.1,31.0 81.2,31.0 82.3,23.9 83.5,27.3 84.6,26.7 85.7,27.1 86.9,27.9 88.0,31.0 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,31.0 5.1,31.0 6.3,31.0 7.4,31.0 8.5,31.0 9.7,31.0 10.8,28.1 11.9,26.8 13.1,21.3 14.2,20.8 15.4,19.5 16.5,19.0 17.6,18.7 18.8,15.1 19.9,14.9 21.0,14.0 22.2,12.6 23.3,11.0 24.4,6.0 25.6,5.1 26.7,8.7 27.8,9.4 29.0,8.3 30.1,8.9 31.2,9.7 32.4,10.8 33.5,10.8 34.6,11.1 35.8,9.8 36.9,10.0 38.1,10.9 39.2,12.4 40.3,14.5 41.5,15.0 42.6,11.5 43.7,9.9 44.9,9.8 46.0,6.9 47.1,5.0 48.3,6.6 49.4,6.6 50.5,7.5 51.7,5.7 52.8,7.5 53.9,9.6 55.1,6.6 56.2,7.1 57.4,11.4 58.5,11.9 59.6,12.3 60.8,14.6 61.9,17.9 63.0,20.4 64.2,20.5 65.3,21.5 66.4,18.4 67.6,23.7 68.7,19.2 69.8,20.9 71.0,22.5 72.1,23.0 73.2,27.5 74.4,28.1 75.5,28.9 76.6,24.6 78.9,21.4 80.1,31.0 81.2,31.0 82.3,23.9 83.5,27.3 84.6,26.7 85.7,27.1 86.9,27.9 88.0,31.0" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#505068">—</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="COAL COKING">COAL COKING</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,20.9 5.1,23.9 6.3,24.2 7.4,21.6 8.5,26.0 9.7,31.0 10.8,29.3 11.9,29.2 13.1,28.5 14.2,28.2 15.4,27.4 16.5,28.3 17.6,26.6 18.8,20.8 19.9,19.3 21.0,21.6 22.2,24.3 23.3,22.9 24.4,24.3 25.6,20.0 26.7,22.0 27.8,23.5 29.0,24.1 30.1,23.0 31.2,21.5 32.4,19.8 33.5,19.5 34.6,16.9 35.8,16.0 36.9,16.5 38.1,16.5 39.2,17.3 40.3,19.2 41.5,16.1 42.6,11.5 43.7,9.4 44.9,7.1 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,6.2 55.1,5.0 56.2,5.0 57.4,5.0 58.5,10.9 59.6,7.2 60.8,9.3 61.9,10.4 63.0,17.2 64.2,19.9 65.3,14.4 66.4,18.8 67.6,22.9 68.7,18.7 69.8,18.6 71.0,21.3 72.1,22.2 73.2,25.0 74.4,24.0 75.5,28.8 76.6,28.1 78.9,24.4 80.1,31.0 81.2,29.5 82.3,22.8 83.5,26.2 84.6,25.3 85.7,25.8 86.9,25.7 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,20.9 5.1,23.9 6.3,24.2 7.4,21.6 8.5,26.0 9.7,31.0 10.8,29.3 11.9,29.2 13.1,28.5 14.2,28.2 15.4,27.4 16.5,28.3 17.6,26.6 18.8,20.8 19.9,19.3 21.0,21.6 22.2,24.3 23.3,22.9 24.4,24.3 25.6,20.0 26.7,22.0 27.8,23.5 29.0,24.1 30.1,23.0 31.2,21.5 32.4,19.8 33.5,19.5 34.6,16.9 35.8,16.0 36.9,16.5 38.1,16.5 39.2,17.3 40.3,19.2 41.5,16.1 42.6,11.5 43.7,9.4 44.9,7.1 46.0,5.0 47.1,5.0 48.3,5.0 49.4,5.0 50.5,5.0 51.7,5.0 52.8,5.0 53.9,6.2 55.1,5.0 56.2,5.0 57.4,5.0 58.5,10.9 59.6,7.2 60.8,9.3 61.9,10.4 63.0,17.2 64.2,19.9 65.3,14.4 66.4,18.8 67.6,22.9 68.7,18.7 69.8,18.6 71.0,21.3 72.1,22.2 73.2,25.0 74.4,24.0 75.5,28.8 76.6,28.1 78.9,24.4 80.1,31.0 81.2,29.5 82.3,22.8 83.5,26.2 84.6,25.3 85.7,25.8 86.9,25.7 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-21.3</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="ARGENTINA">ARGENTINA</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,5.0 5.1,5.0 6.3,5.0 7.4,5.0 8.5,5.0 9.7,5.0 10.8,5.0 11.9,5.0 13.1,5.0 14.2,5.0 15.4,5.0 16.5,5.0 17.6,5.0 18.8,5.0 19.9,5.0 21.0,5.0 22.2,5.0 23.3,5.5 24.4,5.0 25.6,6.5 26.7,8.4 27.8,8.4 29.0,11.7 30.1,12.9 31.2,8.2 32.4,9.7 33.5,11.1 34.6,11.2 35.8,11.9 36.9,12.1 38.1,13.1 39.2,14.3 40.3,14.8 41.5,16.5 42.6,15.6 43.7,20.5 44.9,22.9 46.0,19.5 47.1,19.2 48.3,19.8 49.4,21.0 50.5,23.9 51.7,24.7 52.8,23.8 53.9,24.2 55.1,19.9 56.2,18.4 57.4,18.4 58.5,16.7 59.6,11.7 60.8,13.2 61.9,13.0 63.0,15.4 64.2,17.7 65.3,18.9 66.4,21.5 67.6,26.4 68.7,23.4 69.8,21.9 71.0,20.4 72.1,22.0 73.2,27.2 74.4,27.0 75.5,28.5 76.6,28.6 78.9,24.9 80.1,27.1 81.2,25.3 82.3,25.0 83.5,26.7 84.6,26.8 85.7,27.9 86.9,28.4 88.0,31.0 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,5.0 5.1,5.0 6.3,5.0 7.4,5.0 8.5,5.0 9.7,5.0 10.8,5.0 11.9,5.0 13.1,5.0 14.2,5.0 15.4,5.0 16.5,5.0 17.6,5.0 18.8,5.0 19.9,5.0 21.0,5.0 22.2,5.0 23.3,5.5 24.4,5.0 25.6,6.5 26.7,8.4 27.8,8.4 29.0,11.7 30.1,12.9 31.2,8.2 32.4,9.7 33.5,11.1 34.6,11.2 35.8,11.9 36.9,12.1 38.1,13.1 39.2,14.3 40.3,14.8 41.5,16.5 42.6,15.6 43.7,20.5 44.9,22.9 46.0,19.5 47.1,19.2 48.3,19.8 49.4,21.0 50.5,23.9 51.7,24.7 52.8,23.8 53.9,24.2 55.1,19.9 56.2,18.4 57.4,18.4 58.5,16.7 59.6,11.7 60.8,13.2 61.9,13.0 63.0,15.4 64.2,17.7 65.3,18.9 66.4,21.5 67.6,26.4 68.7,23.4 69.8,21.9 71.0,20.4 72.1,22.0 73.2,27.2 74.4,27.0 75.5,28.5 76.6,28.6 78.9,24.9 80.1,27.1 81.2,25.3 82.3,25.0 83.5,26.7 84.6,26.8 85.7,27.9 86.9,28.4 88.0,31.0" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="31.0" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-55.0</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="CRYPTO NON MINING">CRYPTO NON MINING</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,30.4 5.1,30.4 6.3,30.4 7.4,30.4 8.5,30.4 9.7,30.4 10.8,30.4 11.9,30.4 13.1,30.4 14.2,30.4 15.4,30.4 16.5,30.4 17.6,30.4 18.8,30.4 19.9,30.4 21.0,30.4 22.2,30.4 23.3,30.4 24.4,30.4 25.6,30.4 26.7,30.4 27.8,30.4 29.0,30.4 30.1,30.4 31.2,30.4 32.4,30.4 33.5,30.4 34.6,30.4 35.8,30.4 36.9,30.4 38.1,30.4 39.2,30.4 40.3,30.4 41.5,30.4 42.6,24.5 43.7,22.2 44.9,24.0 46.0,18.4 47.1,19.3 48.3,18.3 49.4,15.3 50.5,11.2 51.7,10.3 52.8,5.0 53.9,13.1 55.1,13.9 56.2,15.5 57.4,18.3 58.5,19.9 59.6,20.0 60.8,19.5 61.9,26.5 63.0,28.3 64.2,30.4 65.3,30.4 66.4,30.4 67.6,30.4 68.7,30.4 69.8,30.4 71.0,30.4 72.1,30.4 73.2,30.4 74.4,30.4 75.5,30.4 76.6,30.4 78.9,29.7 80.1,30.4 81.2,30.4 82.3,30.0 83.5,30.3 84.6,30.6 85.7,31.0 86.9,30.5 88.0,30.4 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,30.4 5.1,30.4 6.3,30.4 7.4,30.4 8.5,30.4 9.7,30.4 10.8,30.4 11.9,30.4 13.1,30.4 14.2,30.4 15.4,30.4 16.5,30.4 17.6,30.4 18.8,30.4 19.9,30.4 21.0,30.4 22.2,30.4 23.3,30.4 24.4,30.4 25.6,30.4 26.7,30.4 27.8,30.4 29.0,30.4 30.1,30.4 31.2,30.4 32.4,30.4 33.5,30.4 34.6,30.4 35.8,30.4 36.9,30.4 38.1,30.4 39.2,30.4 40.3,30.4 41.5,30.4 42.6,24.5 43.7,22.2 44.9,24.0 46.0,18.4 47.1,19.3 48.3,18.3 49.4,15.3 50.5,11.2 51.7,10.3 52.8,5.0 53.9,13.1 55.1,13.9 56.2,15.5 57.4,18.3 58.5,19.9 59.6,20.0 60.8,19.5 61.9,26.5 63.0,28.3 64.2,30.4 65.3,30.4 66.4,30.4 67.6,30.4 68.7,30.4 69.8,30.4 71.0,30.4 72.1,30.4 73.2,30.4 74.4,30.4 75.5,30.4 76.6,30.4 78.9,29.7 80.1,30.4 81.2,30.4 82.3,30.0 83.5,30.3 84.6,30.6 85.7,31.0 86.9,30.5 88.0,30.4" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="30.4" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#505068">—</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="INSURANCE BROKERS">INSURANCE BROKERS</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,22.7 5.1,23.5 6.3,24.0 7.4,21.8 8.5,25.5 9.7,24.6 10.8,21.2 11.9,22.4 13.1,19.3 14.2,18.5 15.4,18.7 16.5,18.5 17.6,19.0 18.8,17.8 19.9,17.2 21.0,19.6 22.2,22.9 23.3,21.2 24.4,21.4 25.6,14.2 26.7,12.0 27.8,13.0 29.0,15.3 30.1,15.6 31.2,13.9 32.4,14.9 33.5,12.3 34.6,12.7 35.8,11.1 36.9,10.8 38.1,10.5 39.2,11.0 40.3,11.9 41.5,16.8 42.6,11.4 43.7,10.6 44.9,12.0 46.0,8.3 47.1,9.0 48.3,5.0 49.4,11.8 50.5,11.4 51.7,8.8 52.8,10.3 53.9,13.1 55.1,13.5 56.2,10.7 57.4,12.0 58.5,11.3 59.6,20.0 60.8,21.3 61.9,20.0 63.0,19.0 64.2,19.9 65.3,24.0 66.4,20.8 67.6,29.9 68.7,27.1 69.8,30.8 71.0,30.8 72.1,30.8 73.2,30.8 74.4,30.8 75.5,30.8 76.6,30.8 78.9,30.0 80.1,30.8 81.2,30.8 82.3,29.8 83.5,30.8 84.6,30.4 85.7,29.9 86.9,31.0 88.0,30.8 88.0,36" fill="rgba(255,74,106,0.10)" stroke="none"/><polyline points="4.0,22.7 5.1,23.5 6.3,24.0 7.4,21.8 8.5,25.5 9.7,24.6 10.8,21.2 11.9,22.4 13.1,19.3 14.2,18.5 15.4,18.7 16.5,18.5 17.6,19.0 18.8,17.8 19.9,17.2 21.0,19.6 22.2,22.9 23.3,21.2 24.4,21.4 25.6,14.2 26.7,12.0 27.8,13.0 29.0,15.3 30.1,15.6 31.2,13.9 32.4,14.9 33.5,12.3 34.6,12.7 35.8,11.1 36.9,10.8 38.1,10.5 39.2,11.0 40.3,11.9 41.5,16.8 42.6,11.4 43.7,10.6 44.9,12.0 46.0,8.3 47.1,9.0 48.3,5.0 49.4,11.8 50.5,11.4 51.7,8.8 52.8,10.3 53.9,13.1 55.1,13.5 56.2,10.7 57.4,12.0 58.5,11.3 59.6,20.0 60.8,21.3 61.9,20.0 63.0,19.0 64.2,19.9 65.3,24.0 66.4,20.8 67.6,29.9 68.7,27.1 69.8,30.8 71.0,30.8 72.1,30.8 73.2,30.8 74.4,30.8 75.5,30.8 76.6,30.8 78.9,30.0 80.1,30.8 81.2,30.8 82.3,29.8 83.5,30.8 84.6,30.4 85.7,29.9 86.9,31.0 88.0,30.8" fill="none" stroke="#ff4a6a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="30.8" r="2.2" fill="#ff4a6a"/></svg></div>
+      <div class="sec-trend" style="color:#ff4a6a">-7.8</div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-card-top">
+        <div class="sec-name" title="QUANTUM COMPUTING">QUANTUM COMPUTING</div>
+        <div class="sec-score" style="color:#ff4a6a">33.7</div>
+      </div>
+      <div class="sec-spark"><svg width="92" height="36" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 36"><polygon points="4.0,36 4.0,30.6 5.1,30.6 6.3,30.6 7.4,30.6 8.5,30.6 9.7,30.6 10.8,30.6 11.9,30.6 13.1,30.6 14.2,30.6 15.4,30.6 16.5,30.6 17.6,30.6 18.8,30.6 19.9,30.6 21.0,30.6 22.2,30.6 23.3,30.6 24.4,30.6 25.6,30.6 26.7,30.6 27.8,30.6 29.0,30.6 30.1,30.6 31.2,30.6 32.4,30.6 33.5,30.6 34.6,30.6 35.8,30.6 36.9,30.6 38.1,30.6 39.2,30.6 40.3,30.6 41.5,30.6 42.6,23.0 43.7,17.4 44.9,22.5 46.0,17.3 47.1,20.0 48.3,15.1 49.4,20.1 50.5,9.9 51.7,11.3 52.8,5.0 53.9,13.2 55.1,18.9 56.2,12.7 57.4,21.3 58.5,30.6 59.6,25.5 60.8,27.7 61.9,30.6 63.0,30.6 64.2,30.6 65.3,30.6 66.4,30.6 67.6,30.6 68.7,30.6 69.8,30.6 71.0,30.6 72.1,30.6 73.2,30.6 74.4,30.6 75.5,30.6 76.6,30.6 78.9,28.3 80.1,30.6 81.2,30.6 82.3,27.5 83.5,27.9 84.6,28.5 85.7,31.0 86.9,28.3 88.0,30.6 88.0,36" fill="rgba(0,212,170,0.13)" stroke="none"/><polyline points="4.0,30.6 5.1,30.6 6.3,30.6 7.4,30.6 8.5,30.6 9.7,30.6 10.8,30.6 11.9,30.6 13.1,30.6 14.2,30.6 15.4,30.6 16.5,30.6 17.6,30.6 18.8,30.6 19.9,30.6 21.0,30.6 22.2,30.6 23.3,30.6 24.4,30.6 25.6,30.6 26.7,30.6 27.8,30.6 29.0,30.6 30.1,30.6 31.2,30.6 32.4,30.6 33.5,30.6 34.6,30.6 35.8,30.6 36.9,30.6 38.1,30.6 39.2,30.6 40.3,30.6 41.5,30.6 42.6,23.0 43.7,17.4 44.9,22.5 46.0,17.3 47.1,20.0 48.3,15.1 49.4,20.1 50.5,9.9 51.7,11.3 52.8,5.0 53.9,13.2 55.1,18.9 56.2,12.7 57.4,21.3 58.5,30.6 59.6,25.5 60.8,27.7 61.9,30.6 63.0,30.6 64.2,30.6 65.3,30.6 66.4,30.6 67.6,30.6 68.7,30.6 69.8,30.6 71.0,30.6 72.1,30.6 73.2,30.6 74.4,30.6 75.5,30.6 76.6,30.6 78.9,28.3 80.1,30.6 81.2,30.6 82.3,27.5 83.5,27.9 84.6,28.5 85.7,31.0 86.9,28.3 88.0,30.6" fill="none" stroke="#00d4aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88.0" cy="30.6" r="2.2" fill="#00d4aa"/></svg></div>
+      <div class="sec-trend" style="color:#505068">—</div>
+    </div>
+  </div>
+</div>
+<!-- ── /Sector Performance ───────────────────────────────────────────── -->
+
+<script>
+(function() {
+  var ctx = document.getElementById('sectorTrendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["Nov 13", "Nov 14", "Nov 17", "Nov 18", "Nov 19", "Nov 20", "Nov 21", "Nov 24", "Nov 25", "Nov 26", "Nov 28", "Dec 01", "Dec 02", "Dec 03", "Dec 04", "Dec 05", "Dec 08", "Dec 09", "Dec 10", "Dec 11", "Dec 12", "Dec 15", "Dec 16", "Dec 17", "Dec 18", "Dec 19", "Dec 22", "Dec 23", "Dec 24", "Dec 26", "Dec 29", "Dec 30", "Dec 31", "Jan 02", "Jan 05", "Jan 06", "Jan 07", "Jan 08", "Jan 09", "Jan 12", "Jan 13", "Jan 14", "Jan 15", "Jan 16", "Jan 20", "Jan 21", "Jan 22", "Jan 23", "Jan 26", "Jan 27", "Jan 28", "Jan 29", "Jan 30", "Feb 02", "Feb 03", "Feb 04", "Feb 05", "Feb 06", "Feb 09", "Feb 10", "Feb 11", "Feb 12", "Feb 13", "Feb 17", "Feb 18", "Feb 19", "Feb 20", "Feb 23", "Feb 24", "Feb 25", "Feb 26", "Feb 27", "Mar 02", "Mar 03", "Mar 04"],
+      datasets: [{"label": "OPTICAL NETWORKING", "data": [79.4, 78.3, 73.5, 69.4, 71.9, 59.7, 63.5, 74.8, 77.4, 83.5, 86.3, 81.2, 83.1, 83.5, 88.2, 87.6, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 81.4, 74.2, 81.2, 88.5, 88.7, 88.7, 88.5, 87.1, 81.0, 81.3, 77.1, 83.3, 78.5, 88.7, 88.7, 84.5, 83.9, 82.9, 87.7, 85.1, 88.7, 88.2, 86.1, 88.1, 85.2, 77.7, 78.3, 85.6, 87.7, 88.0, 87.3, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, null, null, 88.7, 88.7, null, null, null, null, 78.6, 88.7], "borderColor": "#00d4aa", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#00d4aa", "borderWidth": 2, "spanGaps": true}, {"label": "MARINE SHIPPING", "data": [67.3, 69.0, 69.3, 69.6, 66.7, 61.4, 65.1, 66.5, 73.5, 73.8, 77.3, 75.7, 73.9, 80.3, 80.7, 78.6, 76.3, 76.2, 75.3, 74.4, 67.7, 71.1, 67.5, 67.8, 66.0, 64.7, 66.2, 68.1, 67.2, 67.8, 68.0, 66.0, 65.1, 66.6, 66.8, 72.9, 75.1, 77.5, 73.8, 75.7, 72.4, 76.9, 80.6, 76.3, 75.7, 82.2, 81.3, 80.8, 82.3, 83.9, 84.7, 84.2, 80.3, 82.8, 81.7, 80.9, 73.2, 79.0, 79.6, 77.7, 82.3, 75.9, 81.2, 88.7, 88.7, null, 75.4, 88.7, 88.7, 76.5, 75.6, 76.8, 77.6, 78.8, 88.7], "borderColor": "#4a9eff", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#4a9eff", "borderWidth": 2, "spanGaps": true}, {"label": "OIL AND GAS DOWNSTREAM", "data": [68.6, 74.8, 70.0, 74.8, 67.3, 57.6, 60.2, 59.6, 59.5, 59.8, 61.8, 64.6, 60.9, 58.7, 56.5, 54.5, 51.2, 51.4, 51.0, 48.1, 46.0, 45.3, 36.1, 35.4, 33.7, 33.7, 33.7, 33.7, 33.7, 33.7, 33.7, 33.7, 33.7, 33.7, 40.6, 35.5, 36.5, 45.6, 44.2, 41.5, 42.6, 46.6, 44.5, 39.9, 39.9, 47.5, 46.2, 46.7, 42.8, 44.4, 45.9, 48.3, 50.5, 49.4, 59.1, 66.3, 65.9, 73.8, 72.7, 70.4, 74.7, 66.3, 71.2, 69.3, 65.5, null, 54.3, 60.4, 62.8, 55.5, 51.9, 54.8, 57.0, 59.1, 83.4], "borderColor": "#f5a623", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#f5a623", "borderWidth": 2, "spanGaps": true}, {"label": "OIL AND GAS UPSTREAM", "data": [60.5, 62.8, 58.6, 60.8, 58.7, 55.2, 56.1, 57.5, 55.8, 58.3, 61.8, 62.8, 59.4, 66.2, 66.2, 66.7, 62.6, 62.2, 63.2, 59.3, 57.2, 54.9, 48.2, 53.8, 48.7, 50.4, 51.5, 52.6, 51.1, 50.1, 52.5, 54.3, 52.1, 55.6, 52.5, 49.2, 46.0, 51.0, 50.3, 51.7, 56.3, 59.0, 56.1, 56.8, 55.3, 61.9, 60.8, 62.4, 62.6, 64.8, 67.4, 71.4, 71.9, 63.2, 68.0, 73.4, 67.2, 73.5, 74.1, 72.7, 79.7, 72.3, 76.3, 71.7, 77.9, null, 69.6, 80.7, 80.7, 68.8, 67.0, 67.8, 70.7, 71.4, 82.0], "borderColor": "#ff4a6a", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#ff4a6a", "borderWidth": 2, "spanGaps": true}, {"label": "OIL AND GAS MIDSTREAM", "data": [57.1, 60.0, 57.3, 58.1, 57.5, 56.3, 57.8, 56.5, 57.0, 57.2, 59.1, 58.8, 56.7, 59.9, 61.7, 61.5, 60.6, 58.9, 58.6, 58.9, 58.3, 57.7, 53.5, 55.6, 53.1, 52.8, 54.1, 55.2, 54.7, 54.2, 54.7, 55.1, 54.3, 55.1, 53.7, 51.7, 54.5, 57.1, 58.2, 58.7, 63.1, 63.6, 62.6, 64.2, 62.0, 64.0, 63.4, 65.0, 64.9, 67.6, 70.9, 72.3, 70.0, 68.2, 71.9, 72.0, 71.6, 73.7, 74.3, 74.2, 76.8, 74.1, 79.6, 78.2, 80.0, null, 73.5, 80.8, 80.9, 74.3, 73.5, 74.9, 75.5, 76.2, 80.4], "borderColor": "#a855f7", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#a855f7", "borderWidth": 2, "spanGaps": true}, {"label": "LIQUEFIED NATURAL GAS", "data": [47.7, 51.0, 49.1, 48.9, 47.6, 46.0, 46.8, 45.4, 46.2, 49.2, 51.9, 50.4, 48.8, 52.8, 55.2, 53.4, 51.7, 51.8, 47.0, 47.2, 46.2, 44.8, 42.9, 44.8, 45.0, 47.4, 49.0, 51.4, 51.4, 50.3, 51.9, 52.3, 51.4, 54.3, 54.3, 50.0, 50.6, 55.5, 54.0, 54.1, 59.7, 62.4, 61.0, 65.2, 61.1, 65.5, 68.7, 70.3, 67.5, 67.4, 70.9, 72.3, 71.9, 66.8, 70.5, 69.5, 67.5, 72.2, 75.0, 76.0, 77.9, 73.9, 77.3, 74.8, 78.0, null, 71.1, 77.9, 75.4, 72.2, 71.5, 72.0, 73.5, 74.4, 78.7], "borderColor": "#06b6d4", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#06b6d4", "borderWidth": 2, "spanGaps": true}, {"label": "GOLD", "data": [61.5, 58.6, 54.9, 56.8, 58.8, 49.2, 50.3, 60.9, 63.1, 72.4, 76.6, 75.2, 71.4, 70.3, 71.2, 68.0, 62.2, 68.4, 71.2, 78.1, 75.6, 74.0, 73.8, 75.3, 75.3, 79.8, 86.3, 86.9, 84.8, 86.8, 73.8, 74.8, 72.1, 70.5, 76.5, 84.2, 82.5, 82.3, 83.6, 88.7, 88.7, 88.4, 87.6, 87.6, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 72.0, 69.7, 77.9, 75.8, 61.4, 73.0, 88.1, 88.3, 88.7, 71.6, 83.7, 75.6, 78.7, null, 69.3, 88.4, 88.7, 71.9, 69.5, 70.1, 73.9, 75.1, 74.9], "borderColor": "#f97316", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#f97316", "borderWidth": 2, "spanGaps": true}, {"label": "OIL AND GAS EQUIPMENT AND SERVICES", "data": [60.5, 63.6, 58.4, 60.5, 58.6, 53.3, 57.2, 57.5, 60.2, 59.9, 61.8, 63.9, 62.8, 72.4, 73.6, 72.1, 69.1, 71.8, 73.5, 73.2, 66.9, 65.7, 55.8, 57.3, 53.5, 54.5, 57.1, 57.1, 55.4, 54.0, 54.2, 55.8, 53.5, 59.8, 67.3, 66.1, 62.8, 69.3, 69.3, 67.6, 72.8, 73.9, 74.8, 74.0, 72.4, 82.0, 82.6, 80.6, 81.7, 84.4, 78.8, 84.3, 82.4, 82.2, 83.5, 83.0, 77.4, 86.3, 88.7, 85.0, 88.7, 83.2, 86.4, 84.1, 88.3, null, 74.5, 87.1, 88.7, 74.9, 72.4, 72.9, 72.9, 72.2, 74.3], "borderColor": "#84cc16", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#84cc16", "borderWidth": 2, "spanGaps": true}, {"label": "SILVER", "data": [54.5, 51.3, 46.7, 47.0, 49.1, 38.5, 39.8, 49.9, 51.7, 63.9, 77.8, 74.9, 70.4, 67.6, 65.6, 65.1, 60.3, 70.9, 73.6, 82.7, 77.8, 77.9, 77.4, 78.8, 76.9, 83.8, 88.7, 88.7, 86.4, 88.7, 78.7, 81.0, 76.2, 73.1, 82.4, 88.7, 85.3, 84.8, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 70.5, 67.6, 77.2, 76.6, 56.3, 69.2, 80.9, 81.0, 84.8, 63.1, 75.2, 67.2, 72.6, null, 67.4, 88.7, 88.7, 71.5, 70.8, 71.7, 74.7, 75.3, 73.4], "borderColor": "#ec4899", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#ec4899", "borderWidth": 2, "spanGaps": true}, {"label": "ALUMINUM", "data": [66.0, 61.8, 56.0, 53.4, 55.0, 51.0, 54.9, 60.3, 64.6, 69.6, 72.1, 71.1, 71.2, 82.6, 83.0, 79.6, 76.6, 74.5, 78.8, 87.3, 82.6, 81.2, 84.1, 81.4, 86.1, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 88.7, 80.8, 88.7, 88.7, 88.7, 80.0, 88.7, 88.7, 88.7, 88.7, 83.4, 74.7, 74.8, 82.1, null, 78.4, 72.9, 74.3, 78.2, 76.7, 76.2, 75.4, 78.4, 72.4], "borderColor": "#eab308", "backgroundColor": "transparent", "tension": 0.3, "pointRadius": 3, "pointBackgroundColor": "#eab308", "borderWidth": 2, "spanGaps": true}]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'right',
+          labels: { color: '#8888a0', font: { size: 10 }, boxWidth: 10,
+                    padding: 8, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: '#10101a', borderColor: '#2a2a44', borderWidth: 1,
+          titleColor: '#e8e8f0', bodyColor: '#8888a0',
+          callbacks: {
+            label: function(c) {
+              if (c.parsed.y === null || c.parsed.y === undefined) return null;
+              return ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505068', font: { size: 10 } } },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#505068', font: { size: 10 } },
+          min: 35, max: 85
+        }
+      }
+    }
+  });
+})();
+</script>
+
+
+<!-- ── Footer ────────────────────────────────────────────────────────── -->
 <div class="footer">
-    Ratatouille Screener &nbsp;&middot;&nbsp; Local Archive
+    Ratatouille Screener &nbsp;&middot;&nbsp; Updated Mar 04, 2026 at 15:48
 </div>
 
 </body>
