@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ratatouille &#8212; Market Intelligence Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-primary:   #080810;
+    --bg-card:      #10101a;
+    --bg-card-hover:#18182a;
+    --border-subtle:#1c1c30;
+    --border-accent:#2a2a44;
+    --text-primary: #e8e8f0;
+    --text-secondary:#8888a0;
+    --text-muted:   #505068;
+    --accent-green: #00d4aa;
+    --accent-gold:  #f5a623;
+    --accent-blue:  #4a9eff;
+    --accent-red:   #ff4a6a;
+    --radius:       16px;
+    --radius-sm:    10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg-primary);
+    color:var(--text-primary);
+    min-height:100vh;
+    line-height:1.6;
+}
+
+/* ── Hero ── */
+.hero {
+    background:linear-gradient(135deg,#0a0a18 0%,#100e22 50%,#0a1018 100%);
+    border-bottom:1px solid var(--border-subtle);
+    padding:72px 40px 64px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+}
+.hero::before {
+    content:'';
+    position:absolute; inset:0;
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 0%,  rgba(74,158,255,0.07),transparent),
+        radial-gradient(ellipse 60% 40% at 15% 100%,rgba(0,212,170,0.05), transparent),
+        radial-gradient(ellipse 50% 40% at 85% 80%, rgba(139,92,246,0.04),transparent);
+    pointer-events:none;
+}
+.hero-eyebrow {
+    font-size:.7rem; font-weight:600; letter-spacing:3px;
+    text-transform:uppercase; color:var(--accent-blue);
+    margin-bottom:16px; opacity:.8;
+}
+.hero-title {
+    font-size:4.5rem; font-weight:800; letter-spacing:-3px; line-height:1;
+    background:linear-gradient(135deg,#e8e8f0 0%,#aaaacc 60%,#8888aa 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom:14px;
+}
+.hero-subtitle {
+    font-size:1rem; color:var(--text-secondary); margin-bottom:40px;
+}
+.hero-meta {
+    display:flex; justify-content:center; align-items:center;
+    gap:40px; flex-wrap:wrap;
+}
+.hero-stat-val {
+    font-family:'JetBrains Mono',monospace;
+    font-size:2.2rem; font-weight:700; display:block;
+    background:linear-gradient(135deg,var(--accent-green),var(--accent-blue));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.hero-stat-label {
+    font-size:.7rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
+    margin-top:2px;
+}
+.hero-divider {
+    width:1px; height:44px; background:var(--border-accent);
+}
+
+/* ── Main ── */
+.main {
+    max-width:1000px; margin:0 auto; padding:52px 24px 80px;
+}
+.section-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+}
+.section-title {
+    font-size:.78rem; font-weight:600; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:1.2px;
+}
+.last-updated {
+    font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+}
+
+/* ── Report Cards ── */
+.reports-grid { display:flex; flex-direction:column; gap:12px; }
+
+.report-card {
+    background:var(--bg-card);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius);
+    padding:22px 28px;
+    text-decoration:none; color:inherit; display:block;
+    transition:all .2s ease; position:relative; overflow:hidden;
+}
+.report-card::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,transparent,rgba(74,158,255,.025));
+    opacity:0; transition:opacity .2s;
+}
+.report-card:hover {
+    border-color:var(--border-accent);
+    background:var(--bg-card-hover);
+    transform:translateY(-2px);
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.report-card:hover::after { opacity:1; }
+.report-card--latest {
+    border-color:rgba(0,212,170,.28);
+    background:linear-gradient(135deg,#10101a,#0d1a18);
+    box-shadow:0 0 50px rgba(0,212,170,.07);
+}
+.report-card--latest:hover {
+    border-color:rgba(0,212,170,.5);
+    box-shadow:0 12px 50px rgba(0,212,170,.12);
+}
+
+.report-card-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
+}
+.report-date-info { display:flex; align-items:center; gap:14px; }
+.report-date {
+    font-size:1.08rem; font-weight:600; color:var(--text-primary);
+}
+.latest-badge {
+    font-size:.63rem; font-weight:700; letter-spacing:1px;
+    color:var(--accent-green); background:rgba(0,212,170,.1);
+    border:1px solid rgba(0,212,170,.2); border-radius:20px;
+    padding:3px 12px; text-transform:uppercase;
+}
+.report-arrow {
+    color:var(--text-muted); font-size:1.15rem;
+    transition:all .2s; font-family:'JetBrains Mono',monospace;
+}
+.report-card:hover .report-arrow { color:var(--accent-green); transform:translateX(6px); }
+.report-card--latest .report-arrow { color:var(--accent-green); }
+
+.report-stats {
+    display:grid; grid-template-columns:repeat(5,1fr); gap:10px;
+}
+.report-stat {
+    background:rgba(255,255,255,.02); border-radius:var(--radius-sm);
+    padding:10px 12px; border:1px solid var(--border-subtle);
+}
+.rstat-label {
+    font-size:.62rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--text-muted); margin-bottom:5px;
+}
+.rstat-value {
+    font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:700;
+}
+.stat-green { color:var(--accent-green); }
+.stat-gold  { color:var(--accent-gold);  }
+.stat-blue  { color:var(--accent-blue);  }
+.stat-red   { color:var(--accent-red);   }
+
+/* ── Empty State ── */
+.empty-state {
+    text-align:center; padding:80px 20px; color:var(--text-muted);
+}
+.empty-state-icon  { font-size:3rem; margin-bottom:16px; }
+.empty-state-text  { font-size:1rem; }
+
+/* ── Footer ── */
+.footer {
+    border-top:1px solid var(--border-subtle); padding:28px 40px;
+    text-align:center; font-size:.7rem; color:var(--text-muted);
+    letter-spacing:.3px;
+}
+
+/* ── Responsive ── */
+@media (max-width:640px) {
+    .report-stats  { grid-template-columns:repeat(3,1fr); }
+    .hero-divider  { display:none; }
+    .hero-title    { font-size:3rem; letter-spacing:-1px; }
+    .hero          { padding:48px 20px 40px; }
+    .report-card   { padding:18px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="hero-eyebrow">Market Intelligence System</div>
+    <div class="hero-title">Ratatouille</div>
+    <div class="hero-subtitle">7-Factor Momentum Screener &mdash; Full US Market Universe</div>
+    <div class="hero-meta">
+        <div class="hero-stat">
+            <span class="hero-stat-val">7</span>
+            <div class="hero-stat-label">Total Runs</div>
+        </div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat">
+            <span class="hero-stat-val">7K+</span>
+            <div class="hero-stat-label">Tickers / Run</div>
+        </div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat">
+            <span class="hero-stat-val">7</span>
+            <div class="hero-stat-label">Factors</div>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="section-header">
+        <div class="section-title">Run Archive</div>
+        <div class="last-updated">Updated Mar 04, 2026 at 01:09</div>
+    </div>
+    <div class="reports-grid">
+        
+        <a href="reports/2026-03-03.html" class="report-card report-card--latest">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Tuesday, Mar 03, 2026</div>
+                    <span class="latest-badge">● LATEST</span>
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,173</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">ERAS</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">89.5</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">504</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">481</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-03-02.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Monday, Mar 02, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,157</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">ERAS</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">89.7</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">495</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">491</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-02-27.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Friday, Feb 27, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,155</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">FTAI</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">88.8</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">438</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">541</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-02-26.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Thursday, Feb 26, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,167</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">SLGL</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">88.1</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">433</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">606</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-02-25.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Wednesday, Feb 25, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,665</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">ALSN</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">87.8</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">590</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">579</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-02-20.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Friday, Feb 20, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,707</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">LIND</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">87.7</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">619</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">634</div>
+                </div>
+            </div>
+        </a>
+        <a href="reports/2026-02-19.html" class="report-card">
+            <div class="report-card-header">
+                <div class="report-date-info">
+                    <div class="report-date">Thursday, Feb 19, 2026</div>
+                    
+                </div>
+                <div class="report-arrow">&#8594;</div>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat">
+                    <div class="rstat-label">Scanned</div>
+                    <div class="rstat-value stat-blue">6,707</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Pick</div>
+                    <div class="rstat-value stat-gold">MLKN</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">Top Score</div>
+                    <div class="rstat-value stat-green">87.6</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128994; Long</div>
+                    <div class="rstat-value stat-green">602</div>
+                </div>
+                <div class="report-stat">
+                    <div class="rstat-label">&#128308; Short</div>
+                    <div class="rstat-value stat-red">610</div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="footer">
+    Ratatouille Screener &nbsp;&middot;&nbsp; Local Archive
+</div>
+
+</body>
+</html>
