@@ -72,12 +72,13 @@ def get_tickers_and_sectors(csv_path):
 # Price download
 # ─────────────────────────────────────────────────────────────────────────────
 
-def download_price_history(tickers, period='6mo', batch_size=400):
+def download_price_history(tickers, period='6mo', batch_size=400, max_retries=3):
     """
     Bulk-download adjusted closing prices via yfinance.
     Returns a DataFrame (dates × tickers).
-    Silently drops tickers that fail or return no data.
+    Failed batches are retried up to max_retries times with exponential backoff.
     """
+    import time
     import yfinance as yf
     import pandas as pd
 
@@ -89,45 +90,70 @@ def download_price_history(tickers, period='6mo', batch_size=400):
     print(f'  {len(clean):,} tickers queued in batches of {batch_size}')
 
     all_closes = []
+    failed_batches = []     # (batch_num, tickers) for final report
     total_batches = (len(clean) + batch_size - 1) // batch_size
 
     for i in range(0, len(clean), batch_size):
         batch     = clean[i: i + batch_size]
         batch_num = i // batch_size + 1
-        print(f'    batch {batch_num}/{total_batches} ({len(batch)} tickers)…', end=' ', flush=True)
 
-        try:
-            raw = yf.download(
-                batch, period=period,
-                auto_adjust=True, threads=True, progress=False
-            )
+        success = False
+        for attempt in range(1, max_retries + 1):
+            attempt_str = f' (retry {attempt}/{max_retries})' if attempt > 1 else ''
+            print(f'    batch {batch_num}/{total_batches} ({len(batch)} tickers){attempt_str}…',
+                  end=' ', flush=True)
 
-            if raw.empty:
-                print('empty')
-                continue
+            try:
+                raw = yf.download(
+                    batch, period=period,
+                    auto_adjust=True, threads=True, progress=False
+                )
 
-            # yfinance returns multi-level columns when batch > 1
-            if isinstance(raw.columns, pd.MultiIndex):
-                if 'Close' in raw.columns.get_level_values(0):
-                    close_df = raw['Close']
+                if raw.empty:
+                    print('empty')
+                    if attempt < max_retries:
+                        wait = 5 * (2 ** (attempt - 1))
+                        print(f'      ↳ waiting {wait}s before retry…')
+                        time.sleep(wait)
+                        continue
+                    break
+
+                # yfinance returns multi-level columns when batch > 1
+                if isinstance(raw.columns, pd.MultiIndex):
+                    if 'Close' in raw.columns.get_level_values(0):
+                        close_df = raw['Close']
+                    else:
+                        print('no Close column')
+                        break
                 else:
-                    print('no Close column')
-                    continue
-            else:
-                # Single ticker
-                if 'Close' in raw.columns:
-                    close_df = raw[['Close']].rename(columns={'Close': batch[0]})
-                else:
-                    print('no Close column')
-                    continue
+                    # Single ticker
+                    if 'Close' in raw.columns:
+                        close_df = raw[['Close']].rename(columns={'Close': batch[0]})
+                    else:
+                        print('no Close column')
+                        break
 
-            all_closes.append(close_df)
-            n_ok = close_df.notna().any().sum()
-            print(f'ok ({n_ok} valid)')
+                all_closes.append(close_df)
+                n_ok = close_df.notna().any().sum()
+                print(f'ok ({n_ok} valid)')
+                success = True
+                break
 
-        except Exception as e:
-            print(f'ERROR: {e}')
-            continue
+            except Exception as e:
+                print(f'ERROR: {e}')
+                if attempt < max_retries:
+                    wait = 5 * (2 ** (attempt - 1))
+                    print(f'      ↳ waiting {wait}s before retry…')
+                    time.sleep(wait)
+
+        if not success:
+            failed_batches.append((batch_num, batch))
+            print(f'      ✗ batch {batch_num} failed after {max_retries} attempts')
+
+    # Report failed batches
+    if failed_batches:
+        n_failed_tickers = sum(len(b) for _, b in failed_batches)
+        print(f'\n  ⚠ {len(failed_batches)} batch(es) failed ({n_failed_tickers:,} tickers lost)')
 
     if not all_closes:
         raise RuntimeError('No price data downloaded — check internet connection and yfinance install')

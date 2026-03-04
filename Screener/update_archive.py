@@ -369,23 +369,8 @@ def build_latest_report_html(reports_with_stats):
 
 def build_breadth_html(market_history):
     """
-    Market Breadth section: 5 KPI cards + dual-panel chart.
-
-    Signals:
-    - Regime classification: RISK-ON / BULLISH / NEUTRAL / CAUTION / RISK-OFF
-      based on Long-Short spread + L/S ratio composite
-    - Top chart (240px): Long% / Short% lines + MA10 dashed + regime background bands
-      per column + P25 / Median / P75 reference lines
-    - Bottom chart (150px): Long-Short spread as colored bar chart
-      (green >8, blue 5-8, yellow 2-5, orange 0-2, red <0)
-    - Tooltip shows spread + ratio on hover
-
-    Key insight:
-    - Spread > 8  AND ratio > 2.0 → RISK-ON  (strong long bias)
-    - Spread 5-8  AND ratio > 1.5 → BULLISH  (moderate long bias)
-    - Spread 2-5               → NEUTRAL  (cautious)
-    - Spread 0-2               → CAUTION  (reduce exposure)
-    - Spread < 0               → RISK-OFF (short bias)
+    Market Breadth section: 4 stats (Bias, Long%, Short%, Sector Avg)
+    plus a full-width breadth trend chart.
     """
     if not market_history:
         return ''
@@ -402,24 +387,11 @@ def build_breadth_html(market_history):
     long_breadth  = [h['long_breadth_pct']  for h in history]
     short_breadth = [h['short_breadth_pct'] for h in history]
 
-    # ── Derived series ────────────────────────────────────────────────────────
-    spreads = [round(h['long_breadth_pct'] - h['short_breadth_pct'], 2) for h in history]
+    latest = history[-1]
+    l_pct  = latest['long_breadth_pct']
+    s_pct  = latest['short_breadth_pct']
+    s_avg  = latest.get('sector_avg', 0.0)
 
-    # 10-day moving average of long breadth
-    ma10 = []
-    for i in range(len(long_breadth)):
-        window = long_breadth[max(0, i - 9):i + 1]
-        ma10.append(round(sum(window) / len(window), 2))
-
-    # ── Latest snapshot ───────────────────────────────────────────────────────
-    latest    = history[-1]
-    l_pct     = latest['long_breadth_pct']
-    s_pct     = latest['short_breadth_pct']
-    s_avg     = latest.get('sector_avg', 0.0)
-    spread_val = round(l_pct - s_pct, 1)
-    ratio      = l_pct / s_pct if s_pct > 0 else 99.0
-
-    # ── Day-over-day deltas ───────────────────────────────────────────────────
     def delta_fmt(cur, prev):
         d = round(cur - prev, 1)
         if d > 0:  return f'+{d}', '#00d4aa'
@@ -427,63 +399,48 @@ def build_breadth_html(market_history):
         return '—', '#505068'
 
     if len(history) >= 2:
-        prev       = history[-2]
+        prev = history[-2]
         l_dstr, l_dcol = delta_fmt(l_pct, prev['long_breadth_pct'])
         s_dstr, s_dcol = delta_fmt(s_pct, prev['short_breadth_pct'])
         a_dstr, a_dcol = delta_fmt(s_avg,  prev.get('sector_avg', s_avg))
-        prev_s_str = f"{prev['short_breadth_pct']}%"
     else:
         l_dstr = s_dstr = a_dstr = '—'
         l_dcol = s_dcol = a_dcol = '#505068'
-        prev_s_str = '—'
 
-    # ── 5-day momentum ────────────────────────────────────────────────────────
-    spread_5d_ago = spreads[-6]      if len(spreads) >= 6      else spreads[0]
-    long_5d_ago   = long_breadth[-6] if len(long_breadth) >= 6 else long_breadth[0]
-    spread_mom    = round(spread_val - spread_5d_ago, 1)
-    long_mom      = round(l_pct - long_5d_ago, 1)
+    # ── Spread series ──────────────────────────────────────────────────────
+    spreads = [round(h['long_breadth_pct'] - h['short_breadth_pct'], 2) for h in history]
+    spread_val = spreads[-1]
 
-    if   spread_mom > 0.5:  smom_str, smom_col = f'+{spread_mom}', '#00d4aa'
-    elif spread_mom < -0.5: smom_str, smom_col = str(spread_mom),  '#ff4a6a'
-    else:                   smom_str, smom_col = '—',              '#505068'
-
-    if   long_mom > 0.5:  lmom_str, lmom_col = f'+{long_mom}', '#00d4aa'
-    elif long_mom < -0.5: lmom_str, lmom_col = str(long_mom),  '#ff4a6a'
-    else:                 lmom_str, lmom_col = '—',            '#505068'
-
-    # ── Regime classification (composite: spread + ratio) ─────────────────────
-    if spread_val > 8 and ratio > 2.0:
-        regime_label = 'RISK-ON'
-        regime_color = '#00d4aa'
-        regime_sub   = 'Strong long bias'
-    elif spread_val > 5 and ratio > 1.5:
-        regime_label = 'BULLISH'
-        regime_color = '#4a9eff'
-        regime_sub   = 'Moderate long bias'
-    elif spread_val > 2:
-        regime_label = 'NEUTRAL'
-        regime_color = '#f5a623'
-        regime_sub   = 'Cautious / mixed'
-    elif spread_val >= 0:
-        regime_label = 'CAUTION'
-        regime_color = '#f97316'
-        regime_sub   = 'Reduce exposure'
+    # Spread delta (vs previous day)
+    if len(spreads) >= 2:
+        sp_dstr, sp_dcol = delta_fmt(spread_val, spreads[-2])
     else:
-        regime_label = 'RISK-OFF'
-        regime_color = '#ff4a6a'
-        regime_sub   = 'Short bias active'
+        sp_dstr, sp_dcol = '—', '#505068'
 
-    # ── Historical percentile of current spread ────────────────────────────────
-    n_entries  = len(spreads)
-    spread_pct = round(sum(1 for s in spreads if s <= spread_val) / n_entries * 100)
-    spread_ctx = f'{spread_pct}th percentile'
+    # Spread 5-day momentum
+    spread_5d_ago = spreads[-6] if len(spreads) >= 6 else spreads[0]
+    spread_mom    = round(spread_val - spread_5d_ago, 1)
+    sp_mom_str    = f'+{spread_mom}' if spread_mom > 0 else str(spread_mom)
+
+    ratio = l_pct / s_pct if s_pct > 0 else 99
+
+    # Regime classification (composite of spread + ratio)
+    if spread_val > 8 and ratio > 2.0:
+        regime_label, regime_color, regime_sub = 'RISK-ON',  '#00d4aa', 'Strong long bias'
+    elif spread_val > 5 and ratio > 1.5:
+        regime_label, regime_color, regime_sub = 'BULLISH',  '#4a9eff', 'Moderate long bias'
+    elif spread_val > 2:
+        regime_label, regime_color, regime_sub = 'NEUTRAL',  '#f5a623', 'Cautious / mixed'
+    elif spread_val >= 0:
+        regime_label, regime_color, regime_sub = 'CAUTION',  '#f97316', 'Reduce exposure'
+    else:
+        regime_label, regime_color, regime_sub = 'RISK-OFF', '#ff4a6a', 'Short bias active'
 
     latest_date_display = format_date_display(latest['date'])
 
     jdates   = json.dumps(display_dates)
     jlong    = json.dumps(long_breadth)
     jshort   = json.dumps(short_breadth)
-    jma10    = json.dumps(ma10)
     jspreads = json.dumps(spreads)
 
     return f"""
@@ -495,147 +452,64 @@ def build_breadth_html(market_history):
   </div>
 
   <div class="br-stats-row">
-
-    <!-- Regime -->
-    <div class="br-stat br-stat-regime" style="border-color:rgba(255,255,255,0.06);
-         background:linear-gradient(135deg,#10101a,#14121e);">
+    <div class="br-stat">
       <div class="br-stat-label">Regime</div>
       <div class="br-stat-value" style="color:{regime_color}">{regime_label}</div>
-      <div class="br-sub" style="color:{regime_color};opacity:.7">{regime_sub}</div>
+      <div class="br-sub">{regime_sub}</div>
     </div>
-
-    <!-- Long Breadth -->
     <div class="br-stat">
       <div class="br-stat-label">Long Breadth</div>
       <div class="br-stat-value stat-green">{l_pct}%
         <span class="br-delta" style="color:{l_dcol}">{l_dstr}</span>
       </div>
-      <div class="br-sub">5d: <span style="color:{lmom_col}">{lmom_str}</span></div>
     </div>
-
-    <!-- Short Breadth -->
     <div class="br-stat">
       <div class="br-stat-label">Short Breadth</div>
       <div class="br-stat-value stat-red">{s_pct}%
         <span class="br-delta" style="color:{s_dcol}">{s_dstr}</span>
       </div>
-      <div class="br-sub">prev: {prev_s_str}</div>
     </div>
-
-    <!-- L-S Spread -->
     <div class="br-stat">
-      <div class="br-stat-label">L &minus; S Spread</div>
-      <div class="br-stat-value" style="color:{regime_color}">{spread_val}
-        <span class="br-delta" style="color:{smom_col}">{smom_str}</span>
+      <div class="br-stat-label">L-S Spread</div>
+      <div class="br-stat-value stat-blue">{spread_val}
+        <span class="br-delta" style="color:{sp_dcol}">{sp_dstr}</span>
       </div>
-      <div class="br-sub">{spread_ctx}</div>
+      <div class="br-sub">5d mom: {sp_mom_str}</div>
     </div>
-
-    <!-- Sector Avg -->
     <div class="br-stat">
-      <div class="br-stat-label">Sector Avg</div>
+      <div class="br-stat-label">Sector Avg Score</div>
       <div class="br-stat-value stat-blue">{s_avg}
         <span class="br-delta" style="color:{a_dcol}">{a_dstr}</span>
       </div>
-      <div class="br-sub">score / 100</div>
     </div>
-
   </div>
 
-  <!-- ── Chart card ──────────────────────────────────────────────────── -->
   <div class="br-chart-card">
-
-    <!-- Top panel: breadth lines -->
     <div class="br-chart-row">
-      <div class="br-chart-label">Long &amp; Short Breadth — % stocks scoring 70+
-        <span class="br-pill br-pill-green">Long%</span>
-        <span class="br-pill br-pill-red">Short%</span>
-        <span class="br-pill br-pill-white">MA10</span>
+      <div class="br-chart-label">
+        Breadth Trend &mdash; % stocks scoring 70+
+        <span class="br-pill br-pill-green">LONG</span>
+        <span class="br-pill br-pill-red">SHORT</span>
       </div>
     </div>
     <div class="br-chart-wrap"><canvas id="breadthChart"></canvas></div>
-
-    <div class="br-divider"></div>
-
-    <!-- Bottom panel: spread bars -->
-    <div class="br-chart-row" style="margin-top:12px">
-      <div class="br-chart-label">Long &minus; Short Spread
-        <span class="br-guide">
-          <span style="color:#00d4aa">▮</span>&nbsp;&gt;8 Risk-On&nbsp;&nbsp;
-          <span style="color:#4a9eff">▮</span>&nbsp;5-8 Bullish&nbsp;&nbsp;
-          <span style="color:#f5a623">▮</span>&nbsp;2-5 Neutral&nbsp;&nbsp;
-          <span style="color:#ff4a6a">▮</span>&nbsp;&lt;0 Risk-Off
-        </span>
+    <hr class="br-divider">
+    <div class="br-chart-row" style="margin-top:14px">
+      <div class="br-chart-label">
+        L-S Spread
+        <span class="br-guide">(Long% &minus; Short%)</span>
       </div>
     </div>
     <div class="br-spread-wrap"><canvas id="spreadChart"></canvas></div>
-
   </div>
 </div>
 <!-- ── /Market Breadth ───────────────────────────────────────────────── -->
 
 <script>
 (function() {{
-
-  // ── Plugin: vertical regime background bands ──────────────────────────────
-  var regimeBgPlugin = {{
-    id: 'regimeBg',
-    beforeDraw: function(chart) {{
-      var ctx  = chart.ctx;
-      var ca   = chart.chartArea;
-      if (!ca) return;
-      var spreads = {jspreads};
-      var n    = spreads.length;
-      var barW = (ca.right - ca.left) / n;
-      ctx.save();
-      for (var i = 0; i < n; i++) {{
-        var sp = spreads[i];
-        if      (sp > 8) ctx.fillStyle = 'rgba(0,212,170,0.10)';
-        else if (sp > 5) ctx.fillStyle = 'rgba(74,158,255,0.07)';
-        else if (sp > 2) ctx.fillStyle = 'rgba(245,166,35,0.05)';
-        else if (sp > 0) ctx.fillStyle = 'rgba(245,166,35,0.02)';
-        else             ctx.fillStyle = 'rgba(255,74,106,0.10)';
-        ctx.fillRect(ca.left + i * barW, ca.top, barW, ca.bottom - ca.top);
-      }}
-      ctx.restore();
-    }}
-  }};
-
-  // ── Plugin: P25 / Median / P75 reference lines ───────────────────────────
-  var refLinesPlugin = {{
-    id: 'refLines',
-    afterDraw: function(chart) {{
-      var ctx   = chart.ctx;
-      var ca    = chart.chartArea;
-      var yAxis = chart.scales.y;
-      if (!ca || !yAxis) return;
-      var lines = [
-        {{ y: 14.3, label: 'P25', color: 'rgba(80,80,120,0.40)' }},
-        {{ y: 15.2, label: 'Med', color: 'rgba(80,80,120,0.65)' }},
-        {{ y: 16.8, label: 'P75', color: 'rgba(80,80,120,0.40)' }},
-      ];
-      ctx.save();
-      lines.forEach(function(line) {{
-        var py = yAxis.getPixelForValue(line.y);
-        ctx.setLineDash([3, 5]);
-        ctx.strokeStyle = line.color;
-        ctx.lineWidth   = 1;
-        ctx.beginPath(); ctx.moveTo(ca.left, py); ctx.lineTo(ca.right, py); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle  = line.color;
-        ctx.font       = '9px Inter, sans-serif';
-        ctx.textAlign  = 'left';
-        ctx.fillText(line.label, ca.right + 4, py + 3);
-      }});
-      ctx.restore();
-    }}
-  }};
-
-  // ── Main breadth chart ───────────────────────────────────────────────────
-  var ctx1 = document.getElementById('breadthChart').getContext('2d');
-  new Chart(ctx1, {{
+  var ctx = document.getElementById('breadthChart').getContext('2d');
+  new Chart(ctx, {{
     type: 'line',
-    plugins: [regimeBgPlugin, refLinesPlugin],
     data: {{
       labels: {jdates},
       datasets: [
@@ -643,32 +517,17 @@ def build_breadth_html(market_history):
           label: 'Long 70+%',
           data: {jlong},
           borderColor: '#00d4aa',
-          backgroundColor: 'rgba(0,212,170,0.10)',
-          fill: '+1',
-          tension: 0.35,
-          pointRadius: 2, pointBackgroundColor: '#00d4aa', borderWidth: 2.5,
-          order: 2
+          backgroundColor: 'rgba(0,212,170,0.12)',
+          fill: true, tension: 0.35,
+          pointRadius: 5, pointBackgroundColor: '#00d4aa', borderWidth: 2.5
         }},
         {{
           label: 'Short 70+%',
           data: {jshort},
           borderColor: '#ff4a6a',
-          backgroundColor: 'rgba(255,74,106,0.06)',
-          fill: false,
-          tension: 0.35,
-          pointRadius: 2, pointBackgroundColor: '#ff4a6a', borderWidth: 2,
-          order: 3
-        }},
-        {{
-          label: 'MA10',
-          data: {jma10},
-          borderColor: 'rgba(255,255,255,0.45)',
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.35,
-          borderDash: [6, 4],
-          pointRadius: 0, borderWidth: 1.5,
-          order: 1
+          backgroundColor: 'rgba(255,74,106,0.08)',
+          fill: true, tension: 0.35,
+          pointRadius: 5, pointBackgroundColor: '#ff4a6a', borderWidth: 2.5
         }}
       ]
     }},
