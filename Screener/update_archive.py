@@ -218,6 +218,111 @@ def make_sparkline_svg(values, width=92, height=36):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Enhanced sector sparkline with MA10 + reference lines at 50 / 70
+# ─────────────────────────────────────────────────────────────────────────────
+
+def make_sector_spark_svg(values, width=160, height=52):
+    """
+    Enhanced sector sparkline:
+      - Area fill + main score line (green if above MA10, red if below)
+      - MA10 dashed overlay
+      - Dashed reference lines at score=70 (green) and score=50 (orange)
+      - Faint background band for the "strength zone" above 70
+    """
+    valid = [v for v in values if v is not None]
+    if len(valid) < 2:
+        return f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg"></svg>'
+
+    # Fixed scale so 50/70 reference lines are always in a consistent position
+    lo    = min(min(valid), 28)
+    hi    = max(max(valid), 82)
+    span  = hi - lo if hi > lo else 1.0
+    n     = len(values)
+
+    pad_l, pad_r, pad_t, pad_b = 3, 3, 4, 4
+
+    def ypx(v):
+        return round((1.0 - (v - lo) / span) * (height - pad_t - pad_b) + pad_t, 1)
+
+    def xpx(i):
+        return round((i / max(n - 1, 1)) * (width - pad_l - pad_r) + pad_l, 1)
+
+    # Build score point list
+    pts = []
+    for i, v in enumerate(values):
+        if v is None:
+            continue
+        pts.append((xpx(i), ypx(v)))
+
+    if len(pts) < 2:
+        return f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg"></svg>'
+
+    # Build MA10 overlay
+    ma10_pts = []
+    for i, v in enumerate(values):
+        if v is None:
+            continue
+        window = [v2 for v2 in values[max(0, i - 9):i + 1] if v2 is not None]
+        ma     = sum(window) / len(window)
+        ma10_pts.append((xpx(i), ypx(ma)))
+
+    # Color: green if last value is >= MA10, red otherwise
+    last_ma10 = sum(v for v in values[-10:] if v is not None) / max(1, sum(1 for v in values[-10:] if v is not None))
+    above_ma  = valid[-1] >= last_ma10
+    color      = '#00d4aa' if above_ma else '#ff4a6a'
+    fill_color = 'rgba(0,212,170,0.11)' if above_ma else 'rgba(255,74,106,0.09)'
+
+    # Reference Y positions
+    y70 = ypx(70)
+    y50 = ypx(50)
+
+    polyline_pts = ' '.join(f'{x},{y}' for x, y in pts)
+    fill_pts     = f'{pts[0][0]},{height - pad_b} {polyline_pts} {pts[-1][0]},{height - pad_b}'
+    ma10_poly    = ' '.join(f'{x},{y}' for x, y in ma10_pts)
+
+    svg  = (f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg" '
+            f'viewBox="0 0 {width} {height}">')
+    # Strength zone background (above 70)
+    svg += (f'<rect x="{pad_l}" y="{pad_t}" width="{width-pad_l-pad_r}" '
+            f'height="{max(0, y70-pad_t):.1f}" fill="rgba(0,212,170,0.04)"/>')
+    # Reference line at 70
+    svg += (f'<line x1="{pad_l}" y1="{y70}" x2="{width-pad_r}" y2="{y70}" '
+            f'stroke="rgba(0,212,170,0.30)" stroke-width="0.7" stroke-dasharray="3,3"/>')
+    # Reference line at 50
+    svg += (f'<line x1="{pad_l}" y1="{y50}" x2="{width-pad_r}" y2="{y50}" '
+            f'stroke="rgba(245,166,35,0.28)" stroke-width="0.7" stroke-dasharray="3,3"/>')
+    # Area fill
+    svg += f'<polygon points="{fill_pts}" fill="{fill_color}" stroke="none"/>'
+    # MA10 dashed line
+    svg += (f'<polyline points="{ma10_poly}" fill="none" stroke="rgba(255,255,255,0.22)" '
+            f'stroke-width="1.0" stroke-dasharray="3,2"/>')
+    # Main score line
+    svg += (f'<polyline points="{polyline_pts}" fill="none" stroke="{color}" '
+            f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>')
+    # End dot
+    svg += f'<circle cx="{pts[-1][0]}" cy="{pts[-1][1]}" r="2.4" fill="{color}"/>'
+    svg += '</svg>'
+    return svg
+
+
+def _sector_signal(score, d5, above_ma10):
+    """Return (label, color) signal classification for a sector."""
+    if score >= 70:
+        if d5 >= 0:   return 'LEADING',  '#00d4aa'
+        else:         return 'FADING',   '#f5a623'
+    elif score >= 55:
+        if d5 > 2:    return 'BUILDING', '#4a9eff'
+        elif d5 < -3: return 'SLIPPING', '#f97316'
+        else:         return 'HOLDING',  '#606078'
+    elif score >= 40:
+        if d5 > 3:    return 'RECOVERY', '#a78bfa'
+        else:         return 'WEAK',     '#ff4a6a'
+    else:
+        if d5 > 3:    return 'RECOVERY', '#a78bfa'
+        else:         return 'BEARISH',  '#ff4a6a'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section builders
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -687,71 +792,175 @@ def build_breadth_html(market_history):
 
 def build_sector_charts_html(market_history):
     """
-    Sector Performance section — sparkline grid only.
-    (Top-10 multi-line chart removed; full sparkline grid for all named sectors.)
+    Sector Performance section — enhanced sparkline grid.
+    Each card shows: signal badge, score, Δ5d, Δ20d, percentile, MA10 tag.
+    Sparkline has MA10 overlay and reference lines at 50/70.
+    JS client-side sort by Score / Δ5d / Δ20d / Percentile.
     """
     if not market_history:
         return ''
 
     history = sorted(market_history, key=lambda x: x['date'])
 
-    # Latest snapshot
     latest         = history[-1]
     latest_sectors = latest.get('sectors', {})
     if not latest_sectors:
         return ''
 
-    # All sectors sorted by latest score (descending)
-    sectors_sorted = sorted(latest_sectors.items(), key=lambda x: x[1], reverse=True)
+    # ── Per-sector stats ───────────────────────────────────────────────────────
+    sector_stats = []
+    for sec_name, cur_score in latest_sectors.items():
+        values = [h.get('sectors', {}).get(sec_name) for h in history]
+        valid  = [v for v in values if v is not None]
+        if len(valid) < 2:
+            continue
 
-    # ── Sparkline grid — all sectors ──────────────────────────────────────────
+        # 5d and 20d momentum
+        d5  = round(valid[-1] - (valid[-6]  if len(valid) >= 6  else valid[0]), 1)
+        d20 = round(valid[-1] - (valid[-21] if len(valid) >= 21 else valid[0]), 1)
+
+        # MA10
+        ma10_window = valid[max(0, len(valid) - 10):]
+        ma10        = round(sum(ma10_window) / len(ma10_window), 1)
+        above_ma10  = cur_score >= ma10
+        ma_gap      = round(cur_score - ma10, 1)
+
+        # Historical percentile (within own range)
+        pct = round(sum(1 for v in valid if v <= cur_score) / len(valid) * 100)
+
+        # Signal classification
+        sig_label, sig_color = _sector_signal(cur_score, d5, above_ma10)
+
+        sector_stats.append({
+            'name':       sec_name,
+            'score':      cur_score,
+            'd5':         d5,
+            'd20':        d20,
+            'ma10':       ma10,
+            'above_ma10': above_ma10,
+            'ma_gap':     ma_gap,
+            'pct':        pct,
+            'sig_label':  sig_label,
+            'sig_color':  sig_color,
+            'values':     values,
+        })
+
+    # Default sort: score descending
+    sector_stats.sort(key=lambda x: x['score'], reverse=True)
+
+    # ── Build card HTML ────────────────────────────────────────────────────────
     grid_html = ''
-    for sec_name, latest_score in sectors_sorted:
-        values    = [h.get('sectors', {}).get(sec_name) for h in history]
-        spark_svg = make_sparkline_svg(values)
+    for s in sector_stats:
+        score      = s['score']
+        d5         = s['d5']
+        d20        = s['d20']
+        pct        = s['pct']
+        ma10       = s['ma10']
+        ma_gap     = s['ma_gap']
+        sig_label  = s['sig_label']
+        sig_color  = s['sig_color']
+        above_ma10 = s['above_ma10']
 
-        if latest_score >= 70:   score_color = '#00d4aa'
-        elif latest_score >= 60: score_color = '#4a9eff'
-        elif latest_score >= 50: score_color = '#f5a623'
-        else:                    score_color = '#ff4a6a'
+        # Score color by level
+        if score >= 70:   score_color = '#00d4aa'
+        elif score >= 55: score_color = '#4a9eff'
+        elif score >= 40: score_color = '#f5a623'
+        else:             score_color = '#ff4a6a'
 
-        valid_vals = [v for v in values if v is not None]
-        if len(valid_vals) >= 2:
-            delta = round(valid_vals[-1] - valid_vals[0], 1)
-            if   delta >  0.5: trend_str, trend_col = f'+{delta}', '#00d4aa'
-            elif delta < -0.5: trend_str, trend_col = str(delta),  '#ff4a6a'
-            else:              trend_str, trend_col = '—',         '#505068'
-        else:
-            trend_str, trend_col = '—', '#505068'
+        # Δ5d display
+        d5_str  = f'+{d5}' if d5 > 0 else str(d5)
+        d5_col  = '#00d4aa' if d5 > 0.5 else ('#ff4a6a' if d5 < -0.5 else '#505068')
+        d5_arrow = '▲' if d5 > 0.5 else ('▼' if d5 < -0.5 else '▸')
 
-        # Truncate long sector names for display
-        disp_name = sec_name if len(sec_name) <= 22 else sec_name[:20] + '…'
+        # Δ20d display
+        d20_str = f'+{d20}' if d20 > 0 else str(d20)
+        d20_col = '#00d4aa' if d20 > 1 else ('#ff4a6a' if d20 < -1 else '#505068')
+
+        # MA10 tag
+        ma_tag_label = f'{"▲" if above_ma10 else "▼"} MA10'
+        ma_tag_color = '#00d4aa' if above_ma10 else '#ff4a6a'
+        ma_gap_str   = f'+{ma_gap}' if ma_gap >= 0 else str(ma_gap)
+
+        # Signal badge background (rgba from hex)
+        sig_r, sig_g, sig_b = (
+            int(sig_color[1:3], 16),
+            int(sig_color[3:5], 16),
+            int(sig_color[5:7], 16)
+        )
+        sig_bg = f'rgba({sig_r},{sig_g},{sig_b},0.14)'
+
+        # Truncate name
+        disp_name = s['name'] if len(s['name']) <= 24 else s['name'][:22] + '…'
+
+        # Enhanced sparkline
+        spark_svg = make_sector_spark_svg(s['values'])
 
         grid_html += f"""
-    <div class="sec-card">
-      <div class="sec-card-top">
-        <div class="sec-name" title="{sec_name}">{disp_name}</div>
-        <div class="sec-score" style="color:{score_color}">{latest_score}</div>
+    <div class="sec-card" style="border-left-color:{sig_color}"
+         data-score="{score}" data-d5="{d5}" data-d20="{d20}" data-pct="{pct}">
+      <div class="sec-card-header">
+        <div class="sec-name" title="{s['name']}">{disp_name}</div>
+        <div class="sec-sig" style="background:{sig_bg};color:{sig_color}">{sig_label}</div>
+      </div>
+      <div class="sec-metrics">
+        <div class="sec-score" style="color:{score_color}">{score}</div>
+        <div class="sec-ma-tag" style="color:{ma_tag_color}">{ma_tag_label}
+          <span class="sec-ma-gap">({ma_gap_str})</span>
+        </div>
       </div>
       <div class="sec-spark">{spark_svg}</div>
-      <div class="sec-trend" style="color:{trend_col}">{trend_str}</div>
+      <div class="sec-footer">
+        <span class="sec-stat" style="color:{d5_col}">{d5_arrow} {d5_str}</span>
+        <span class="sec-stat sec-stat-muted">{pct}th pct</span>
+        <span class="sec-stat" style="color:{d20_col}">20d {d20_str}</span>
+      </div>
     </div>"""
 
-    n_sectors = len(sectors_sorted)
+    n_sectors = len(sector_stats)
+
+    # Count signals
+    signals = {}
+    for s in sector_stats:
+        signals[s['sig_label']] = signals.get(s['sig_label'], 0) + 1
+    sig_summary = ' &nbsp;·&nbsp; '.join(
+        f'<span style="color:{_sector_signal(70 if k in ("LEADING","FADING") else 55 if k in ("BUILDING","SLIPPING","HOLDING") else 45, 1 if k in ("LEADING","BUILDING","RECOVERY") else -1, True)[1]}">{v} {k}</span>'
+        for k, v in sorted(signals.items(), key=lambda x: -x[1])
+    )
 
     return f"""
 <!-- ── Sector Performance ───────────────────────────────────────────── -->
 <div class="sc-wrap">
   <div class="sc-header-row">
     <div class="sc-section-title">Sector Performance</div>
-    <div class="sc-count">{n_sectors} sectors tracked</div>
+    <div class="sc-header-right">
+      <div class="sc-sig-summary">{sig_summary}</div>
+      <div class="sc-sort-bar">
+        <span class="sc-sort-label">Sort:</span>
+        <button class="sc-sort-btn active" onclick="sortSectors('score',this)">Score</button>
+        <button class="sc-sort-btn" onclick="sortSectors('d5',this)">Δ 5d</button>
+        <button class="sc-sort-btn" onclick="sortSectors('d20',this)">Δ 20d</button>
+        <button class="sc-sort-btn" onclick="sortSectors('pct',this)">Pct</button>
+      </div>
+    </div>
   </div>
 
-  <!-- All-sector sparkline grid -->
-  <div class="sec-grid">
-    {grid_html}
+  <div class="sec-grid" id="secGrid">
+{grid_html}
   </div>
 </div>
+
+<script>
+function sortSectors(key, btn) {{
+  var grid  = document.getElementById('secGrid');
+  var cards = Array.from(grid.querySelectorAll('.sec-card'));
+  cards.sort(function(a, b) {{
+    return parseFloat(b.dataset[key]) - parseFloat(a.dataset[key]);
+  }});
+  cards.forEach(function(c) {{ grid.appendChild(c); }});
+  document.querySelectorAll('.sc-sort-btn').forEach(function(b) {{ b.classList.remove('active'); }});
+  btn.classList.add('active');
+}}
+</script>
 <!-- ── /Sector Performance ───────────────────────────────────────────── -->
 """
 
@@ -957,49 +1166,92 @@ body {{
 
 /* ══ Sector Performance ════════════════════════════════════════════════ */
 .sc-wrap {{
-    max-width:1000px; margin:0 auto; padding:44px 24px 0;
+    max-width:1060px; margin:0 auto; padding:44px 24px 0;
 }}
 .sc-header-row {{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom:16px; gap:12px; flex-wrap:wrap;
 }}
 .sc-section-title {{
     font-size:.78rem; font-weight:600; color:var(--text-secondary);
-    text-transform:uppercase; letter-spacing:1.2px;
+    text-transform:uppercase; letter-spacing:1.2px; flex-shrink:0;
 }}
-.sc-count {{
-    font-size:.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+.sc-header-right {{
+    display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+}}
+.sc-sig-summary {{
+    font-size:.62rem; color:var(--text-muted); letter-spacing:.3px;
+    display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end;
+}}
+.sc-sort-bar {{
+    display:flex; align-items:center; gap:6px;
+}}
+.sc-sort-label {{
+    font-size:.62rem; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:.8px;
+}}
+.sc-sort-btn {{
+    font-family:'JetBrains Mono',monospace; font-size:.62rem; font-weight:600;
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    color:var(--text-secondary); padding:3px 10px; border-radius:20px;
+    cursor:pointer; transition:all .15s;
+}}
+.sc-sort-btn:hover {{ border-color:var(--border-accent); color:var(--text-primary); }}
+.sc-sort-btn.active {{
+    background:rgba(74,158,255,.12); border-color:rgba(74,158,255,.35);
+    color:var(--accent-blue);
 }}
 
 /* ══ Sector Sparkline Grid ═════════════════════════════════════════════ */
 .sec-grid {{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:8px;
+    grid-template-columns:repeat(auto-fill,minmax(185px,1fr));
+    gap:9px;
 }}
 .sec-card {{
     background:var(--bg-card); border:1px solid var(--border-subtle);
-    border-radius:var(--radius-sm); padding:10px 12px 8px;
-    transition:border-color .15s;
+    border-left:3px solid transparent;
+    border-radius:var(--radius-sm); padding:11px 13px 9px;
+    transition:border-color .15s, background .15s;
 }}
-.sec-card:hover {{ border-color:var(--border-accent); }}
-.sec-card-top {{
+.sec-card:hover {{ background:var(--bg-card-hover); }}
+.sec-card-header {{
     display:flex; align-items:flex-start; justify-content:space-between;
-    margin-bottom:5px;
+    gap:5px; margin-bottom:5px;
 }}
 .sec-name {{
-    font-size:.58rem; font-weight:600; color:var(--text-secondary);
+    font-size:.57rem; font-weight:600; color:var(--text-secondary);
     text-transform:uppercase; letter-spacing:.5px; line-height:1.35;
     flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    margin-right:6px;
+}}
+.sec-sig {{
+    font-size:.50rem; font-weight:700; letter-spacing:.6px;
+    padding:2px 6px; border-radius:20px; flex-shrink:0;
+    text-transform:uppercase; white-space:nowrap;
+}}
+.sec-metrics {{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:4px; gap:4px;
 }}
 .sec-score {{
-    font-family:'JetBrains Mono',monospace; font-size:.82rem;
+    font-family:'JetBrains Mono',monospace; font-size:.92rem;
     font-weight:700; flex-shrink:0;
 }}
-.sec-spark {{ line-height:0; margin:2px 0 4px; }}
-.sec-trend {{
+.sec-ma-tag {{
+    font-size:.58rem; font-weight:600; flex-shrink:0; text-align:right;
+}}
+.sec-ma-gap {{
+    font-size:.52rem; opacity:.7; font-family:'JetBrains Mono',monospace;
+}}
+.sec-spark {{ line-height:0; margin:3px 0 6px; width:100%; }}
+.sec-spark svg {{ width:100%; height:52px; }}
+.sec-footer {{
+    display:flex; align-items:center; justify-content:space-between;
+}}
+.sec-stat {{
     font-family:'JetBrains Mono',monospace; font-size:.58rem; font-weight:600;
 }}
+.sec-stat-muted {{ color:var(--text-muted); }}
 
 /* ══ Shared stat colors ════════════════════════════════════════════════ */
 .stat-green {{ color:var(--accent-green); }}
@@ -1024,7 +1276,9 @@ body {{
     .br-stats-row  {{ grid-template-columns:repeat(2,1fr); }}
     .br-chart-wrap {{ height:180px; }}
     .br-spread-wrap{{ height:110px; }}
-    .sec-grid      {{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }}
+    .sec-grid      {{ grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); }}
+    .sc-header-right {{ align-items:flex-start; }}
+    .sc-sig-summary {{ justify-content:flex-start; }}
 }}
 </style>
 </head>
