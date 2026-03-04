@@ -17,6 +17,8 @@ jobs:
   run-screener:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write   # necessario per git push dei nuovi report
 
     steps:
       # ── 0. Guard: procedi solo se NYSE ha appena chiuso (ora ET = 16:xx) ──
