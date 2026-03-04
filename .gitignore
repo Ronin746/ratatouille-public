@@ -1,0 +1,37 @@
+# Python
+Screener/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+Screener/screener.log
+
+# Credenziali / segreti (mai in git)
+Screener/email_config.json
+Screener/token.json
+Screener/credentials.json
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Excel temp files
+~$*
+
+# Archivi compressi locali
+deploy_cloudflare.zip
+*.zip
+
+# Cartelle di lavoro locali
+Cestinabile/
+
+# Archive generata automaticamente (è un build artifact)
+Archive/
+
+# Vecchie cartelle Netlify (già cancellate ma per sicurezza)
+.netlify
+netlify-site/
+netlify.toml

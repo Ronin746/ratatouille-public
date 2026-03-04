@@ -1,0 +1,9 @@
+yfinance
+pandas
+numpy
+scipy
+tabulate
+schedule
+pytickersymbols
+requests
+jinja2
