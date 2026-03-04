@@ -1,12 +1,16 @@
 name: Ratatouille Screener
 
 on:
-  # Esegui automaticamente dal lunedì al venerdì alle 22:05 UTC
-  # (= 23:05 CET / 00:05 CEST — dopo la chiusura di Wall Street)
+  # Due trigger per coprire EST (inverno) ed EDT (estate):
+  # NYSE chiude sempre alle 16:00 ET → 5 min dopo:
+  #   16:05 ET = 21:05 UTC quando EST (UTC-5)  → nov–mar
+  #   16:05 ET = 20:05 UTC quando EDT (UTC-4)  → mar–nov
+  # Il guard step qui sotto garantisce che solo il trigger corretto proceda.
   schedule:
-    - cron: '5 22 * * 1-5'
+    - cron: '5 21 * * 1-5'   # EST (inverno)
+    - cron: '5 20 * * 1-5'   # EDT (estate)
 
-  # Avvio manuale dalla tab "Actions" su GitHub
+  # Avvio manuale dalla tab "Actions" su GitHub (bypassa il guard)
   workflow_dispatch:
 
 jobs:
@@ -15,14 +19,34 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      # ── 0. Guard: procedi solo se NYSE ha appena chiuso (ora ET = 16:xx) ──
+      - name: Check NYSE just closed
+        id: guard
+        run: |
+          python3 - <<'EOF'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import os
+
+          et_now = datetime.now(ZoneInfo("America/New_York"))
+          hour   = et_now.hour
+          proceed = 16 <= hour < 17
+
+          print(f"ET time: {et_now.strftime('%H:%M')} — proceed: {proceed}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"proceed={str(proceed).lower()}\n")
+          EOF
+
       # ── 1. Checkout ────────────────────────────────────────────────────────
       - name: Checkout repository
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # serve per il commit di ritorno
+          fetch-depth: 0
 
       # ── 2. Python ──────────────────────────────────────────────────────────
       - name: Set up Python 3.11
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -30,35 +54,37 @@ jobs:
           cache-dependency-path: Screener/requirements.txt
 
       - name: Install dependencies
-        run: |
-          pip install -r Screener/requirements.txt
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
+        run: pip install -r Screener/requirements.txt
 
       # ── 3. Screener ────────────────────────────────────────────────────────
       - name: Run screener
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: Screener
         run: python scheduler_app.py --now
         env:
-          # Opzionale: se usi email_manager.py con Gmail
           EMAIL_USER:     ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
       # ── 4. Build Archive ───────────────────────────────────────────────────
       - name: Build archive page
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: Screener
         run: python update_archive.py
 
       # ── 5. Commit nuovi report/dati nel repo ───────────────────────────────
       - name: Commit new reports and data
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Reports/ Data/ Archive/
-          # Commette solo se ci sono modifiche
           git diff --cached --quiet || git commit -m "screener: $(date -u +'%Y-%m-%d')"
           git push
 
       # ── 6. Deploy su Cloudflare Pages ─────────────────────────────────────
       - name: Deploy to Cloudflare Pages
+        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: .
         run: python deploy_to_cloudflare.py
         env:
