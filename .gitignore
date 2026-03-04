@@ -28,8 +28,8 @@ deploy_cloudflare.zip
 # Cartelle di lavoro locali
 Cestinabile/
 
-# Archive generata automaticamente (è un build artifact)
-Archive/
+# Archive: ora versionata in git (Cloudflare Pages si aggiorna da qui)
+# Archive/
 
 # Vecchie cartelle Netlify (già cancellate ma per sicurezza)
 .netlify

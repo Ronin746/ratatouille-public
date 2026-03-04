@@ -75,20 +75,12 @@ jobs:
         run: python update_archive.py
 
       # ── 5. Commit nuovi report/dati nel repo ───────────────────────────────
+      # Cloudflare Pages rileva il push e deploya Archive/ automaticamente
       - name: Commit new reports and data
         if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Reports/ Data/
+          git add Reports/ Data/ Archive/
           git diff --cached --quiet || git commit -m "screener: $(date -u +'%Y-%m-%d')"
           git push
-
-      # ── 6. Deploy su Cloudflare Pages ─────────────────────────────────────
-      - name: Deploy to Cloudflare Pages
-        if: steps.guard.outputs.proceed == 'true' || github.event_name == 'workflow_dispatch'
-        working-directory: .
-        run: python deploy_to_cloudflare.py
-        env:
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_API_TOKEN:  ${{ secrets.CF_API_TOKEN }}
