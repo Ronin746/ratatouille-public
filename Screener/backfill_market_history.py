@@ -201,7 +201,7 @@ def compute_backfill_entries(close_df, sector_map, days=90, ma_long=50, ma_short
 
             for sec_name, sec_tickers in sec_groups.items():
                 good = [t for t in sec_tickers if m50[t] > 0]
-                if len(good) < 3:
+                if len(good) < 2:
                     continue
                 ratios    = np.array([tc[t] / m50[t] for t in good])
                 avg_ratio = float(np.mean(ratios))

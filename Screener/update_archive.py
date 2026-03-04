@@ -116,7 +116,7 @@ def compute_market_scores(date_str):
             sector_counts = named.groupby('Sector').size()
             sector_means  = named.groupby('Sector')['Final_Score'].mean()
             for sec, avg in sector_means.items():
-                if sector_counts.get(sec, 0) >= 3:
+                if sector_counts.get(sec, 0) >= 2:
                     sectors[sec] = round(float(avg), 1)
             if sectors:
                 sector_avg = round(sum(sectors.values()) / len(sectors), 1)
@@ -1343,11 +1343,13 @@ def main():
         reports_with_stats.append((date_str, stats))
         print(f'  → {date_str} copied  |  {stats["total_stocks"]} stocks, top: {stats["top_ticker"]}')
 
-        if date_str not in history_by_date:
+        existing = history_by_date.get(date_str)
+        if existing is None or existing.get('estimated', False):
             ms = compute_market_scores(date_str)
             if ms:
                 history_by_date[date_str] = ms
-                print(f'     ↳ market scores: long={ms["long_breadth_pct"]}%  '
+                replaced = '(replaced estimate) ' if existing else ''
+                print(f'     ↳ {replaced}market scores: long={ms["long_breadth_pct"]}%  '
                       f'short={ms["short_breadth_pct"]}%  sec_avg={ms["sector_avg"]}')
 
     # ── Save updated market history ───────────────────────────────────────────
