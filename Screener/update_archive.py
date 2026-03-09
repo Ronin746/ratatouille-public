@@ -76,6 +76,63 @@ def get_csv_stats(date_str):
     return stats
 
 
+def get_latest_basket_top10():
+    """
+    Read the latest screen_results CSV and return per-basket top-10 stocks.
+    Returns dict: {basket_name: [{'t':ticker,'s':score10,'r2':r2,
+                                   'd1':chg1d,'d7':chg1w,'d30':chg1m}, ...]}
+    """
+    screener_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir   = os.path.dirname(screener_dir)
+    data_dir     = os.path.join(parent_dir, 'Data')
+
+    # Find latest CSV
+    try:
+        csv_files = sorted(
+            [f for f in os.listdir(data_dir)
+             if f.startswith('screen_results_') and f.endswith('.csv')],
+            reverse=True
+        )
+    except Exception:
+        return {}
+
+    if not csv_files:
+        return {}
+
+    csv_path = os.path.join(data_dir, csv_files[0])
+
+    try:
+        import pandas as pd
+        from sector_baskets import SECTOR_BASKETS
+
+        df = pd.read_csv(csv_path, index_col=0)
+        required = {'Final_Score', 'r_squared', '1d_return', '1w_return', '1m_return'}
+        if not required.issubset(df.columns):
+            return {}
+
+        result = {}
+        for basket_name, tickers in SECTOR_BASKETS.items():
+            sub = df[df.index.isin(tickers)].copy()
+            if sub.empty:
+                continue
+            sub = sub.sort_values('Final_Score', ascending=False).head(10)
+            stocks = []
+            for ticker, row in sub.iterrows():
+                stocks.append({
+                    't':   str(ticker),
+                    's':   round(float(row['Final_Score']), 1),
+                    'r2':  round(float(row['r_squared']), 2),
+                    'd1':  round(float(row['1d_return']) * 100, 1),
+                    'd7':  round(float(row['1w_return']) * 100, 1),
+                    'd30': round(float(row['1m_return']) * 100, 1),
+                })
+            result[basket_name] = stocks
+        return result
+    except Exception as e:
+        print(f'  ⚠ get_latest_basket_top10 error: {e}')
+        return {}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Market score history
 # ─────────────────────────────────────────────────────────────────────────────
@@ -506,7 +563,7 @@ def build_breadth_html(market_history):
 <!-- ── /Market Breadth ───────────────────────────────────────────────── -->
 
 <script>
-(function() {{
+document.addEventListener('DOMContentLoaded', function() {{
   var ctx = document.getElementById('breadthChart').getContext('2d');
   new Chart(ctx, {{
     type: 'line',
@@ -643,17 +700,18 @@ def build_breadth_html(market_history):
     }}
   }});
 
-}})();
+}});
 </script>
 """
 
 
-def build_sector_charts_html(market_history):
+def build_sector_charts_html(market_history, top10_data=None):
     """
     Sector Performance section — enhanced sparkline grid.
     Each card shows: signal badge, score, Δ5d, Δ20d, percentile, MA10 tag.
     Sparkline has MA10 overlay and reference lines at 50/70.
-    JS client-side sort by Score / Δ5d / Δ20d / Percentile.
+    JS client-side sort by Score / Δ5d / Δ20d / Percentile / Stage.
+    Click card to expand Top-10 stocks panel.
     """
     if not market_history:
         return ''
@@ -703,11 +761,24 @@ def build_sector_charts_html(market_history):
             'values':     values,
         })
 
-    # Default sort: score descending
-    sector_stats.sort(key=lambda x: x['score'], reverse=True)
+    # Default sort: by stage (same order as sortByStage JS), then score descending within stage
+    STAGE_ORDER_PY = ['LEADING','FADING','BUILDING','SLIPPING','HOLDING','RECOVERY','WEAK','BEARISH']
+    STAGE_COLORS_PY = {
+        'LEADING': '#00d4aa', 'FADING': '#4a9eff', 'BUILDING': '#4a9eff',
+        'SLIPPING': '#f5a623', 'HOLDING': '#f5a623', 'RECOVERY': '#f5a623',
+        'WEAK': '#ff4a6a', 'BEARISH': '#ff4a6a',
+    }
+    stage_rank = {s: i for i, s in enumerate(STAGE_ORDER_PY)}
+    sector_stats.sort(key=lambda x: (stage_rank.get(x['sig_label'], 99), -x['score']))
 
-    # ── Build card HTML ────────────────────────────────────────────────────────
+    # ── Build card HTML grouped by stage (with stage headers) ─────────────────
     grid_html = ''
+    current_stage = None
+    # Pre-count cards per stage for the header label
+    stage_counts = {}
+    for s in sector_stats:
+        stage_counts[s['sig_label']] = stage_counts.get(s['sig_label'], 0) + 1
+
     for s in sector_stats:
         score      = s['score']
         d5         = s['d5']
@@ -718,6 +789,13 @@ def build_sector_charts_html(market_history):
         sig_label  = s['sig_label']
         sig_color  = s['sig_color']
         above_ma10 = s['above_ma10']
+
+        # Stage header when stage group changes
+        if sig_label != current_stage:
+            current_stage = sig_label
+            hdr_color = STAGE_COLORS_PY.get(sig_label, '#888888')
+            hdr_count = stage_counts.get(sig_label, 0)
+            grid_html += f'\n    <div class="sec-stage-hdr" style="color:{hdr_color}">{sig_label}  ({hdr_count})</div>'
 
         # Score color by level
         if score >= 70:   score_color = '#00d4aa'
@@ -753,9 +831,15 @@ def build_sector_charts_html(market_history):
         # Enhanced sparkline
         spark_svg = make_sector_spark_svg(s['values'])
 
+        # Top-10 data for click panel
+        top10_list = (top10_data or {}).get(s['name'], [])
+        top10_attr = json.dumps(top10_list).replace('"', '&quot;')
+
         grid_html += f"""
     <div class="sec-card" style="border-left-color:{sig_color}"
-         data-score="{score}" data-d5="{d5}" data-d20="{d20}" data-pct="{pct}">
+         data-score="{score}" data-d5="{d5}" data-d20="{d20}" data-pct="{pct}"
+         data-stage="{sig_label}" data-top10="{top10_attr}"
+         onclick="openSectorPanel(this)">
       <div class="sec-card-header">
         <div class="sec-name" title="{s['name']}">{disp_name}</div>
         <div class="sec-sig" style="background:{sig_bg};color:{sig_color}">{sig_label}</div>
@@ -794,10 +878,11 @@ def build_sector_charts_html(market_history):
       <div class="sc-sig-summary">{sig_summary}</div>
       <div class="sc-sort-bar">
         <span class="sc-sort-label">Sort:</span>
-        <button class="sc-sort-btn active" onclick="sortSectors('score',this)">Score</button>
-        <button class="sc-sort-btn" onclick="sortSectors('d5',this)">Δ 5d</button>
-        <button class="sc-sort-btn" onclick="sortSectors('d20',this)">Δ 20d</button>
+        <button class="sc-sort-btn" onclick="sortSectors('score',this)">Score</button>
+        <button class="sc-sort-btn" onclick="sortSectors('d5',this)">&#916; 5d</button>
+        <button class="sc-sort-btn" onclick="sortSectors('d20',this)">&#916; 20d</button>
         <button class="sc-sort-btn" onclick="sortSectors('pct',this)">Pct</button>
+        <button class="sc-sort-btn active" onclick="sortByStage(this)">Stage</button>
       </div>
     </div>
   </div>
@@ -805,11 +890,21 @@ def build_sector_charts_html(market_history):
   <div class="sec-grid" id="secGrid">
 {grid_html}
   </div>
+
+  <div class="sec-panel-area" id="secPanelArea" style="display:none">
+    <div class="sec-panel-header">
+      <span class="sec-panel-title" id="secPanelTitle"></span>
+      <button class="sec-panel-close" onclick="closeSectorPanel()">&#x2715;</button>
+    </div>
+    <div id="secPanelTable"></div>
+  </div>
 </div>
 
 <script>
+// ── Sort helpers ──────────────────────────────────────────────────────────
 function sortSectors(key, btn) {{
-  var grid  = document.getElementById('secGrid');
+  var grid = document.getElementById('secGrid');
+  grid.querySelectorAll('.sec-stage-hdr').forEach(function(h) {{ h.remove(); }});
   var cards = Array.from(grid.querySelectorAll('.sec-card'));
   cards.sort(function(a, b) {{
     return parseFloat(b.dataset[key]) - parseFloat(a.dataset[key]);
@@ -818,6 +913,90 @@ function sortSectors(key, btn) {{
   document.querySelectorAll('.sc-sort-btn').forEach(function(b) {{ b.classList.remove('active'); }});
   btn.classList.add('active');
 }}
+
+function sortByStage(btn) {{
+  var STAGE_ORDER = ['LEADING','FADING','BUILDING','SLIPPING','HOLDING','RECOVERY','WEAK','BEARISH'];
+  var STAGE_COLORS = {{
+    'LEADING':'#00d4aa','FADING':'#4a9eff','BUILDING':'#4a9eff',
+    'SLIPPING':'#f5a623','HOLDING':'#f5a623','RECOVERY':'#f5a623',
+    'WEAK':'#ff4a6a','BEARISH':'#ff4a6a'
+  }};
+  var grid = document.getElementById('secGrid');
+  grid.querySelectorAll('.sec-stage-hdr').forEach(function(h) {{ h.remove(); }});
+  var cards = Array.from(grid.querySelectorAll('.sec-card'));
+  var groups = {{}};
+  STAGE_ORDER.forEach(function(s) {{ groups[s] = []; }});
+  cards.forEach(function(c) {{
+    var stage = c.dataset.stage || 'WEAK';
+    if (!groups[stage]) groups[stage] = [];
+    groups[stage].push(c);
+  }});
+  STAGE_ORDER.forEach(function(s) {{
+    groups[s].sort(function(a,b) {{ return parseFloat(b.dataset.score) - parseFloat(a.dataset.score); }});
+  }});
+  STAGE_ORDER.forEach(function(s) {{
+    if (groups[s].length === 0) return;
+    var hdr = document.createElement('div');
+    hdr.className = 'sec-stage-hdr';
+    hdr.style.color = STAGE_COLORS[s] || '#888';
+    hdr.textContent = s + '  (' + groups[s].length + ')';
+    grid.appendChild(hdr);
+    groups[s].forEach(function(c) {{ grid.appendChild(c); }});
+  }});
+  document.querySelectorAll('.sc-sort-btn').forEach(function(b) {{ b.classList.remove('active'); }});
+  btn.classList.add('active');
+}}
+
+// ── Top-10 panel ─────────────────────────────────────────────────────────
+var _selCard = null;
+
+function openSectorPanel(card) {{
+  if (_selCard === card) {{ closeSectorPanel(); return; }}
+  if (_selCard) _selCard.classList.remove('sec-selected');
+  _selCard = card;
+  card.classList.add('sec-selected');
+
+  var stocks = [];
+  try {{ stocks = JSON.parse(card.dataset.top10 || '[]'); }} catch(e) {{}}
+
+  var name = (card.querySelector('.sec-name').title || card.querySelector('.sec-name').textContent).trim();
+  document.getElementById('secPanelTitle').textContent = name + ' \u2014 Top 10';
+
+  if (stocks.length === 0) {{
+    document.getElementById('secPanelTable').innerHTML = '<p style="color:var(--text-muted);font-size:.65rem;padding:6px 0">No data available.</p>';
+  }} else {{
+    var rows = stocks.map(function(s) {{
+      var d1s   = (s.d1  > 0 ? '+' : '') + s.d1  + '%';
+      var d7s   = (s.d7  > 0 ? '+' : '') + s.d7  + '%';
+      var d30s  = (s.d30 > 0 ? '+' : '') + s.d30 + '%';
+      var c1    = s.d1  > 0 ? '#00d4aa' : (s.d1  < 0 ? '#ff4a6a' : '#808090');
+      var c7    = s.d7  > 0 ? '#00d4aa' : (s.d7  < 0 ? '#ff4a6a' : '#808090');
+      var c30   = s.d30 > 0 ? '#00d4aa' : (s.d30 < 0 ? '#ff4a6a' : '#808090');
+      return '<tr>'
+        + '<td>' + s.t + '</td>'
+        + '<td>' + s.s + '</td>'
+        + '<td>' + s.r2 + '</td>'
+        + '<td style="color:' + c1  + '">' + d1s  + '</td>'
+        + '<td style="color:' + c7  + '">' + d7s  + '</td>'
+        + '<td style="color:' + c30 + '">' + d30s + '</td>'
+        + '</tr>';
+    }}).join('');
+    document.getElementById('secPanelTable').innerHTML =
+      '<table class="sec-panel-table"><thead><tr>'
+      + '<th>Ticker</th><th>Score</th><th>R\u00B2</th>'
+      + '<th>Chg 1D%</th><th>Chg 1W%</th><th>Chg 1M%</th>'
+      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }}
+  document.getElementById('secPanelArea').style.display = 'block';
+  document.getElementById('secPanelArea').scrollIntoView({{behavior:'smooth', block:'nearest'}});
+}}
+
+function closeSectorPanel() {{
+  if (_selCard) _selCard.classList.remove('sec-selected');
+  _selCard = null;
+  document.getElementById('secPanelArea').style.display = 'none';
+}}
+
 </script>
 <!-- ── /Sector Performance ───────────────────────────────────────────── -->
 """
@@ -834,8 +1013,9 @@ def build_index_html(reports_with_stats, market_history=None):
     breadth_html       = ''
     sector_html        = ''
     if market_history:
-        breadth_html = build_breadth_html(market_history)
-        sector_html  = build_sector_charts_html(market_history)
+        breadth_html  = build_breadth_html(market_history)
+        top10_data    = get_latest_basket_top10()
+        sector_html   = build_sector_charts_html(market_history, top10_data=top10_data)
 
     now_str = datetime.now().strftime('%b %d, %Y at %H:%M')
 
@@ -847,7 +1027,7 @@ def build_index_html(reports_with_stats, market_history=None):
 <title>Ratatouille &#8212; Market Intelligence Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <style>
 :root {{
     --bg-primary:    #080810;
@@ -1032,7 +1212,7 @@ body {{
 }}
 .sc-section-title {{
     font-size:.78rem; font-weight:600; color:var(--text-secondary);
-    text-transform:uppercase; letter-spacing:1.2px; flex-shrink:0;
+    text-transform:uppercase; letter-spacing:1.2px;
 }}
 .sc-header-right {{
     display:flex; flex-direction:column; align-items:flex-end; gap:8px;
@@ -1059,7 +1239,6 @@ body {{
     background:rgba(74,158,255,.12); border-color:rgba(74,158,255,.35);
     color:var(--accent-blue);
 }}
-
 /* ══ Sector Sparkline Grid ═════════════════════════════════════════════ */
 .sec-grid {{
     display:grid;
@@ -1110,6 +1289,49 @@ body {{
     font-family:'JetBrains Mono',monospace; font-size:.58rem; font-weight:600;
 }}
 .sec-stat-muted {{ color:var(--text-muted); }}
+.sec-card {{ cursor:pointer; }}
+.sec-card.sec-selected {{ box-shadow:0 0 0 1.5px var(--border-accent); }}
+
+/* ── Stage header (Per Stage sort) ──────────────────────────────── */
+.sec-stage-hdr {{
+    grid-column:1/-1; padding:10px 0 3px;
+    font-size:.57rem; font-weight:700; text-transform:uppercase; letter-spacing:.8px;
+    border-bottom:1px solid var(--border-subtle); margin-bottom:2px;
+}}
+
+/* ── Top-10 panel ────────────────────────────────────────────────── */
+.sec-panel-area {{
+    margin-top:12px; background:var(--bg-card);
+    border:1px solid var(--border-accent); border-radius:var(--radius-sm);
+    padding:13px 16px; animation:spFadeIn .15s ease;
+}}
+@keyframes spFadeIn {{ from {{ opacity:0; transform:translateY(-5px); }} to {{ opacity:1; transform:translateY(0); }} }}
+.sec-panel-header {{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+}}
+.sec-panel-title {{
+    font-size:.62rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.6px; color:var(--text-secondary);
+}}
+.sec-panel-close {{
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    font-size:.75rem; padding:2px 7px; border-radius:4px; transition:color .15s;
+}}
+.sec-panel-close:hover {{ color:var(--text-primary); }}
+.sec-panel-table {{ width:100%; border-collapse:collapse; }}
+.sec-panel-table th {{
+    font-family:'JetBrains Mono',monospace; font-size:.54rem; font-weight:600;
+    color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px;
+    padding:3px 8px 5px; border-bottom:1px solid var(--border-subtle); text-align:right;
+}}
+.sec-panel-table th:first-child {{ text-align:left; }}
+.sec-panel-table td {{
+    font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    padding:4px 8px; border-bottom:1px solid var(--border-subtle);
+    text-align:right; color:var(--text-secondary);
+}}
+.sec-panel-table td:first-child {{ text-align:left; font-weight:700; color:var(--text-primary); }}
+.sec-panel-table tr:last-child td {{ border-bottom:none; }}
 
 /* ══ Shared stat colors ════════════════════════════════════════════════ */
 .stat-green {{ color:var(--accent-green); }}

@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def _fmt(val, decimals=2):
@@ -409,7 +409,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         basket_df = basket_df.sort_values(by='Avg Score', ascending=False)
 
     gen_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-    gen_date = datetime.now().strftime('%B %d, %Y')
+    gen_date = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
     n_stocks = len(display_df)
     n_cands = len(candidates_df) if candidates_df is not None and not candidates_df.empty else 0
     n_baskets = len(basket_df) if basket_df is not None and not basket_df.empty else 0
@@ -458,9 +458,9 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             <span class="card-badge badge-main">{n_cands} Candidate{'s' if n_cands != 1 else ''}</span>
         </div>
         <p class="card-subtitle">
-            Stocks matching the 14-point Big Winner framework &mdash;
-            High ADR%/ATR%, Basket Momentum, Relative Strength, Clean Chart, MA Squeeze,
-            Catalyst, Consolidation, Group Setup, Leadership.
+            Top-ranked stocks from the Long pipeline (Score &ge; 6.0, Price &gt; $10).
+            SCORE10 = (align&times;0.20 + cross&times;0.30 + vcp&times;0.30 + r&sup2;&times;0.20) &divide; 3 &times; 10 &mdash;
+            filtered by Market Cap &ge; $1B, Price &gt; 4&times;ATR from 50 SMA, weekly uptrend confirmed.
         </p>
         <div class="card-body">{cand_table}</div>
     </section>"""
@@ -554,9 +554,9 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             <span class="card-badge badge-short">{n_short_cands} Candidate{'s' if n_short_cands != 1 else ''}</span>
         </div>
         <p class="card-subtitle">
-            Stocks matching the inverted 14-point framework &mdash;
-            Relative Weakness, Broken Chart, MA Death Cross, Distribution,
-            Sector Collapse, Laggard Detection. Best candidates for short selling.
+            Top-ranked stocks from the Short pipeline (Score &ge; 6.0, Price &gt; $30).
+            Inverted SCORE10 &mdash; highest scores indicate the weakest technicals.
+            Filtered by Market Cap &ge; $1B; weekly downtrend and distribution confirmed.
         </p>
         <div class="card-body">{scand_table}</div>
     </section>"""
@@ -724,6 +724,14 @@ body {{
     backdrop-filter: blur(24px);
 }}
 .topbar-left {{ display:flex; align-items:center; gap:16px; }}
+.home-btn {{
+    display:flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%;
+    background:var(--bg-input); border:1px solid var(--border-accent);
+    color:var(--text-secondary); font-size:1rem; text-decoration:none;
+    transition:all 0.2s; flex-shrink:0;
+}}
+.home-btn:hover {{ color:var(--accent-green); border-color:var(--accent-green); background:var(--accent-green-dim); }}
 .topbar-logo {{
     font-size: 1.5rem; font-weight: 700;
     background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
@@ -949,6 +957,7 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
 
 <div class="topbar">
     <div class="topbar-left">
+        <a href="../index.html" class="home-btn" title="Back to Homepage">&#8592;</a>
         <span class="topbar-logo">Ratatouille</span>
         <div class="topbar-divider"></div>
         <span class="topbar-date">{gen_date} &middot; {gen_time}</span>
@@ -997,19 +1006,16 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
 
     {long_recommended_section}
 
-    {long_basket_section}
-
-    {long_basket_detail_section}
-
     <section class="card" id="screener-section">
         <div class="card-header">
             <div class="card-title">
-                <h2>Full Screener Results</h2>
+                <h2>Full Screener</h2>
             </div>
             <span class="card-badge badge-main">{n_stocks} Stocks</span>
         </div>
         <p class="card-subtitle">
-            All metric columns (Score, Performance %) are sortable by clicking the header.
+            Complete Long universe sorted by Score. All columns are sortable.
+            SCORE10 = (align&times;0.20 + cross&times;0.30 + vcp&times;0.30 + r&sup2;&times;0.20) &divide; 3 &times; 10.
         </p>
         <div class="card-body">{long_screener_table}</div>
     </section>
@@ -1050,10 +1056,6 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
 
     {short_recommended_section}
 
-    {short_basket_section}
-
-    {short_basket_detail_section}
-
     <section class="card" id="short_screener-section">
         <div class="card-header">
             <div class="card-title">
@@ -1062,7 +1064,8 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
             <span class="card-badge badge-short">{n_stocks} Stocks</span>
         </div>
         <p class="card-subtitle">
-            All metric columns (Short Score, Performance %) are sortable. Highest Short Score = weakest stock.
+            Complete Short universe sorted by Short Score. Highest score = weakest stock.
+            Inverted SCORE10 &mdash; filters: Market Cap &ge; $1B, Price &gt; $30.
         </p>
         <div class="card-body">{short_screener_table}</div>
     </section>
@@ -1088,16 +1091,12 @@ var tablesInitialized = {{ long: false, short: false }};
 var longNavItems = [
     {{ href: '#candidates-section', label: 'Candidates' }},
     {{ href: '#recommended-section', label: 'Recommended' }},
-    {{ href: '#baskets-section', label: 'Baskets' }},
-    {{ href: '#basket-details-section', label: 'Top 5' }},
     {{ href: '#screener-section', label: 'Full Screen' }}
 ];
 
 var shortNavItems = [
     {{ href: '#short_candidates-section', label: 'Short Candidates' }},
     {{ href: '#short_recommended-section', label: 'Short Recommended' }},
-    {{ href: '#short_baskets-section', label: 'Weak Sectors' }},
-    {{ href: '#short_basket-details-section', label: 'Worst 5' }},
     {{ href: '#short_screener-section', label: 'Full Short Screen' }}
 ];
 
@@ -1167,10 +1166,6 @@ function initTabTables(tab) {{
                 }}
             }});
         }}
-        // Long Baskets
-        if ($('#basketTable').length && !$.fn.DataTable.isDataTable('#basketTable')) {{
-            $('#basketTable').DataTable({{ order: [[1, 'desc']], paging: false, searching: false, info: false }});
-        }}
         // Long Candidates
         if ($('#candidateTable').length && !$.fn.DataTable.isDataTable('#candidateTable')) {{
             $('#candidateTable').DataTable({{
@@ -1187,12 +1182,6 @@ function initTabTables(tab) {{
                 language: {{ search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: {{ previous: '&larr;', next: '&rarr;' }} }}
             }});
         }}
-        // Long Basket Details
-        $('#tab-long table[id^="basketDetail"]').each(function() {{
-            if (!$.fn.DataTable.isDataTable(this)) {{
-                $(this).DataTable({{ order: [[1, 'desc']], paging: false, searching: false, info: false }});
-            }}
-        }});
     }} else {{
         // Short Screener
         if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {{
@@ -1207,10 +1196,6 @@ function initTabTables(tab) {{
                     paginate: {{ previous: '&larr;', next: '&rarr;' }}
                 }}
             }});
-        }}
-        // Short Baskets
-        if ($('#short_basketTable').length && !$.fn.DataTable.isDataTable('#short_basketTable')) {{
-            $('#short_basketTable').DataTable({{ order: [[1, 'desc']], paging: false, searching: false, info: false }});
         }}
         // Short Candidates
         if ($('#short_candidateTable').length && !$.fn.DataTable.isDataTable('#short_candidateTable')) {{
@@ -1228,12 +1213,6 @@ function initTabTables(tab) {{
                 language: {{ search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: {{ previous: '&larr;', next: '&rarr;' }} }}
             }});
         }}
-        // Short Basket Details
-        $('#tab-short table[id^="short_basketDetail"]').each(function() {{
-            if (!$.fn.DataTable.isDataTable(this)) {{
-                $(this).DataTable({{ order: [[1, 'desc']], paging: false, searching: false, info: false }});
-            }}
-        }});
     }}
 }}
 
