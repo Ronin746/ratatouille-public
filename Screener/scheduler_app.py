@@ -54,7 +54,8 @@ def run_screener(tickers=None):
     # zeroes out atr_pct, adr_pct, volume_surge for every ticker.
     # Fix: normalize the index to tz-naive NYC dates before filtering.
     et_tz    = pytz.timezone("America/New_York")
-    today_et = pd.Timestamp(datetime.now(et_tz).date())
+    now_et   = datetime.now(et_tz)
+    today_et = pd.Timestamp(now_et.date())
 
     if raw_data.index.tz is not None:
         # Convert UTC index → NYC local date → tz-naive for comparison
@@ -62,11 +63,17 @@ def run_screener(tickers=None):
     else:
         idx_et = raw_data.index.normalize()
 
-    raw_data = raw_data[idx_et < today_et]
+    # After 16:00 ET the market is closed → today's bar is complete, include it.
+    # Before 16:00 ET the session is still open → exclude the partial bar.
+    if now_et.hour >= 16:
+        raw_data = raw_data[idx_et <= today_et]
+    else:
+        raw_data = raw_data[idx_et < today_et]
     if raw_data.empty:
         logger.error("No completed session data available after date filter. Aborting.")
         return
-    logger.info(f"Data truncated to last completed NY session: {raw_data.index[-1].date()}")
+    session_date = raw_data.index[-1].date()
+    logger.info(f"Data truncated to last completed NY session: {session_date}")
 
     benchmark_data = get_ticker_data(raw_data, BENCHMARK_TICKER)
     if benchmark_data is None or benchmark_data.empty:
@@ -191,7 +198,7 @@ def run_screener(tickers=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
 
-        date_str = datetime.now().strftime('%Y-%m-%d')
+        date_str = session_date.strftime('%Y-%m-%d')
         filename = f"Ratatouille_{date_str}.html"
         reports_dir = os.path.join(project_root, 'Reports')
         os.makedirs(reports_dir, exist_ok=True)
@@ -224,6 +231,7 @@ def run_screener(tickers=None):
             candidates_df=candidates_df,
             short_basket_df=short_basket_df,
             short_candidates_df=short_candidates_df,
+            session_date=session_date,
         )
         logger.info(f"Dashboard saved to: {report_path}")
 
@@ -238,6 +246,25 @@ def run_screener(tickers=None):
             pass
 
         # Report saved — site is opened by START_SCREENER.command after Netlify deploy
+
+        # ── Auto git push ─────────────────────────────────────────────────────
+        try:
+            import subprocess
+            repo_root = os.path.dirname(script_dir)
+            logger.info("Git: staging and pushing changes...")
+            subprocess.run(["git", "add", "Screener/", "Archive/index.html",
+                            "Archive/market_score_history.json"],
+                           cwd=repo_root, check=True)
+            subprocess.run(["git", "commit", "-m",
+                            f"Auto update - {datetime.now().strftime('%Y-%m-%d %H:%M')}"],
+                           cwd=repo_root, check=True)
+            subprocess.run(["git", "push", "origin", "main"],
+                           cwd=repo_root, check=True)
+            logger.info("Git: push completed.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Git push failed: {e}")
+        except Exception as e:
+            logger.warning(f"Git push error: {e}")
 
     except Exception as e:
         logger.error(f"Error generating outputs: {e}")
@@ -264,9 +291,13 @@ if __name__ == "__main__":
             test_tickers = all_tickers[:50]
             run_screener(tickers=test_tickers)
     else:
-        logger.info("Scheduler started. Waiting for 22:01...")
-        schedule.every().day.at("22:01").do(job)
-        
+        logger.info("Scheduler started. Waiting for 22:30 (Mon–Fri)...")
+        schedule.every().monday.at("22:30").do(job)
+        schedule.every().tuesday.at("22:30").do(job)
+        schedule.every().wednesday.at("22:30").do(job)
+        schedule.every().thursday.at("22:30").do(job)
+        schedule.every().friday.at("22:30").do(job)
+
         while True:
             schedule.run_pending()
             time.sleep(60)

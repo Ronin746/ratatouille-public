@@ -409,7 +409,11 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         basket_df = basket_df.sort_values(by='Avg Score', ascending=False)
 
     gen_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-    gen_date = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
+    session_date = kwargs.get('session_date', None)
+    if session_date is not None:
+        gen_date = session_date.strftime('%B %d, %Y')
+    else:
+        gen_date = datetime.now().strftime('%B %d, %Y')
     n_stocks = len(display_df)
     n_cands = len(candidates_df) if candidates_df is not None and not candidates_df.empty else 0
     n_baskets = len(basket_df) if basket_df is not None and not basket_df.empty else 0
@@ -1013,10 +1017,6 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
             </div>
             <span class="card-badge badge-main">{n_stocks} Stocks</span>
         </div>
-        <p class="card-subtitle">
-            Complete Long universe sorted by Score. All columns are sortable.
-            SCORE10 = (align&times;0.20 + cross&times;0.30 + vcp&times;0.30 + r&sup2;&times;0.20) &divide; 3 &times; 10.
-        </p>
         <div class="card-body">{long_screener_table}</div>
     </section>
 
@@ -1063,10 +1063,6 @@ table.dataTable thead .sorting_desc::after {{ opacity:0.9 !important; color:var(
             </div>
             <span class="card-badge badge-short">{n_stocks} Stocks</span>
         </div>
-        <p class="card-subtitle">
-            Complete Short universe sorted by Short Score. Highest score = weakest stock.
-            Inverted SCORE10 &mdash; filters: Market Cap &ge; $1B, Price &gt; $30.
-        </p>
         <div class="card-body">{short_screener_table}</div>
     </section>
 
