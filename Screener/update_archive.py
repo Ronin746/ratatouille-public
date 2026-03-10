@@ -404,20 +404,6 @@ def build_latest_report_html(reports_with_stats):
       <div class="lr-date">{date_display}</div>
       <div class="lr-arrow">&#8594;</div>
     </div>
-    <div class="lr-stats">
-      <div class="lr-stat">
-        <div class="lr-stat-label">Scanned</div>
-        <div class="lr-stat-value stat-blue">{total_str}</div>
-      </div>
-      <div class="lr-stat">
-        <div class="lr-stat-label">Top Pick</div>
-        <div class="lr-stat-value stat-gold">{stats['top_ticker']}</div>
-      </div>
-      <div class="lr-stat">
-        <div class="lr-stat-label">Best Score</div>
-        <div class="lr-stat-value stat-green">{score_str}</div>
-      </div>
-    </div>
   </a>
 </div>
 <!-- ── /Latest Report ────────────────────────────────────────────────── -->
