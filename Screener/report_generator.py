@@ -224,6 +224,7 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  score_val,
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -243,7 +244,7 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
     rec_df.insert(0, "Rank", rec_df.index + 1)
     rec_table = _build_table_html(
         rec_df, table_id,
-        columns=["Rank", "Ticker", "Price", "Score", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"],
+        columns=["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"],
         formatters={
             "Score": lambda v: f'<span class="{score_badge_class}">{_fmt(v, 1)}</span>',
         },
@@ -325,6 +326,7 @@ def _build_basket_detail_sections(display_df, basket_df, mode="long"):
             rows.append({
                 "Ticker": str(ticker),
                 "Score": round(row.get(score_col, 0), 1),
+                "R²":    round(row.get('r_squared', 0), 2),
                 "1D %": round(row.get('1d_return', 0) * 100, 2),
                 "3D %": round(row.get('3d_return', 0) * 100, 2),
                 "1W %": round(row.get('1w_return', 0) * 100, 2),
@@ -337,7 +339,7 @@ def _build_basket_detail_sections(display_df, basket_df, mode="long"):
         score_badge_class = "score-badge-short" if mode == "short" else "score-badge"
         table_html = _build_table_html(
             bdf, tid,
-            columns=["Ticker", "Score", "1D %", "3D %", "1W %", "1M %"],
+            columns=["Ticker", "Score", "R²", "1D %", "3D %", "1W %", "1M %"],
             formatters={
                 "Score": lambda v: f'<span class="{score_badge_class}">{_fmt(v, 1)}</span>',
             },
@@ -509,6 +511,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Final_Score', 0), 1),
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -518,7 +521,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         })
 
     screener_df = pd.DataFrame(screener_rows)
-    screener_cols = ["Rank", "Ticker", "Price", "Score", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
+    screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
 
     long_screener_table = _build_table_html(
         screener_df, "screenerTable",
@@ -609,6 +612,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Short_Score', 100 - row.get('Final_Score', 0)), 1),
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -618,7 +622,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         })
 
     short_screener_df = pd.DataFrame(short_screener_rows)
-    short_screener_cols = ["Rank", "Ticker", "Price", "Score", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
+    short_screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
 
     short_screener_table = _build_table_html(
         short_screener_df, "short_screenerTable",
