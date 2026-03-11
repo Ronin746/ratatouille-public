@@ -869,6 +869,7 @@ def build_sector_charts_html(market_history, top10_data=None):
         <button class="sc-sort-btn" onclick="sortSectors('d20',this)">&#916; 20d</button>
         <button class="sc-sort-btn" onclick="sortSectors('pct',this)">Pct</button>
         <button class="sc-sort-btn active" onclick="sortByStage(this)">Stage</button>
+        <button class="sc-watchlist-btn" onclick="downloadLeadingWatchlist()" title="Download top-10 tickers from LEADING &amp; BUILDING sectors as CSV">&#8659; Watchlist</button>
       </div>
     </div>
   </div>
@@ -981,6 +982,58 @@ function closeSectorPanel() {{
   if (_selCard) _selCard.classList.remove('sec-selected');
   _selCard = null;
   document.getElementById('secPanelArea').style.display = 'none';
+}}
+
+// ── Watchlist download (LEADING + BUILDING sectors, top-10 each) ──────────
+function downloadLeadingWatchlist() {{
+  var TARGET_STAGES = {{'LEADING': true, 'BUILDING': true}};
+  var cards = Array.from(document.querySelectorAll('#secGrid .sec-card'));
+  var seen = {{}};
+  var rows = [];
+  var today = new Date().toISOString().slice(0,10);
+
+  // header
+  rows.push('Ticker,Sector,Stage,Score,R2,Chg1D%,Chg1W%,Chg1M%');
+
+  cards.forEach(function(card) {{
+    var stage = card.dataset.stage || '';
+    if (!TARGET_STAGES[stage]) return;
+    var sectorName = (card.querySelector('.sec-name').title || card.querySelector('.sec-name').textContent).trim();
+    var stocks = [];
+    try {{ stocks = JSON.parse(card.dataset.top10 || '[]'); }} catch(e) {{}}
+    stocks.forEach(function(s) {{
+      if (seen[s.t]) return;
+      seen[s.t] = true;
+      rows.push([
+        s.t,
+        '"' + sectorName.replace(/"/g, '""') + '"',
+        stage,
+        s.s,
+        s.r2,
+        s.d1,
+        s.d7,
+        s.d30
+      ].join(','));
+    }});
+  }});
+
+  if (rows.length <= 1) {{
+    alert('No LEADING or BUILDING sectors found in current view.');
+    return;
+  }}
+
+  var n = rows.length - 1;
+  var csv = rows.join('\r\n');
+  var blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'watchlist_leading_building_' + today + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  console.log('Watchlist downloaded: ' + n + ' tickers');
 }}
 
 </script>
@@ -1224,6 +1277,15 @@ body {{
 .sc-sort-btn.active {{
     background:rgba(74,158,255,.12); border-color:rgba(74,158,255,.35);
     color:var(--accent-blue);
+}}
+.sc-watchlist-btn {{
+    font-family:'JetBrains Mono',monospace; font-size:.62rem; font-weight:600;
+    background:rgba(0,212,170,.10); border:1px solid rgba(0,212,170,.35);
+    color:#00d4aa; padding:3px 10px; border-radius:20px;
+    cursor:pointer; transition:all .15s; margin-left:4px;
+}}
+.sc-watchlist-btn:hover {{
+    background:rgba(0,212,170,.20); border-color:#00d4aa;
 }}
 /* ══ Sector Sparkline Grid ═════════════════════════════════════════════ */
 .sec-grid {{
