@@ -1137,7 +1137,7 @@ function downloadLeadingWatchlist() {{
   }}
 
   var n = rows.length - 1;
-  var csv = rows.join('\r\n');
+  var csv = rows.join('\\r\\n');
   var blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');

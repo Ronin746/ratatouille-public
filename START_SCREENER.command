@@ -29,7 +29,12 @@ fi
 echo "✅  Python environment ready"
 echo ""
 
-# ── 2. Run the screener ───────────────────────────────
+# ── 2. Sync baskets from Basket.docx ─────────────────
+echo "Checking Basket.docx for new baskets..."
+python3 sync_baskets.py
+echo ""
+
+# ── 3. Run the screener ───────────────────────────────
 echo "Starting scan (~20-30 min for 7000 tickers)."
 echo "Do not close this window."
 echo "───────────────────────────────────────────────────"
@@ -44,7 +49,7 @@ if [ $SCREENER_EXIT -ne 0 ]; then
     echo ""
 fi
 
-# ── 3. Build / update the archive page ───────────────
+# ── 4. Build / update the archive page ───────────────
 echo ""
 echo "Building archive page..."
 python3 update_archive.py
@@ -54,7 +59,7 @@ if [ $ARCHIVE_EXIT -ne 0 ]; then
     echo "⚠️  Archive update failed. Skipping deploy."
 else
     echo ""
-    # ── 4. Deploy to Cloudflare Pages ─────────────────
+    # ── 5. Deploy to Cloudflare Pages ─────────────────
     echo "Deploying to Cloudflare Pages..."
     CF_OUTPUT=$(python3 "$ROOT_DIR/deploy_to_cloudflare.py" 2>&1)
     DEPLOY_EXIT=$?
