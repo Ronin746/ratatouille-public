@@ -76,6 +76,59 @@ def get_csv_stats(date_str):
     return stats
 
 
+def get_latest_candidates(min_score=75):
+    """
+    Read the latest screen_results CSV and return all tickers with
+    Final_Score >= min_score (long candidates).
+    Returns list: [{'t':ticker,'sector':sector,'s':score,'r2':r2,
+                    'd1':chg1d,'d7':chg1w,'d30':chg1m}, ...]
+    sorted by score descending.
+    """
+    screener_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir   = os.path.dirname(screener_dir)
+    data_dir     = os.path.join(parent_dir, 'Data')
+
+    try:
+        csv_files = sorted(
+            [f for f in os.listdir(data_dir)
+             if f.startswith('screen_results_') and f.endswith('.csv')],
+            reverse=True
+        )
+    except Exception:
+        return []
+
+    if not csv_files:
+        return []
+
+    csv_path = os.path.join(data_dir, csv_files[0])
+
+    try:
+        import pandas as pd
+        df = pd.read_csv(csv_path, index_col=0)
+        required = {'Final_Score', 'r_squared', '1d_return', '1w_return', '1m_return'}
+        if not required.issubset(df.columns):
+            return []
+
+        cands = df[df['Final_Score'] >= min_score].copy()
+        cands = cands.sort_values('Final_Score', ascending=False)
+
+        result = []
+        for ticker, row in cands.iterrows():
+            result.append({
+                't':      str(ticker),
+                'sector': str(row.get('Sector', '')),
+                's':      round(float(row['Final_Score']), 1),
+                'r2':     round(float(row['r_squared']), 2),
+                'd1':     round(float(row['1d_return']) * 100, 1),
+                'd7':     round(float(row['1w_return']) * 100, 1),
+                'd30':    round(float(row['1m_return']) * 100, 1),
+            })
+        return result
+    except Exception as e:
+        print(f'  ⚠ get_latest_candidates error: {e}')
+        return []
+
+
 def get_latest_basket_top10():
     """
     Read the latest screen_results CSV and return per-basket top-10 stocks.
@@ -1017,8 +1070,29 @@ function downloadLeadingWatchlist() {{
     }});
   }});
 
+  // Append long candidates (Final_Score >= 75) not already included above
+  var candEl = document.getElementById('candidatesData');
+  if (candEl) {{
+    var candidates = [];
+    try {{ candidates = JSON.parse(candEl.textContent || '[]'); }} catch(e) {{}}
+    candidates.forEach(function(c) {{
+      if (seen[c.t]) return;
+      seen[c.t] = true;
+      rows.push([
+        c.t,
+        '"' + (c.sector || '').replace(/"/g, '""') + '"',
+        'CANDIDATE',
+        c.s,
+        c.r2,
+        c.d1,
+        c.d7,
+        c.d30
+      ].join(','));
+    }});
+  }}
+
   if (rows.length <= 1) {{
-    alert('No LEADING or BUILDING sectors found in current view.');
+    alert('No LEADING/BUILDING sectors or candidates found.');
     return;
   }}
 
@@ -1028,7 +1102,7 @@ function downloadLeadingWatchlist() {{
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href     = url;
-  a.download = 'watchlist_leading_building_' + today + '.csv';
+  a.download = 'watchlist_' + today + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1051,11 +1125,14 @@ def build_index_html(reports_with_stats, market_history=None):
     latest_report_html = build_latest_report_html(reports_with_stats)
     breadth_html       = ''
     sector_html        = ''
+    candidates_data = []
     if market_history:
-        breadth_html  = build_breadth_html(market_history)
-        top10_data    = get_latest_basket_top10()
-        sector_html   = build_sector_charts_html(market_history, top10_data=top10_data)
+        breadth_html    = build_breadth_html(market_history)
+        top10_data      = get_latest_basket_top10()
+        candidates_data = get_latest_candidates(min_score=75)
+        sector_html     = build_sector_charts_html(market_history, top10_data=top10_data)
 
+    candidates_json = json.dumps(candidates_data)
     now_str = datetime.now().strftime('%b %d, %Y at %H:%M')
 
     return f"""<!DOCTYPE html>
@@ -1429,6 +1506,7 @@ body {{
     Ratatouille Screener &nbsp;&middot;&nbsp; Updated {now_str}
 </div>
 
+<script id="candidatesData" type="application/json">{candidates_json}</script>
 </body>
 </html>"""
 
