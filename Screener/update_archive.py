@@ -76,54 +76,94 @@ def get_csv_stats(date_str):
     return stats
 
 
-def get_latest_candidates(min_score=75):
+def get_latest_candidates():
     """
-    Read the latest screen_results CSV and return all tickers with
-    Final_Score >= min_score (long candidates).
-    Returns list: [{'t':ticker,'sector':sector,'s':score,'r2':r2,
+    Parse the Long Candidates table from the latest Ratatouille report HTML.
+    Returns list: [{'t':ticker,'sector':sector,'s':score7f,'r2':score10,
                     'd1':chg1d,'d7':chg1w,'d30':chg1m}, ...]
-    sorted by score descending.
+    preserving the order from the report (best candidates first).
+
+    Report table columns (0-indexed):
+      0:Ticker  1:Score/10  2:7-Factor  3:Price  4:Chg1D%  5:Chg1W%  6:Chg1M%
+      7:ATR%    8:Dist21EMA 9:DistATR50SMA  10:Setup Notes
     """
-    screener_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir   = os.path.dirname(screener_dir)
-    data_dir     = os.path.join(parent_dir, 'Data')
+    screener_dir  = os.path.dirname(os.path.abspath(__file__))
+    parent_dir    = os.path.dirname(screener_dir)
+    reports_dir   = os.path.join(parent_dir, 'Reports')
 
     try:
-        csv_files = sorted(
-            [f for f in os.listdir(data_dir)
-             if f.startswith('screen_results_') and f.endswith('.csv')],
+        pattern = re.compile(r'^Ratatouille_(\d{4}-\d{2}-\d{2})\.html$')
+        html_files = sorted(
+            [f for f in os.listdir(reports_dir) if pattern.match(f)],
             reverse=True
         )
     except Exception:
         return []
 
-    if not csv_files:
+    if not html_files:
         return []
 
-    csv_path = os.path.join(data_dir, csv_files[0])
+    html_path = os.path.join(reports_dir, html_files[0])
 
     try:
-        import pandas as pd
-        df = pd.read_csv(csv_path, index_col=0)
-        required = {'Final_Score', 'r_squared', '1d_return', '1w_return', '1m_return'}
-        if not required.issubset(df.columns):
+        # Build reverse ticker→basket map for sector lookup
+        try:
+            from sector_baskets import SECTOR_BASKETS
+            ticker_to_basket = {
+                t: basket
+                for basket, tickers in SECTOR_BASKETS.items()
+                for t in tickers
+            }
+        except Exception:
+            ticker_to_basket = {}
+
+        with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
+            html = f.read()
+
+        # Locate the candidateTable tbody
+        tbl_start = html.find('id="candidateTable"')
+        if tbl_start == -1:
             return []
+        tbody_start = html.find('<tbody>', tbl_start)
+        tbody_end   = html.find('</tbody>', tbody_start)
+        if tbody_start == -1 or tbody_end == -1:
+            return []
+        tbody = html[tbody_start:tbody_end]
 
-        cands = df[df['Final_Score'] >= min_score].copy()
-        cands = cands.sort_values('Final_Score', ascending=False)
-
+        # Parse rows
         result = []
-        for ticker, row in cands.iterrows():
-            result.append({
-                't':      str(ticker),
-                'sector': str(row.get('Sector', '')),
-                's':      round(float(row['Final_Score']), 1),
-                'r2':     round(float(row['r_squared']), 2),
-                'd1':     round(float(row['1d_return']) * 100, 1),
-                'd7':     round(float(row['1w_return']) * 100, 1),
-                'd30':    round(float(row['1m_return']) * 100, 1),
-            })
+        for row_m in re.finditer(r'<tr>(.*?)</tr>', tbody, re.DOTALL):
+            cells_raw = re.findall(r'<td>(.*?)</td>', row_m.group(1), re.DOTALL)
+            cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells_raw]
+            if len(cells) < 7:
+                continue
+            ticker = cells[0].strip()
+            if not ticker:
+                continue
+
+            # Sector: basket lookup first, then try to extract ALL-CAPS word from Setup Notes
+            sector = ticker_to_basket.get(ticker, '')
+            if not sector and len(cells) > 10:
+                notes = cells[10]
+                m = re.search(r'\|\s*([A-Z][A-Z &]{2,})\s*\|', notes)
+                if m:
+                    sector = m.group(1).strip()
+
+            try:
+                result.append({
+                    't':      ticker,
+                    'sector': sector,
+                    's':      round(float(cells[2]), 1),   # 7-Factor score
+                    'r2':     round(float(cells[1]), 2),   # Score/10 (setup quality)
+                    'd1':     round(float(cells[4]), 1),
+                    'd7':     round(float(cells[5]), 1),
+                    'd30':    round(float(cells[6]), 1),
+                })
+            except (ValueError, IndexError):
+                continue
+
         return result
+
     except Exception as e:
         print(f'  ⚠ get_latest_candidates error: {e}')
         return []
@@ -1129,7 +1169,7 @@ def build_index_html(reports_with_stats, market_history=None):
     if market_history:
         breadth_html    = build_breadth_html(market_history)
         top10_data      = get_latest_basket_top10()
-        candidates_data = get_latest_candidates(min_score=75)
+        candidates_data = get_latest_candidates()
         sector_html     = build_sector_charts_html(market_history, top10_data=top10_data)
 
     candidates_json = json.dumps(candidates_data)
