@@ -1,0 +1,54 @@
+name: Daily Screener v3
+
+on:
+  schedule:
+    - cron: '0 3 * * 2-6'    # 03:00 UTC = 04:00 CET (inv) / 05:00 CEST (est) (mar-sab)
+  workflow_dispatch:           # Avvio manuale da GitHub.com
+
+permissions:
+  contents: write
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: Screener/requirements.txt
+
+      - name: Installa dipendenze
+        run: pip install -r Screener/requirements.txt
+
+      - name: Esegui daily backfill completo
+        run: |
+          cd Screener
+          python daily_auto_backfill.py
+        env:
+          EMAIL_USER:     ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+
+      - name: Commit e push risultati
+        run: |
+          git config user.name "Andrea"
+          git config user.email "chiefuseless@gmail.com"
+          git add Reports/ Archive/ Screener/ Data/archive/
+          git diff --cached --quiet && echo "Nessuna modifica da committare" || git commit -m "Auto screener v3 - $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin main
+          git push origin main
+
+      - name: Deploy su Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken:    ${{ secrets.CF_API_TOKEN }}
+          accountId:   ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ratatouille-radar
+          directory:   Archive
+          branch:      main

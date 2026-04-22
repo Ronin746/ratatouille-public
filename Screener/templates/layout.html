@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ratatouille Screener &mdash; {{ gen_date }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css">
+<style>
+/* ══════════════════════════════════════════════════════════
+   RATATOUILLE — design system  (dark + light)
+   ══════════════════════════════════════════════════════════ */
+
+/* ── DARK (default) — Claude desktop dark palette ── */
+:root {
+    /* Background caldi scuri — Claude desktop dark */
+    --bg-base:      #1c1917;          /* stone-950 caldo */
+    --bg-surface:   #252422;          /* superficie caldo */
+    --bg-elevated:  #2e2c29;          /* elevato caldo */
+    --bg-input:     #2e2c29;
+
+    /* Bordi caldi scuri */
+    --border-base:  #3d3b38;          /* bordo caldo */
+    --border-dim:   #302e2b;          /* bordo tenue */
+    --border-hover: #52504c;          /* bordo hover */
+
+    /* Testo caldo chiaro */
+    --text-primary:   #f5f4ef;        /* panna calda */
+    --text-secondary: #a8a49e;        /* grigio caldo medio */
+    --text-muted:     #6e6b66;        /* grigio caldo scuro */
+
+    /* Accent arancione/ocra — stesso del light */
+    --accent:         #cc6b45;        /* arancione/ocra Claude */
+    --accent-bright:  #da7756;        /* ocra chiaro */
+    --accent-dim:     rgba(204,107,69,0.12);
+    --accent-glow:    rgba(204,107,69,0.18);
+
+    /* Semantic */
+    --green:          #34d399;        /* emerald-400 */
+    --green-dim:      rgba(52,211,153,0.10);
+    --gold:           #fbbf24;        /* amber-400 */
+    --gold-dim:       rgba(251,191,36,0.10);
+    --red:            #f87171;        /* red-400 */
+    --red-dim:        rgba(248,113,113,0.10);
+    --blue:           #60a5fa;        /* blue-400 */
+    --blue-dim:       rgba(96,165,250,0.10);
+    --orange:         #fb923c;        /* orange-400 */
+    --purple:         #a78bfa;        /* violet-400 */
+
+    /* Topbar glass caldo scuro */
+    --topbar-bg:      rgba(28,25,23,0.92);
+
+    /* Card/stat */
+    --card-bg:        #252422;
+    --stat-bg:        #2e2c29;
+    --stat-bg-hover:  #3d3b38;
+
+    /* Shape */
+    --radius:    12px;
+    --radius-sm:  8px;
+    --radius-xs:  6px;
+
+    /* Shadows — Tremor shadow-sm */
+    --shadow:    0 1px 2px 0 rgba(0,0,0,0.4);
+    --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -2px rgba(0,0,0,0.4);
+    --shadow-xl: 0 10px 15px -3px rgba(0,0,0,0.6), 0 4px 6px -4px rgba(0,0,0,0.5);
+}
+
+/* ── LIGHT — palette Claude desktop (bianco caldo, viola, testo antracite) ── */
+[data-theme="light"] {
+    /* Background caldi — come Claude desktop */
+    --bg-base:      #f5f4ef;          /* panna calda */
+    --bg-surface:   #faf9f5;          /* bianco caldo carta */
+    --bg-elevated:  #eeecea;          /* grigio caldo chiaro */
+    --bg-input:     #eeecea;
+
+    /* Bordi caldi */
+    --border-base:  #e2dfd8;
+    --border-dim:   #ede9e3;
+    --border-hover: #cdc9c1;
+
+    /* Testo antracite caldo */
+    --text-primary:   #1a1915;        /* quasi nero caldo */
+    --text-secondary: #6b6860;        /* grigio caldo medio */
+    --text-muted:     #9b9790;        /* grigio caldo chiaro */
+
+    /* Accent arancione/ocra — logo Claude */
+    --accent:         #cc6b45;        /* arancione ocra Claude */
+    --accent-bright:  #da7756;        /* ocra chiaro */
+    --accent-dim:     #fdf0ea;        /* arancione-50 caldo */
+    --accent-glow:    rgba(204,107,69,0.10);
+
+    --green:          #059669;
+    --green-dim:      rgba(5,150,105,0.08);
+    --gold:           #b45309;
+    --gold-dim:       rgba(180,83,9,0.08);
+    --red:            #dc2626;
+    --red-dim:        rgba(220,38,38,0.08);
+    --blue:           #2563eb;
+    --blue-dim:       rgba(37,99,235,0.08);
+    --orange:         #ea580c;
+    --purple:         #7c3aed;
+
+    --topbar-bg:      rgba(245,244,239,0.92);
+
+    /* Card/stat */
+    --card-bg:        #faf9f5;
+    --stat-bg:        #f5f4ef;
+    --stat-bg-hover:  #eeecea;
+
+    /* Shadows calde */
+    --shadow:    0 1px 2px 0 rgba(26,25,21,0.06);
+    --shadow-lg: 0 4px 6px -1px rgba(26,25,21,0.08), 0 2px 4px -2px rgba(26,25,21,0.06);
+    --shadow-xl: 0 10px 15px -3px rgba(26,25,21,0.10), 0 4px 6px -4px rgba(26,25,21,0.07);
+}
+
+/* ── THEME TOGGLE SWITCH ── */
+.theme-toggle {
+    display: flex; align-items: center; gap: 7px;
+    cursor: pointer; user-select: none; flex-shrink: 0;
+}
+.theme-toggle-label {
+    font-size: 0.72rem; font-weight: 500;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    min-width: 30px;
+}
+.theme-toggle-track {
+    position: relative;
+    width: 38px; height: 22px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-base);
+    border-radius: 99px;
+    transition: background 0.25s, border-color 0.25s;
+    flex-shrink: 0;
+}
+[data-theme="light"] .theme-toggle-track {
+    background: var(--accent-dim);
+    border-color: var(--accent-bright);
+}
+.theme-toggle-thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; line-height: 1;
+}
+[data-theme="light"] .theme-toggle-thumb {
+    transform: translateX(16px);
+    background: var(--accent);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background 0.25s, color 0.25s;
+}
+
+/* ══════════════════════════════════════════
+   TOPBAR — floating, glassmorphism
+   ══════════════════════════════════════════ */
+.topbar-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 12px 24px;
+    background: transparent;
+    pointer-events: none;
+}
+.topbar {
+    pointer-events: all;
+    max-width: 1600px;
+    margin: 0 auto;
+    background: var(--topbar-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--border-base);
+    border-radius: 14px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02);
+}
+.topbar-left { display:flex; align-items:center; gap:14px; }
+.home-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:32px; height:32px; border-radius:8px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--border-base);
+    color:var(--text-secondary); font-size:0.95rem; text-decoration:none;
+    transition:all 0.2s; flex-shrink:0;
+}
+.home-btn:hover {
+    color:var(--accent-bright);
+    border-color:rgba(129,140,248,0.4);
+    background:var(--accent-dim);
+}
+.topbar-logo {
+    font-size:1.1rem; font-weight:700; letter-spacing:-0.5px;
+    color: var(--accent);
+}
+.topbar-logo span {
+    color: var(--accent);
+}
+.topbar-divider { width:1px; height:20px; background:var(--border-base); }
+.topbar-date {
+    color:var(--text-muted);
+    font-size:0.78rem;
+    font-family:'JetBrains Mono', monospace;
+}
+.topbar-right { display:flex; gap:6px; flex-wrap:wrap; }
+
+.nav-pill {
+    padding:5px 14px; border-radius:20px; font-size:0.74rem; font-weight:500;
+    color:var(--text-secondary);
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-dim);
+    cursor:pointer; text-decoration:none; transition:all 0.2s;
+    letter-spacing:0.2px;
+}
+.nav-pill:hover, .nav-pill.active {
+    color:var(--accent-bright);
+    border-color:rgba(129,140,248,0.35);
+    background:var(--accent-dim);
+}
+.nav-pill-short {
+    padding:5px 14px; border-radius:20px; font-size:0.74rem; font-weight:500;
+    color:var(--text-secondary);
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border-dim);
+    cursor:pointer; text-decoration:none; transition:all 0.2s;
+}
+.nav-pill-short:hover, .nav-pill-short.active {
+    color:var(--red);
+    border-color:rgba(248,113,113,0.35);
+    background:var(--red-dim);
+}
+
+/* ══════════════════════════════════════════
+   TAB SYSTEM
+   ══════════════════════════════════════════ */
+.tab-bar {
+    display:flex; justify-content:center; gap:10px;
+    padding:16px 24px 0;
+    max-width:1600px; margin:0 auto;
+}
+.tab-btn {
+    padding:10px 36px;
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    font-size:0.88rem; font-weight:600; cursor:pointer;
+    transition:all 0.2s; letter-spacing:0.3px;
+    font-family:'Inter', sans-serif;
+    position:relative; overflow:hidden;
+}
+.tab-btn-long {
+    background: rgba(99,102,241,0.06);
+    color: var(--text-secondary);
+    border-color: var(--border-base);
+}
+.tab-btn-long:hover, .tab-btn-long.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(129,140,248,0.10));
+    color: var(--accent-bright);
+    border-color: rgba(99,102,241,0.4);
+    box-shadow: 0 0 20px rgba(99,102,241,0.12);
+}
+.tab-btn-short {
+    background: rgba(248,113,113,0.05);
+    color: var(--text-secondary);
+    border-color: var(--border-base);
+}
+.tab-btn-short:hover, .tab-btn-short.active {
+    background: linear-gradient(135deg, rgba(248,113,113,0.18), rgba(251,146,60,0.08));
+    color: var(--red);
+    border-color: rgba(248,113,113,0.4);
+    box-shadow: 0 0 20px rgba(248,113,113,0.10);
+}
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ══════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════ */
+.dashboard {
+    max-width:1600px; margin:0 auto;
+    padding:20px 24px 60px;
+    display:flex; flex-direction:column; gap:20px;
+}
+
+/* ══════════════════════════════════════════
+   STATS BAR
+   ══════════════════════════════════════════ */
+.stats-bar {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+    gap:12px;
+}
+/* Tremor KPI card pattern: rounded-lg border p-6 shadow-sm bg-white dark:bg-[#090E1A] */
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-sm);    /* rounded-lg */
+    padding: 16px 18px;                 /* p-4 ~ p-6 */
+    transition: all 0.2s;
+    box-shadow: var(--shadow);          /* shadow-sm */
+}
+.stat-card:hover {
+    background: var(--stat-bg-hover);
+    border-color: var(--border-hover);
+}
+/* Tremor: label = "font-bold sm:text-sm text-gray-900 dark:text-gray-50" */
+.stat-label {
+    font-size: 0.875rem;                /* text-sm */
+    font-weight: 700;                   /* font-bold */
+    color: var(--text-primary);         /* gray-900 / gray-50 */
+    margin-bottom: 4px;
+}
+/* Tremor: value = "text-xl text-gray-900 dark:text-gray-50" */
+.stat-value {
+    font-size: 1.25rem;                 /* text-xl */
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+.stat-green  { color:var(--green); }
+.stat-gold   { color:var(--gold); }
+.stat-blue   { color:var(--blue); }
+.stat-purple { color:var(--purple); }
+.stat-red    { color:var(--red); }
+.stat-orange { color:var(--orange); }
+
+/* ══════════════════════════════════════════
+   CARD — Tremor: rounded-lg border shadow-sm bg-white dark:bg-[#090E1A]
+   ══════════════════════════════════════════ */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-base);   /* border-gray-200 dark:border-gray-900 */
+    border-radius: var(--radius);           /* rounded-lg */
+    overflow: hidden;
+    box-shadow: var(--shadow);              /* shadow-sm */
+    transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-hover); }
+
+.card-highlight {
+    border-color: rgba(251,191,36,0.2);
+    box-shadow: var(--shadow), 0 0 60px rgba(251,191,36,0.03);
+}
+.card-highlight-long {
+    border-color: rgba(99,102,241,0.25);
+    box-shadow: var(--shadow), 0 0 60px rgba(99,102,241,0.05);
+}
+.card-highlight-short {
+    border-color: rgba(248,113,113,0.2);
+    box-shadow: var(--shadow), 0 0 60px rgba(248,113,113,0.03);
+}
+
+.card-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px 0;
+}
+.card-title { display:flex; align-items:center; gap:10px; }
+.card-icon  { font-size:1.1rem; opacity:0.8; }
+.card-title h2 {
+    font-size:0.95rem; font-weight:600; letter-spacing:-0.2px;
+    color: var(--text-primary);
+}
+
+.card-badge {
+    font-size:0.67rem; font-weight:600;
+    padding:3px 10px; border-radius:20px; letter-spacing:0.3px;
+}
+.badge-gold   { color:var(--gold);   background:var(--gold-dim);   border:1px solid rgba(251,191,36,0.2); }
+.badge-basket { color:var(--blue);   background:var(--blue-dim);   border:1px solid rgba(96,165,250,0.2); }
+.badge-main   { color:var(--accent-bright); background:var(--accent-dim); border:1px solid rgba(99,102,241,0.25); }
+.badge-short  { color:var(--red);   background:var(--red-dim);   border:1px solid rgba(248,113,113,0.2); }
+.badge-short-orange { color:var(--orange); background:rgba(251,146,60,0.10); border:1px solid rgba(251,146,60,0.2); }
+
+.card-subtitle { padding:5px 22px 0; font-size:0.74rem; color:var(--text-muted); }
+.card-body { padding:16px 22px 22px; overflow-x:auto; }
+
+/* ── Score Badge ── */
+.score-badge {
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-weight:700;
+    font-size:0.8rem; color:var(--accent-bright);
+}
+.score-badge-short {
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-weight:700;
+    font-size:0.8rem; color:var(--red);
+}
+
+/* ── Tags ── */
+.tag {
+    display:inline-block; font-size:0.6rem; font-weight:500;
+    padding:2px 7px; border-radius:4px; letter-spacing:0.2px;
+}
+.tag-green   { color:var(--green);  background:var(--green-dim); }
+.tag-red     { color:var(--red);    background:var(--red-dim); }
+.tag-neutral { color:var(--gold);   background:var(--gold-dim); }
+.tag-dim     { color:var(--text-muted); background:rgba(255,255,255,0.04); }
+
+/* ══════════════════════════════════════════
+   DATATABLES — Tremor exact tokens
+   header: text-sm font-semibold text-gray-900 dark:text-gray-50
+   cell:   text-sm text-gray-600 dark:text-gray-400
+   body:   divide-y divide-gray-200 dark:divide-gray-800
+   hover:  hover:bg-gray-50 hover:dark:bg-gray-900
+   ══════════════════════════════════════════ */
+table.dataTable {
+    border-collapse:collapse !important;
+    width:100% !important;
+    font-size:0.875rem;  /* text-sm */
+}
+table.dataTable thead th {
+    background: var(--stat-bg) !important;
+    color:var(--text-primary) !important;
+    font-weight:600 !important; font-size:0.875rem !important;  /* text-sm font-semibold */
+    text-transform:none !important; letter-spacing:0 !important;
+    padding:14px 16px !important;  /* px-4 py-3.5 */
+    border-bottom:1px solid var(--border-base) !important;
+    white-space:nowrap; cursor:pointer;
+    font-family:'Inter', sans-serif !important;
+}
+
+table.dataTable tbody td {
+    padding:16px !important;  /* p-4 */
+    border-bottom:1px solid var(--border-dim) !important;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.875rem; color:var(--text-secondary);  /* text-sm text-gray-600/400 */
+    vertical-align:middle;
+}
+table.dataTable tbody tr {
+    background:transparent !important;
+    transition:background 0.12s;
+}
+table.dataTable tbody tr:hover {
+    background:var(--stat-bg-hover) !important;  /* hover:bg-gray-50 / gray-900 */
+}
+/* Tremor uses divide-y (no alternating rows) — keep subtle stripe for readability */
+table.dataTable tbody tr:nth-child(even) {
+    background:var(--stat-bg) !important;
+}
+table.dataTable tbody tr:nth-child(even):hover {
+    background:var(--stat-bg-hover) !important;
+}
+
+/* Sort arrows */
+table.dataTable thead .sorting::after,
+table.dataTable thead .sorting_asc::after,
+table.dataTable thead .sorting_desc::after { opacity:0.25 !important; }
+table.dataTable thead .sorting_asc::after,
+table.dataTable thead .sorting_desc::after {
+    opacity:0.85 !important;
+    color:var(--accent-bright) !important;
+}
+
+/* Wrapper controls */
+.dataTables_wrapper { color:var(--text-secondary) !important; }
+.dataTables_wrapper .dataTables_filter input {
+    background:var(--bg-input) !important;
+    color:var(--text-primary) !important;
+    border:1px solid var(--border-base) !important;
+    border-radius:var(--radius-sm) !important;
+    padding:6px 12px !important;
+    font-family:'Inter',sans-serif !important;
+    font-size:0.78rem !important;
+    outline:none; transition:border-color 0.2s;
+}
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color:rgba(99,102,241,0.5) !important;
+}
+.dataTables_wrapper .dataTables_filter label,
+.dataTables_wrapper .dataTables_length label {
+    color:var(--text-muted) !important; font-size:0.76rem !important;
+}
+.dataTables_wrapper .dataTables_length select {
+    background:var(--bg-input) !important;
+    color:var(--text-primary) !important;
+    border:1px solid var(--border-base) !important;
+    border-radius:var(--radius-xs) !important;
+    padding:3px 8px !important;
+}
+.dataTables_wrapper .dataTables_info {
+    color:var(--text-muted) !important;
+    font-size:0.73rem !important;
+    padding-top:12px !important;
+}
+.dataTables_wrapper .dataTables_paginate { padding-top:12px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color:var(--text-secondary) !important;
+    background:transparent !important;
+    border:1px solid var(--border-dim) !important;
+    border-radius:var(--radius-xs) !important;
+    margin:0 2px !important; padding:3px 10px !important;
+    font-size:0.73rem !important; transition:all 0.15s;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color:var(--accent-bright) !important;
+    border-color:rgba(99,102,241,0.4) !important;
+    background:var(--accent-dim) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    color:#fff !important;
+    background:var(--accent) !important;
+    border-color:var(--accent) !important;
+    font-weight:600 !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    color:var(--text-muted) !important; opacity:0.4;
+}
+
+/* Export buttons */
+.dt-buttons { margin-bottom:12px !important; }
+.dt-button {
+    background:var(--bg-input) !important;
+    color:var(--text-secondary) !important;
+    border:1px solid var(--border-base) !important;
+    border-radius:var(--radius-xs) !important;
+    padding:4px 12px !important;
+    font-size:0.7rem !important;
+    font-family:'Inter',sans-serif !important;
+    font-weight:500 !important;
+    cursor:pointer !important;
+    transition:all 0.15s !important;
+}
+.dt-button:hover {
+    color:var(--accent-bright) !important;
+    border-color:rgba(99,102,241,0.4) !important;
+    background:var(--accent-dim) !important;
+}
+
+/* ── Basket Detail Cards ── */
+.basket-detail-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(420px, 1fr));
+    gap:14px;
+}
+.basket-detail-card {
+    background:var(--card-bg);
+    border:1px solid var(--border-dim);
+    border-radius:var(--radius-sm);
+    overflow:hidden; transition:border-color 0.2s;
+}
+.basket-detail-card:hover { border-color:var(--border-base); }
+.basket-detail-header {
+    padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border-dim);
+    cursor:pointer; user-select:none;
+}
+.basket-detail-header:hover { background:rgba(255,255,255,0.02); }
+.basket-detail-name { font-size:0.82rem; font-weight:600; color:var(--text-primary); }
+.basket-detail-meta { display:flex; gap:8px; align-items:center; }
+.basket-toggle { font-size:0.65rem; color:var(--text-muted); transition:transform 0.2s; }
+.basket-detail-body { padding:8px 12px 14px; overflow-x:auto; }
+.basket-detail-body.collapsed { display:none; }
+
+/* ── Footer ── */
+.footer {
+    text-align:center; padding:20px;
+    color:var(--text-muted); font-size:0.7rem;
+    border-top:1px solid var(--border-dim);
+    margin-top:8px;
+    letter-spacing:0.3px;
+}
+
+/* ── Responsive ── */
+@media (max-width:768px) {
+    .topbar-wrap { padding:8px 12px; }
+    .dashboard { padding:14px 12px 40px; }
+    .card-body { padding:12px 14px 18px; }
+    .card-header { padding:14px 14px 0; }
+    .stats-bar { grid-template-columns:repeat(2,1fr); }
+    .basket-detail-grid { grid-template-columns:1fr; }
+    .tab-bar { flex-direction:column; padding:10px 12px 0; }
+    .tab-btn { padding:10px 24px; font-size:0.85rem; }
+    .topbar { flex-wrap:wrap; gap:8px; }
+}
+
+/* ══ APP LAYOUT — sidebar + main ═════════════════════════════════════════ */
+.app-layout { display:flex; min-height:calc(100vh - 56px); }
+.sidebar {
+    width:200px; flex-shrink:0;
+    position:sticky; top:56px; height:calc(100vh - 56px);
+    overflow-y:auto; overflow-x:hidden;
+    border-right:1px solid var(--border-base);
+    background:var(--bg-surface); padding:20px 0; z-index:80;
+    scrollbar-width:thin;
+    transition:background .2s, border-color .2s;
+}
+.sidebar::-webkit-scrollbar { width:4px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border-base); border-radius:4px; }
+.sidebar-label {
+    font-size:.58rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:1.5px; color:var(--text-muted);
+    padding:0 16px 8px; margin-bottom:4px;
+}
+.sidebar-item {
+    display:flex; align-items:center; gap:8px;
+    padding:7px 16px; font-size:.73rem; font-weight:500;
+    color:var(--text-secondary); text-decoration:none;
+    cursor:pointer; transition:all .15s;
+    border-left:2px solid transparent;
+}
+.sidebar-item:hover { color:var(--text-primary); background:var(--bg-elevated); }
+.sidebar-item.active { color:var(--accent); background:var(--accent-dim); border-left-color:var(--accent); }
+.sidebar-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.main-content { flex:1; min-width:0; }
+
+@media (max-width:768px) {
+    .sidebar { display:none; }
+    .app-layout { display:block; }
+    .topbar-wrap { padding:8px 12px; }
+    .dashboard { padding:14px 12px 40px; }
+    .card-body { padding:12px 14px 18px; }
+    .card-header { padding:14px 14px 0; }
+    .stats-bar { grid-template-columns:repeat(2,1fr); }
+    .basket-detail-grid { grid-template-columns:1fr; }
+    .tab-bar { flex-direction:column; padding:10px 12px 0; }
+    .tab-btn { padding:10px 24px; font-size:0.85rem; }
+    .topbar { flex-wrap:wrap; gap:8px; }
+}</style>
+<!-- Applica il tema subito, prima del render, per evitare flash -->
+<script>(function(){try{var t=localStorage.getItem('br-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()</script>
+</head>
+<body>
+
+<div class="topbar-wrap">
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="../index.html" class="home-btn" title="Back to Homepage">&#8592;</a>
+        <span class="topbar-logo">Ratatouille</span>
+        <div class="topbar-divider"></div>
+        <span class="topbar-date">{{ gen_date }} &middot; {{ gen_time }}</span>
+    </div>
+    <div class="topbar-right" id="navPills">
+        <!-- Populated dynamically by JS based on active tab -->
+    </div>
+</div>
+</div>
+
+<div class="app-layout">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-label" id="sidebarLabel">Long Analysis</div>
+    <div id="sidebarItems">
+        <!-- Populated by JS on tab switch -->
+    </div>
+</aside>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="main-content">
+
+<!-- ══ TAB BUTTONS ══ -->
+<div class="tab-bar">
+    <button class="tab-btn tab-btn-long active" onclick="switchTab('long')">Long Analysis</button>
+    <button class="tab-btn tab-btn-short" onclick="switchTab('short')">Short Analysis</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     LONG TAB CONTENT
+     ══════════════════════════════════════════════════════ -->
+<div id="tab-long" class="tab-content active">
+<div class="dashboard">
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Universe</div>
+            <div class="stat-value stat-blue">{{ n_stocks }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Trend Setups</div>
+            <div class="stat-value stat-gold">{{ n_cands }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Strong Baskets</div>
+            <div class="stat-value stat-green">{{ n_strong_baskets }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Score</div>
+            <div class="stat-value stat-green">{{ top_score }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median</div>
+            <div class="stat-value" style="color:var(--text-secondary)">{{ median_score }}</div>
+        </div>
+    </div>
+
+    {{ long_candidate_section | safe }}
+
+    {{ long_trend_continuation_section | safe }}
+
+    {{ long_recommended_section | safe }}
+
+    {{ long_basket_section | safe }}
+
+    <section class="card" id="screener-section">
+        <div class="card-header">
+            <div class="card-title">
+                <h2>Full Screener</h2>
+            </div>
+            <span class="card-badge badge-main">{{ n_stocks }} Stocks</span>
+        </div>
+        <div class="card-body">{{ long_screener_table | safe }}</div>
+    </section>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SHORT TAB CONTENT
+     ══════════════════════════════════════════════════════ -->
+<div id="tab-short" class="tab-content">
+<div class="dashboard">
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Universe</div>
+            <div class="stat-value stat-blue">{{ n_stocks }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Short Setups</div>
+            <div class="stat-value stat-gold">{{ n_short_cands }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Weak Baskets</div>
+            <div class="stat-value stat-red">{{ n_strong_short_baskets }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Short Score</div>
+            <div class="stat-value stat-red">{{ top_short_score }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median</div>
+            <div class="stat-value" style="color:var(--text-secondary)">{{ median_short_score }}</div>
+        </div>
+    </div>
+
+    {{ short_candidate_section | safe }}
+
+    {{ short_trend_continuation_section | safe }}
+
+    {{ short_recommended_section | safe }}
+
+    {{ short_basket_section | safe }}
+
+    <section class="card" id="short_screener-section">
+        <div class="card-header">
+            <div class="card-title">
+                <h2>Full Short Screener</h2>
+            </div>
+            <span class="card-badge badge-short">{{ n_stocks }} Stocks</span>
+        </div>
+        <div class="card-body">{{ short_screener_table | safe }}</div>
+    </section>
+
+</div>
+</div>
+
+<div class="footer">
+    Ratatouille Screener &middot; {{ gen_time }} &middot; Long/Short Dual Analysis &middot; 14-Point Framework &middot; Zero Paid APIs
+</div>
+
+</div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+// TAB SWITCHING — Vanilla JS
+// ══════════════════════════════════════════════════════
+var currentTab = 'long';
+var tablesInitialized = { long: false, short: false };
+
+var longNavItems = [
+    { href: '#trend-continuation-section', label: 'Trend Setups' },
+    { href: '#recommended-section', label: 'Recommended' },
+    { href: '#baskets-section', label: 'Baskets' },
+    { href: '#screener-section', label: 'Full Screen' }
+];
+
+var shortNavItems = [
+    { href: '#short_trend-continuation-section', label: 'Short Setups' },
+    { href: '#short_recommended-section', label: 'Short Recommended' },
+    { href: '#short_baskets-section', label: 'Short Baskets' },
+    { href: '#short_screener-section', label: 'Full Short Screen' }
+];
+
+function buildNavPills(items, pillClass) {
+    var navEl = document.getElementById('navPills');
+    navEl.innerHTML = '';
+    items.forEach(function(item, i) {
+        var a = document.createElement('a');
+        a.href = item.href;
+        a.className = pillClass + (i === 0 ? ' active' : '');
+        a.textContent = item.label;
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.querySelector(item.href);
+            if (target) {
+                window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+            }
+            navEl.querySelectorAll('.' + pillClass).forEach(function(p) { p.classList.remove('active'); });
+            a.classList.add('active');
+        });
+        navEl.appendChild(a);
+    });
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (tab === 'long') {
+        document.querySelector('.tab-btn-long').classList.add('active');
+    } else {
+        document.querySelector('.tab-btn-short').classList.add('active');
+    }
+
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    if (tab === 'long') {
+        buildNavPills(longNavItems, 'nav-pill');
+        buildSidebar(longNavItems, 'Long Analysis');
+    } else {
+        buildNavPills(shortNavItems, 'nav-pill-short');
+        buildSidebar(shortNavItems, 'Short Analysis');
+    }
+
+    if (!tablesInitialized[tab]) {
+        initTabTables(tab);
+        tablesInitialized[tab] = true;
+    }
+}
+
+function initTabTables(tab) {
+    if (tab === 'long') {
+        if ($('#screenerTable').length && !$.fn.DataTable.isDataTable('#screenerTable')) {
+            $('#screenerTable').DataTable({
+                order: [[3, 'desc']],
+                pageLength: 50,
+                dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
+                buttons: ['copy','csv','excel'],
+                language: {
+                    search: 'Filter:', lengthMenu: 'Show _MENU_',
+                    info: '_START_&ndash;_END_ of _TOTAL_',
+                    paginate: { previous: '&larr;', next: '&rarr;' }
+                }
+            });
+        }
+        if ($('#candidateTable').length && !$.fn.DataTable.isDataTable('#candidateTable')) {
+            $('#candidateTable').DataTable({
+                order: [[1, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        if ($('#recommendedTable').length && !$.fn.DataTable.isDataTable('#recommendedTable')) {
+            $('#recommendedTable').DataTable({
+                order: [[3, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        if ($('#trendContTable').length && !$.fn.DataTable.isDataTable('#trendContTable')) {
+            $('#trendContTable').DataTable({
+                order: [[6, 'asc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+    } else {
+        if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {
+            $('#short_screenerTable').DataTable({
+                order: [[3, 'desc']],
+                pageLength: 50,
+                dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
+                buttons: ['copy','csv','excel'],
+                language: {
+                    search: 'Filter:', lengthMenu: 'Show _MENU_',
+                    info: '_START_&ndash;_END_ of _TOTAL_',
+                    paginate: { previous: '&larr;', next: '&rarr;' }
+                }
+            });
+        }
+        if ($('#short_candidateTable').length && !$.fn.DataTable.isDataTable('#short_candidateTable')) {
+            $('#short_candidateTable').DataTable({
+                order: [[1, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        if ($('#short_recommendedTable').length && !$.fn.DataTable.isDataTable('#short_recommendedTable')) {
+            $('#short_recommendedTable').DataTable({
+                order: [[3, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        if ($('#short_trendContTable').length && !$.fn.DataTable.isDataTable('#short_trendContTable')) {
+            $('#short_trendContTable').DataTable({
+                order: [[6, 'asc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+    }
+}
+
+// ══ BASKET TOGGLE ══
+function toggleBasket(header) {
+    var body = header.nextElementSibling;
+    var toggle = header.querySelector('.basket-toggle');
+    if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.innerHTML = '&#x25BC;';
+    } else {
+        body.classList.add('collapsed');
+        toggle.innerHTML = '&#x25B6;';
+    }
+}
+
+function toggleBasketShort(header) {
+    var body = header.nextElementSibling;
+    var toggle = header.querySelector('.basket-toggle');
+    if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.innerHTML = '&#x25BC;';
+    } else {
+        body.classList.add('collapsed');
+        toggle.innerHTML = '&#x25B6;';
+    }
+}
+
+// ══ THEME — read-only (toggle lives in archive/breadth page) ══
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+}
+
+// ══ SIDEBAR — build items for current tab ══
+function buildSidebar(items, label) {
+    var labelEl = document.getElementById('sidebarLabel');
+    var container = document.getElementById('sidebarItems');
+    if (!labelEl || !container) return;
+    labelEl.textContent = label;
+    container.innerHTML = '';
+    items.forEach(function(item, i) {
+        var a = document.createElement('a');
+        a.className = 'sidebar-item' + (i === 0 ? ' active' : '');
+        a.textContent = item.label;
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.querySelector(item.href);
+            if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+            container.querySelectorAll('.sidebar-item').forEach(function(s) { s.classList.remove('active'); });
+            a.classList.add('active');
+        });
+        container.appendChild(a);
+    });
+}
+
+// ══ INIT ON LOAD ══
+$(document).ready(function() {
+    var saved = 'light';
+    try { saved = localStorage.getItem('br-theme') || 'light'; } catch(e) {}
+    applyTheme(saved);
+    switchTab('long');
+});
+</script>
+</body>
+</html>

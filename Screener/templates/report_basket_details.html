@@ -1,0 +1,25 @@
+<section class="card" id="{{ section_id }}">
+    <div class="card-header">
+        <div class="card-title">
+            <h2>{{ title }}</h2>
+        </div>
+        <span class="card-badge {{ badge_class }}">{{ active_baskets_count }} Active Baskets</span>
+    </div>
+    <p class="card-subtitle">{{ subtitle | safe }}</p>
+    <div class="card-body basket-detail-grid">
+        {% for basket in baskets %}
+        <div class="basket-detail-card">
+            <div class="basket-detail-header" onclick="{{ basket.toggle_fn }}">
+                <div class="basket-detail-name">{{ basket.name }}</div>
+                <div class="basket-detail-meta">
+                    <span class="tag tag-dim">{{ basket.label }}</span>
+                    <span class="basket-toggle">&#x25BC;</span>
+                </div>
+            </div>
+            <div class="basket-detail-body">
+                {{ basket.table_html | safe }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ratatouille Screener &mdash; March 08, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css">
+<style>
+/* ══════════════════════════════════════════════════════════
+   MASTER TEMPLATE — Unified visual style
+   ══════════════════════════════════════════════════════════ */
+:root {
+    --bg-primary: #0a0a0f;
+    --bg-card: #111118;
+    --bg-card-hover: #1a1a26;
+    --bg-input: #1a1a28;
+    --border-subtle: #1c1c2c;
+    --border-accent: #2a2a3c;
+    --text-primary: #e8e8f0;
+    --text-secondary: #8888a0;
+    --text-muted: #555570;
+    --accent-green: #00d4aa;
+    --accent-green-dim: rgba(0,212,170,0.10);
+    --accent-gold: #f5a623;
+    --accent-gold-dim: rgba(245,166,35,0.10);
+    --accent-blue: #4a9eff;
+    --accent-red: #ff4a6a;
+    --accent-red-dim: rgba(255,74,106,0.10);
+    --accent-orange: #ff8c42;
+    --accent-orange-dim: rgba(255,140,66,0.10);
+    --accent-amaranth: #e23d6d;
+    --accent-purple: #8b5cf6;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.35);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════
+   TAB SYSTEM — Long / Short Toggle
+   ══════════════════════════════════════════ */
+.tab-bar {
+    display:flex; justify-content:center; gap:12px;
+    padding:20px 40px 0;
+    max-width:1600px; margin:0 auto;
+}
+.tab-btn {
+    padding:14px 40px; border:2px solid transparent; border-radius:var(--radius);
+    font-size:1rem; font-weight:700; cursor:pointer;
+    transition:all 0.25s ease; letter-spacing:0.5px;
+    font-family:'Inter', sans-serif;
+}
+.tab-btn-long {
+    background: linear-gradient(135deg, rgba(0,212,170,0.12), rgba(74,158,255,0.08));
+    color: var(--accent-green);
+    border-color: rgba(0,212,170,0.3);
+}
+.tab-btn-long:hover, .tab-btn-long.active {
+    background: linear-gradient(135deg, rgba(0,212,170,0.25), rgba(74,158,255,0.15));
+    border-color: var(--accent-green);
+    box-shadow: 0 0 24px rgba(0,212,170,0.15);
+}
+.tab-btn-short {
+    background: linear-gradient(135deg, rgba(255,74,106,0.12), rgba(255,140,66,0.08));
+    color: var(--accent-red);
+    border-color: rgba(255,74,106,0.3);
+}
+.tab-btn-short:hover, .tab-btn-short.active {
+    background: linear-gradient(135deg, rgba(255,74,106,0.25), rgba(255,140,66,0.15));
+    border-color: var(--accent-red);
+    box-shadow: 0 0 24px rgba(255,74,106,0.15);
+}
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ── Topbar ── */
+.topbar {
+    background: linear-gradient(135deg, #0e0e18 0%, #161628 100%);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 18px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(24px);
+}
+.topbar-left { display:flex; align-items:center; gap:16px; }
+.home-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%;
+    background:var(--bg-input); border:1px solid var(--border-accent);
+    color:var(--text-secondary); font-size:1rem; text-decoration:none;
+    transition:all 0.2s; flex-shrink:0;
+}
+.home-btn:hover { color:var(--accent-green); border-color:var(--accent-green); background:var(--accent-green-dim); }
+.topbar-logo {
+    font-size: 1.5rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.topbar-divider { width:1px; height:28px; background:var(--border-accent); }
+.topbar-date { color:var(--text-secondary); font-size:0.85rem; }
+.topbar-right { display:flex; gap:10px; flex-wrap:wrap; }
+.nav-pill {
+    padding:6px 16px; border-radius:20px; font-size:0.78rem; font-weight:500;
+    color:var(--text-secondary); background:var(--bg-input); border:1px solid var(--border-subtle);
+    cursor:pointer; text-decoration:none; transition:all 0.2s;
+}
+.nav-pill:hover, .nav-pill.active {
+    color:var(--accent-green); border-color:var(--accent-green); background:var(--accent-green-dim);
+}
+/* Short theme nav pills */
+.nav-pill-short {
+    padding:6px 16px; border-radius:20px; font-size:0.78rem; font-weight:500;
+    color:var(--text-secondary); background:var(--bg-input); border:1px solid var(--border-subtle);
+    cursor:pointer; text-decoration:none; transition:all 0.2s;
+}
+.nav-pill-short:hover, .nav-pill-short.active {
+    color:var(--accent-red); border-color:var(--accent-red); background:var(--accent-red-dim);
+}
+
+/* ── Layout ── */
+.dashboard { max-width:1600px; margin:0 auto; padding:28px 40px 60px; display:flex; flex-direction:column; gap:24px; }
+
+/* ── Stats Bar ── */
+.stats-bar { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:14px; }
+.stat-card {
+    background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
+    padding:16px 18px; transition:all 0.2s;
+}
+.stat-card:hover { border-color:var(--border-accent); transform:translateY(-1px); }
+.stat-label {
+    font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;
+    color:var(--text-muted); margin-bottom:4px;
+}
+.stat-value { font-size:1.5rem; font-weight:700; font-family:'JetBrains Mono', monospace; }
+.stat-green { color:var(--accent-green); }
+.stat-gold { color:var(--accent-gold); }
+.stat-blue { color:var(--accent-blue); }
+.stat-purple { color:var(--accent-purple); }
+.stat-red { color:var(--accent-red); }
+.stat-orange { color:var(--accent-orange); }
+
+/* ══════════════════════════════════════════
+   CARD — Master template
+   ══════════════════════════════════════════ */
+.card {
+    background:var(--bg-card); border:1px solid var(--border-subtle);
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);
+}
+.card-highlight {
+    border-color:rgba(245,166,35,0.3);
+    box-shadow:var(--shadow-lg), 0 0 80px rgba(245,166,35,0.04);
+}
+.card-highlight-long {
+    border-color:rgba(0,212,170,0.35);
+    box-shadow:var(--shadow-lg), 0 0 80px rgba(0,212,170,0.06);
+}
+.card-highlight-short {
+    border-color:rgba(255,74,106,0.3);
+    box-shadow:var(--shadow-lg), 0 0 80px rgba(255,74,106,0.04);
+}
+.card-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 0; }
+.card-title { display:flex; align-items:center; gap:10px; }
+.card-icon { font-size:1.2rem; }
+.card-title h2 { font-size:1.1rem; font-weight:600; letter-spacing:-0.3px; }
+.card-badge {
+    font-size:0.7rem; font-weight:600; padding:4px 12px; border-radius:20px; letter-spacing:0.4px;
+}
+.badge-gold { color:var(--accent-gold); background:var(--accent-gold-dim); border:1px solid rgba(245,166,35,0.2); }
+.badge-basket { color:var(--accent-blue); background:rgba(74,158,255,0.08); border:1px solid rgba(74,158,255,0.2); }
+.badge-main { color:var(--accent-green); background:var(--accent-green-dim); border:1px solid rgba(0,212,170,0.2); }
+.badge-short { color:var(--accent-red); background:var(--accent-red-dim); border:1px solid rgba(255,74,106,0.2); }
+.badge-short-orange { color:var(--accent-orange); background:var(--accent-orange-dim); border:1px solid rgba(255,140,66,0.2); }
+.card-subtitle { padding:6px 24px 0; font-size:0.78rem; color:var(--text-muted); }
+.card-body { padding:18px 24px 24px; overflow-x:auto; }
+
+/* ── Score Badge ── */
+.score-badge {
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-weight:700;
+    font-size:0.82rem; color:var(--accent-green);
+}
+.score-badge-short {
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-weight:700;
+    font-size:0.82rem; color:var(--accent-red);
+}
+
+/* ── Tags ── */
+.tag {
+    display:inline-block; font-size:0.62rem; font-weight:500; padding:2px 7px;
+    border-radius:4px; letter-spacing:0.3px;
+}
+.tag-green { color:#00d4aa; background:rgba(0,212,170,0.12); }
+.tag-red { color:#ff4a6a; background:rgba(255,74,106,0.12); }
+.tag-neutral { color:var(--accent-gold); background:var(--accent-gold-dim); }
+.tag-dim { color:var(--text-muted); background:rgba(255,255,255,0.04); }
+
+/* ══════════════════════════════════════════
+   DATATABLES — Unified styling
+   ══════════════════════════════════════════ */
+table.dataTable { border-collapse:collapse !important; width:100% !important; font-size:0.8rem; }
+table.dataTable thead th {
+    background:var(--bg-input) !important; color:var(--text-secondary) !important;
+    font-weight:600 !important; font-size:0.7rem !important; text-transform:uppercase !important;
+    letter-spacing:0.5px !important; padding:11px 12px !important;
+    border-bottom:1px solid var(--border-accent) !important; white-space:nowrap;
+    cursor:pointer;
+}
+table.dataTable thead th:first-child { border-radius:var(--radius-sm) 0 0 0; }
+table.dataTable thead th:last-child { border-radius:0 var(--radius-sm) 0 0; }
+table.dataTable tbody td {
+    padding:9px 12px !important; border-bottom:1px solid var(--border-subtle) !important;
+    font-family:'JetBrains Mono', monospace; font-size:0.76rem; color:var(--text-primary);
+    vertical-align:middle;
+}
+table.dataTable tbody tr { background:transparent !important; transition:background 0.15s; }
+table.dataTable tbody tr:hover { background:var(--bg-card-hover) !important; }
+table.dataTable tbody tr:nth-child(even) { background:rgba(255,255,255,0.012) !important; }
+table.dataTable tbody tr:nth-child(even):hover { background:var(--bg-card-hover) !important; }
+
+/* Sort arrows */
+table.dataTable thead .sorting::after,
+table.dataTable thead .sorting_asc::after,
+table.dataTable thead .sorting_desc::after { opacity:0.3 !important; }
+table.dataTable thead .sorting_asc::after,
+table.dataTable thead .sorting_desc::after { opacity:0.9 !important; color:var(--accent-green) !important; }
+
+/* Controls */
+.dataTables_wrapper { color:var(--text-secondary) !important; }
+.dataTables_wrapper .dataTables_filter input {
+    background:var(--bg-input) !important; color:var(--text-primary) !important;
+    border:1px solid var(--border-accent) !important; border-radius:var(--radius-sm) !important;
+    padding:7px 14px !important; font-family:'Inter',sans-serif !important;
+    font-size:0.8rem !important; outline:none; transition:border-color 0.2s;
+}
+.dataTables_wrapper .dataTables_filter input:focus { border-color:var(--accent-green) !important; }
+.dataTables_wrapper .dataTables_filter label,
+.dataTables_wrapper .dataTables_length label { color:var(--text-muted) !important; font-size:0.78rem !important; }
+.dataTables_wrapper .dataTables_length select {
+    background:var(--bg-input) !important; color:var(--text-primary) !important;
+    border:1px solid var(--border-accent) !important; border-radius:6px !important; padding:3px 8px !important;
+}
+.dataTables_wrapper .dataTables_info { color:var(--text-muted) !important; font-size:0.76rem !important; padding-top:14px !important; }
+.dataTables_wrapper .dataTables_paginate { padding-top:14px !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color:var(--text-secondary) !important; background:transparent !important;
+    border:1px solid var(--border-subtle) !important; border-radius:6px !important;
+    margin:0 2px !important; padding:3px 10px !important; font-size:0.76rem !important; transition:all 0.15s;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color:var(--accent-green) !important; border-color:var(--accent-green) !important; background:var(--accent-green-dim) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    color:var(--bg-primary) !important; background:var(--accent-green) !important;
+    border-color:var(--accent-green) !important; font-weight:600 !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color:var(--text-muted) !important; opacity:0.4; }
+
+/* Buttons */
+.dt-buttons { margin-bottom:14px !important; }
+.dt-button {
+    background:var(--bg-input) !important; color:var(--text-secondary) !important;
+    border:1px solid var(--border-accent) !important; border-radius:6px !important;
+    padding:5px 14px !important; font-size:0.72rem !important; font-family:'Inter',sans-serif !important;
+    font-weight:500 !important; cursor:pointer !important; transition:all 0.15s !important;
+}
+.dt-button:hover {
+    color:var(--accent-green) !important; border-color:var(--accent-green) !important;
+    background:var(--accent-green-dim) !important;
+}
+
+/* ── Basket Detail Cards ── */
+.basket-detail-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:16px;
+}
+.basket-detail-card {
+    background:var(--bg-primary); border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm); overflow:hidden; transition:border-color 0.2s;
+}
+.basket-detail-card:hover { border-color:var(--border-accent); }
+.basket-detail-header {
+    padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border-subtle); cursor:pointer; user-select:none;
+}
+.basket-detail-header:hover { background:rgba(255,255,255,0.02); }
+.basket-detail-name { font-size:0.85rem; font-weight:600; color:var(--text-primary); }
+.basket-detail-meta { display:flex; gap:8px; align-items:center; }
+.basket-toggle {
+    font-size:0.7rem; color:var(--text-muted); transition:transform 0.2s;
+}
+.basket-detail-body {
+    padding:8px 12px 14px; overflow-x:auto;
+}
+.basket-detail-body.collapsed {
+    display:none;
+}
+
+/* ── Footer ── */
+.footer {
+    text-align:center; padding:20px; color:var(--text-muted); font-size:0.72rem;
+    border-top:1px solid var(--border-subtle); margin-top:8px;
+}
+
+/* ── Responsive ── */
+@media (max-width:768px) {
+    .topbar { padding:14px 16px; flex-direction:column; gap:10px; }
+    .dashboard { padding:16px 12px 40px; }
+    .card-body { padding:12px 14px 18px; }
+    .card-header { padding:14px 14px 0; }
+    .stats-bar { grid-template-columns:repeat(2,1fr); }
+    .basket-detail-grid { grid-template-columns:1fr; }
+    .tab-bar { flex-direction:column; padding:12px 16px 0; }
+    .tab-btn { padding:12px 24px; font-size:0.9rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="../index.html" class="home-btn" title="Back to Homepage">&#8592;</a>
+        <span class="topbar-logo">Ratatouille</span>
+        <div class="topbar-divider"></div>
+        <span class="topbar-date">March 08, 2026 &middot; 2026-03-09 15:37</span>
+    </div>
+    <div class="topbar-right" id="navPills">
+        <!-- Populated dynamically by JS based on active tab -->
+    </div>
+</div>
+
+<!-- ══ TAB BUTTONS ══ -->
+<div class="tab-bar">
+    <button class="tab-btn tab-btn-long active" onclick="switchTab('long')">Long Analysis</button>
+    <button class="tab-btn tab-btn-short" onclick="switchTab('short')">Short Analysis</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     LONG TAB CONTENT
+     ══════════════════════════════════════════════════════ -->
+<div id="tab-long" class="tab-content active">
+<div class="dashboard">
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Universe</div>
+            <div class="stat-value stat-blue">2</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Candidates</div>
+            <div class="stat-value stat-gold">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Strong Baskets</div>
+            <div class="stat-value stat-green">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Score</div>
+            <div class="stat-value stat-green">99.5</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median</div>
+            <div class="stat-value" style="color:var(--text-secondary)">98.8</div>
+        </div>
+    </div>
+
+    
+
+    
+
+    <section class="card" id="screener-section">
+        <div class="card-header">
+            <div class="card-title">
+                <h2>Full Screener</h2>
+            </div>
+            <span class="card-badge badge-main">2 Stocks</span>
+        </div>
+        <p class="card-subtitle">
+            Complete Long universe sorted by Score. All columns are sortable.
+            SCORE10 = (align&times;0.20 + cross&times;0.30 + vcp&times;0.30 + r&sup2;&times;0.20) &divide; 3 &times; 10.
+        </p>
+        <div class="card-body"><table id="screenerTable" class="display compact" style="width:100%">
+<thead><tr><th>Rank</th><th>Ticker</th><th>Price</th><th>Score</th><th>ATR%</th><th>ADR%</th><th>1D %</th><th>1W %</th><th>1M %</th><th>3M %</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>AAPL</td><td>0</td><td><span class="score-badge">99.5</span></td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--accent-green)">+1.00%</td><td style="color:var(--accent-green)">+5.00%</td><td style="color:var(--accent-green)">+12.30%</td></tr>
+<tr><td>2</td><td>MSFT</td><td>0</td><td><span class="score-badge">98.2</span></td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--accent-green)">+2.00%</td><td style="color:var(--accent-green)">+8.00%</td><td style="color:var(--accent-green)">+23.40%</td></tr>
+
+</tbody>
+</table></div>
+    </section>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SHORT TAB CONTENT
+     ══════════════════════════════════════════════════════ -->
+<div id="tab-short" class="tab-content">
+<div class="dashboard">
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Universe</div>
+            <div class="stat-value stat-blue">2</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Short Candidates</div>
+            <div class="stat-value stat-gold">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Weak Baskets</div>
+            <div class="stat-value stat-red">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Short Score</div>
+            <div class="stat-value stat-red">12.2</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median</div>
+            <div class="stat-value" style="color:var(--text-secondary)">11.3</div>
+        </div>
+    </div>
+
+    
+
+    
+
+    <section class="card" id="short_screener-section">
+        <div class="card-header">
+            <div class="card-title">
+                <h2>Full Short Screener</h2>
+            </div>
+            <span class="card-badge badge-short">2 Stocks</span>
+        </div>
+        <p class="card-subtitle">
+            Complete Short universe sorted by Short Score. Highest score = weakest stock.
+            Inverted SCORE10 &mdash; filters: Market Cap &ge; $1B, Price &gt; $30.
+        </p>
+        <div class="card-body"><table id="short_screenerTable" class="display compact" style="width:100%">
+<thead><tr><th>Rank</th><th>Ticker</th><th>Price</th><th>Score</th><th>ATR%</th><th>ADR%</th><th>1D %</th><th>1W %</th><th>1M %</th><th>3M %</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>MSFT</td><td>0</td><td><span class="score-badge-short">12.2</span></td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--accent-green)">+2.00%</td><td style="color:var(--accent-green)">+8.00%</td><td style="color:var(--accent-green)">+23.40%</td></tr>
+<tr><td>2</td><td>AAPL</td><td>0</td><td><span class="score-badge-short">10.5</span></td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--text-secondary)">0.00%</td><td style="color:var(--accent-green)">+1.00%</td><td style="color:var(--accent-green)">+5.00%</td><td style="color:var(--accent-green)">+12.30%</td></tr>
+
+</tbody>
+</table></div>
+    </section>
+
+</div>
+</div>
+
+<div class="footer">
+    Ratatouille Screener &middot; 2026-03-09 15:37 &middot; Long/Short Dual Analysis &middot; 14-Point Framework &middot; Zero Paid APIs
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+// TAB SWITCHING — Vanilla JS
+// ══════════════════════════════════════════════════════
+var currentTab = 'long';
+var tablesInitialized = { long: false, short: false };
+
+var longNavItems = [
+    { href: '#candidates-section', label: 'Candidates' },
+    { href: '#recommended-section', label: 'Recommended' },
+    { href: '#screener-section', label: 'Full Screen' }
+];
+
+var shortNavItems = [
+    { href: '#short_candidates-section', label: 'Short Candidates' },
+    { href: '#short_recommended-section', label: 'Short Recommended' },
+    { href: '#short_screener-section', label: 'Full Short Screen' }
+];
+
+function buildNavPills(items, pillClass) {
+    var navEl = document.getElementById('navPills');
+    navEl.innerHTML = '';
+    items.forEach(function(item, i) {
+        var a = document.createElement('a');
+        a.href = item.href;
+        a.className = pillClass + (i === 0 ? ' active' : '');
+        a.textContent = item.label;
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.querySelector(item.href);
+            if (target) {
+                window.scrollTo({ top: target.offsetTop - 70, behavior: 'smooth' });
+            }
+            navEl.querySelectorAll('.' + pillClass).forEach(function(p) { p.classList.remove('active'); });
+            a.classList.add('active');
+        });
+        navEl.appendChild(a);
+    });
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+
+    // Toggle tab buttons
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (tab === 'long') {
+        document.querySelector('.tab-btn-long').classList.add('active');
+    } else {
+        document.querySelector('.tab-btn-short').classList.add('active');
+    }
+
+    // Toggle content
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    // Update nav pills
+    if (tab === 'long') {
+        buildNavPills(longNavItems, 'nav-pill');
+    } else {
+        buildNavPills(shortNavItems, 'nav-pill-short');
+    }
+
+    // Initialize DataTables for this tab if not done yet
+    if (!tablesInitialized[tab]) {
+        initTabTables(tab);
+        tablesInitialized[tab] = true;
+    }
+}
+
+function initTabTables(tab) {
+    if (tab === 'long') {
+        // Long Screener
+        if ($('#screenerTable').length && !$.fn.DataTable.isDataTable('#screenerTable')) {
+            $('#screenerTable').DataTable({
+                order: [[3, 'desc']],  // col 3 = Score (Rank=0, Ticker=1, Price=2, Score=3)
+                pageLength: 50,
+                dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
+                buttons: ['copy','csv','excel'],
+                language: {
+                    search: 'Filter:', lengthMenu: 'Show _MENU_',
+                    info: '_START_&ndash;_END_ of _TOTAL_',
+                    paginate: { previous: '&larr;', next: '&rarr;' }
+                }
+            });
+        }
+        // Long Candidates
+        if ($('#candidateTable').length && !$.fn.DataTable.isDataTable('#candidateTable')) {
+            $('#candidateTable').DataTable({
+                order: [[1, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        // Long Recommended
+        if ($('#recommendedTable').length && !$.fn.DataTable.isDataTable('#recommendedTable')) {
+            $('#recommendedTable').DataTable({
+                order: [[3, 'desc']], pageLength: 25, searching: true,  // col 3 = Score
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+    } else {
+        // Short Screener
+        if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {
+            $('#short_screenerTable').DataTable({
+                order: [[3, 'desc']],  // col 3 = Score (Rank=0, Ticker=1, Price=2, Score=3)
+                pageLength: 50,
+                dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
+                buttons: ['copy','csv','excel'],
+                language: {
+                    search: 'Filter:', lengthMenu: 'Show _MENU_',
+                    info: '_START_&ndash;_END_ of _TOTAL_',
+                    paginate: { previous: '&larr;', next: '&rarr;' }
+                }
+            });
+        }
+        // Short Candidates
+        if ($('#short_candidateTable').length && !$.fn.DataTable.isDataTable('#short_candidateTable')) {
+            $('#short_candidateTable').DataTable({
+                order: [[1, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        // Short Recommended
+        if ($('#short_recommendedTable').length && !$.fn.DataTable.isDataTable('#short_recommendedTable')) {
+            $('#short_recommendedTable').DataTable({
+                order: [[3, 'desc']], pageLength: 25, searching: true,  // col 3 = Score
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+    }
+}
+
+// ══ BASKET TOGGLE (Long) ══
+function toggleBasket(header) {
+    var body = header.nextElementSibling;
+    var toggle = header.querySelector('.basket-toggle');
+    if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.innerHTML = '&#x25BC;';
+    } else {
+        body.classList.add('collapsed');
+        toggle.innerHTML = '&#x25B6;';
+    }
+}
+
+// ══ BASKET TOGGLE (Short) ══
+function toggleBasketShort(header) {
+    var body = header.nextElementSibling;
+    var toggle = header.querySelector('.basket-toggle');
+    if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.innerHTML = '&#x25BC;';
+    } else {
+        body.classList.add('collapsed');
+        toggle.innerHTML = '&#x25B6;';
+    }
+}
+
+// ══ INIT ON LOAD ══
+$(document).ready(function() {
+    // Default: Long tab active
+    switchTab('long');
+});
+</script>
+</body>
+</html>

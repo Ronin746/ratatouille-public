@@ -1,0 +1,31 @@
+# Python
+Screener/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+Screener/screener.log
+Screener/daily_backfill.log
+
+# Credenziali / segreti (mai in git)
+Screener/email_config.json
+Screener/token.json
+Screener/credentials.json
+
+# macOS
+.DS_Store
+**/.DS_Store
+._*
+
+# Excel temp files
+~$*
+
+# Archivi compressi locali
+*.zip
+
+# CSV screener (troppo grandi per git, ~4MB/giorno)
+# La storia è preservata in Archive/market_score_history.json
+Data/*.csv

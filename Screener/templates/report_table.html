@@ -1,0 +1,18 @@
+<table id="{{ table_id }}" class="display compact" style="width:100%">
+<thead>
+    <tr>
+        {% if index %}<th>Ticker</th>{% endif %}
+        {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+    </tr>
+</thead>
+<tbody>
+    {% for row in rows %}
+    <tr>
+        {% if index %}<td><strong>{{ row.idx }}</strong></td>{% endif %}
+        {% for cell in row.cells %}
+        {{ cell | safe }}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</tbody>
+</table>
