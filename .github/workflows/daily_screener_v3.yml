@@ -33,9 +33,6 @@ jobs:
         run: |
           cd Screener
           python daily_auto_backfill.py
-        env:
-          EMAIL_USER:     ${{ secrets.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
       - name: Commit e push risultati
         run: |
@@ -49,8 +46,8 @@ jobs:
       - name: Deploy su Cloudflare Pages (v3)
         uses: cloudflare/pages-action@v1
         with:
-          apiToken:    ${{ secrets.CF_API_TOKEN }}
-          accountId:   ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken:    XLqz6Kr7bOKnxtm6Lh0WOg-w0Oo6RelISrUIFK3t
+          accountId:   5d542bdd57fb4aac9391856b2f41a2a5
           projectName: ratatouille-radar
           directory:   Archive
           branch:      v3
