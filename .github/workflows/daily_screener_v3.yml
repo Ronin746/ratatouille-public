@@ -14,8 +14,10 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (v3)
         uses: actions/checkout@v5
+        with:
+          ref: v3
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v6
@@ -41,14 +43,14 @@ jobs:
           git config user.email "chiefuseless@gmail.com"
           git add Reports/ Archive/ Screener/ Data/archive/
           git diff --cached --quiet && echo "Nessuna modifica da committare" || git commit -m "Auto screener v3 - $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin main
-          git push origin main
+          git pull --rebase origin v3
+          git push origin v3
 
-      - name: Deploy su Cloudflare Pages
+      - name: Deploy su Cloudflare Pages (v3)
         uses: cloudflare/pages-action@v1
         with:
           apiToken:    ${{ secrets.CF_API_TOKEN }}
           accountId:   ${{ secrets.CF_ACCOUNT_ID }}
           projectName: ratatouille-radar
           directory:   Archive
-          branch:      main
+          branch:      v3

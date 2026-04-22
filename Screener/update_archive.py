@@ -2001,6 +2001,14 @@ def build_index_html(reports_with_stats, market_history=None, session_date=None,
     candidates_json = json.dumps(candidates_data)
     now_str = datetime.now().strftime('%b %d, %Y at %H:%M')
 
+    # Report link for sidebar
+    report_url = ''
+    report_date_display = ''
+    if reports_with_stats:
+        rdate = reports_with_stats[0][0]  # YYYY-MM-DD
+        report_url = f'reports/{rdate}.html'
+        report_date_display = format_date_display(rdate)
+
     import jinja2
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -2016,7 +2024,9 @@ def build_index_html(reports_with_stats, market_history=None, session_date=None,
         sector_html=sector_html,
         sector_etf_html=sector_etf_html,
         now_str=now_str,
-        candidates_json=candidates_json
+        candidates_json=candidates_json,
+        report_url=report_url,
+        report_date_display=report_date_display,
     )
 
 
