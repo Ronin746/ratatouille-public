@@ -76,6 +76,7 @@ SECTOR_BASKETS = {
     "OIL AND GAS UPSTREAM": ["CVE", "PR", "APA", "MUR", "RRC", "MTDR", "SM", "DINO", "FANG", "CHRD", "OVV", "VLO", "CNX", "COP", "EOG", "KOS", "XOM", "CVX", "EQT", "CTRA", "OXY", "DVN", "MGY", "MPC", "CVI", "PSX", "NOG", "AR", "CRK", "DK", "TPL", "PBF"],
     "OPTICAL NETWORK INFRA": ["LWLG", "AAOI", "AXTI", "FN", "ON", "PLAB", "VIAV", "COHR", "TTMI", "CIEN", "LITE", "GLW", "ANET", "LRCX", "PPG", "SHW", "CSCO", "IPGP", "LASR"],
     "PAYMENT PROCESSING": ["AFRM", "SEZL", "XYZ", "CPAY", "WEX", "PAGS", "PAYO", "PYPL", "AXP", "FOUR", "STNE", "MA", "EVTC", "V", "WU", "QTWO", "TOST", "GPN", "FIS"],
+    "POWER SEMICONDUCTORS": ["NVTS", "VICR", "MPWR", "WOLF", "ON", "STM", "TXN", "NXPI", "SWKS", "MCHP", "DIOD", "AOSL"],
     "PSYCHEDELICS": ["DRUG", "GHRS", "ATAI", "CMPS", "PSIL", "DFTX"],
     "QUANTUM COMPUTING": ["INFQ", "IONQ", "QMCO", "QUBT", "QBTS", "BTQ", "RGTI", "ARQQ", "QTUM"],
     "RAILROAD": ["RAIL", "WAB", "CNI", "TRN", "CSX", "NSC", "UNP", "FSTR", "CP", "GBX"],
