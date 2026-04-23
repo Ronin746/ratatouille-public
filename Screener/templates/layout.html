@@ -701,11 +701,11 @@ table.dataTable thead .sorting_desc::after {
 
     {{ long_candidate_section | safe }}
 
-    {{ long_trend_continuation_section | safe }}
+    {{ long_basket_detail_section | safe }}
 
     {{ long_recommended_section | safe }}
 
-    {{ long_basket_section | safe }}
+    {{ long_trend_continuation_section | safe }}
 
     <section class="card" id="screener-section">
         <div class="card-header">
@@ -751,11 +751,11 @@ table.dataTable thead .sorting_desc::after {
 
     {{ short_candidate_section | safe }}
 
-    {{ short_trend_continuation_section | safe }}
+    {{ short_basket_detail_section | safe }}
 
     {{ short_recommended_section | safe }}
 
-    {{ short_basket_section | safe }}
+    {{ short_trend_continuation_section | safe }}
 
     <section class="card" id="short_screener-section">
         <div class="card-header">
@@ -789,16 +789,16 @@ var currentTab = 'long';
 var tablesInitialized = { long: false, short: false };
 
 var longNavItems = [
-    { href: '#trend-continuation-section', label: 'Trend Setups' },
+    { href: '#trend-reversals-section', label: 'Trend Reversals' },
     { href: '#recommended-section', label: 'Recommended' },
-    { href: '#baskets-section', label: 'Baskets' },
+    { href: '#trend-continuation-section', label: 'Trend Setups' },
     { href: '#screener-section', label: 'Full Screen' }
 ];
 
 var shortNavItems = [
-    { href: '#short_trend-continuation-section', label: 'Short Setups' },
+    { href: '#short_trend-reversals-section', label: 'Short Reversals' },
     { href: '#short_recommended-section', label: 'Short Recommended' },
-    { href: '#short_baskets-section', label: 'Short Baskets' },
+    { href: '#short_trend-continuation-section', label: 'Short Setups' },
     { href: '#short_screener-section', label: 'Full Short Screen' }
 ];
 
@@ -874,6 +874,13 @@ function initTabTables(tab) {
         }
         if ($('#recommendedTable').length && !$.fn.DataTable.isDataTable('#recommendedTable')) {
             $('#recommendedTable').DataTable({
+                order: [[3, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"f>rt<"dt-bottom"lip>',
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+        }
+        if ($('#trendReversalsTable').length && !$.fn.DataTable.isDataTable('#trendReversalsTable')) {
+            $('#trendReversalsTable').DataTable({
                 order: [[3, 'desc']], pageLength: 25, searching: true,
                 dom: '<"dt-top"f>rt<"dt-bottom"lip>',
                 language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }

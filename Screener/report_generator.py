@@ -509,26 +509,6 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
 
     # ── Long Basket Momentum ──
     long_basket_section = ""
-    if basket_df is not None and not basket_df.empty:
-        basket_table = _build_table_html(
-            basket_df, "basketTable",
-            formatters={
-                'Avg Score': lambda v: f'<span class="score-badge">{_fmt(v, 2)}</span>',
-            },
-            pct_columns=["3M %", "1M %", "1W %", "3D %"]
-        )
-        import jinja2
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(script_dir, "templates")))
-        template = env.get_template("report_card.html")
-        long_basket_section = template.render(
-            section_id="baskets-section",
-            title="Sector &amp; Theme Momentum",
-            badge_class="badge-basket",
-            count_label=f"{n_baskets} Baskets",
-            subtitle="Aggregate performance by sector. Only baskets with stocks found in the current scan are shown.",
-            table_html=basket_table
-        )
 
     # ── Long Trend Reversals ──
     long_basket_detail_section = _build_trend_reversals_html(display_df, mode="long")
@@ -580,27 +560,6 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
 
     # ── Short Basket Momentum ──
     short_basket_section = ""
-    effective_short_basket = short_basket_df if short_basket_df is not None and not short_basket_df.empty else None
-    if effective_short_basket is not None:
-        sbasket_table = _build_table_html(
-            effective_short_basket, "short_basketTable",
-            formatters={
-                'Avg Score': lambda v: f'<span class="score-badge-short">{_fmt(v, 2)}</span>',
-            },
-            pct_columns=["3M %", "1M %", "1W %", "3D %"]
-        )
-        import jinja2
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(script_dir, "templates")))
-        template = env.get_template("report_card.html")
-        short_basket_section = template.render(
-            section_id="short_baskets-section",
-            title="Weakest Sectors &amp; Themes",
-            badge_class="badge-short",
-            count_label=f"{n_short_baskets} Baskets",
-            subtitle="Sector baskets sorted by weakness. Worst performing sectors first &mdash; ideal for identifying short opportunities.",
-            table_html=sbasket_table
-        )
 
     # ── Short Trend Reversals (Not implemented yet) ──
     short_basket_detail_section = ""
