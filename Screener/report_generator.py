@@ -83,35 +83,13 @@ def _parse_market_cap(cap_str):
         return 0.0
 
 
-def _fetch_market_caps_finviz(tickers, chunk_size=100):
+def _fetch_market_caps(tickers, chunk_size=100):
     """
-    Fetch market caps from Finviz screener for a list of tickers.
-    Returns dict {ticker: market_cap_float}. Falls back to empty dict on error.
-    Requires: pip install finvizfinance
+    Fetch market caps for a list of tickers using data_fetcher (yfinance).
     """
-    result = {}
-    if not tickers:
-        return result
-    try:
-        from finvizfinance.screener.overview import Overview
-    except ImportError:
-        return result
-
-    for i in range(0, len(tickers), chunk_size):
-        chunk = tickers[i:i + chunk_size]
-        try:
-            fov = Overview()
-            fov.set_filter(ticker=','.join(chunk))
-            df_fv = fov.screener_view()
-            if df_fv is not None and not df_fv.empty:
-                for r in df_fv.to_dict(orient="records"):
-                    t = str(r.get('Ticker', '')).strip()
-                    if t:
-                        result[t] = _parse_market_cap(r.get('Market Cap', ''))
-        except Exception:
-            pass
-
-    return result
+    import data_fetcher
+    # Use max_workers=20 to speed up since yfinance is fast
+    return data_fetcher.fetch_market_caps(tickers, max_workers=20)
 
 
 def _build_recommended_html(display_df, basket_df, mode="long"):
@@ -170,18 +148,17 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
     if pre_filtered.empty:
         return ""
 
-    # MARKET CAP FILTER via Finviz: >= $500M
+    # MARKET CAP FILTER: >= $500M
     MIN_MARKET_CAP = 500_000_000  # $500M
     sort_col = 'Short_Score' if (mode == "short" and score_col == 'Short_Score') else 'Final_Score'
     ascending = (mode == "short" and score_col != 'Short_Score')
     top_df = pre_filtered.sort_values(sort_col, ascending=ascending).head(300)
     tickers_to_check = [str(t) for t in top_df.index]
-    mkt_caps = _fetch_market_caps_finviz(tickers_to_check)
+    mkt_caps = _fetch_market_caps(tickers_to_check)
     if mkt_caps:
         qualified = {t for t, cap in mkt_caps.items() if cap >= MIN_MARKET_CAP}
         pre_filtered = top_df[top_df.index.map(str).isin(qualified)].copy()
     else:
-        # Finviz non disponibile — procedi senza filtro market cap
         pre_filtered = top_df.copy()
 
     if pre_filtered.empty:
@@ -302,10 +279,10 @@ def _build_trend_continuation_html(display_df, mode="long"):
     if 'ema21_dist' not in filtered.columns:
         return ""
 
-    # ── Market cap filter via Finviz: >= $500M ─────────────────────────────────────
+    # ── Market cap filter: >= $500M ─────────────────────────────────────
     MIN_MARKET_CAP = 500_000_000
     tickers_to_check = [str(t) for t in filtered.index]
-    mkt_caps = _fetch_market_caps_finviz(tickers_to_check)
+    mkt_caps = _fetch_market_caps(tickers_to_check)
     if mkt_caps:
         qualified = {t for t, cap in mkt_caps.items() if cap >= MIN_MARKET_CAP}
         filtered = filtered[filtered.index.map(str).isin(qualified)].copy()
@@ -383,107 +360,96 @@ def _build_trend_continuation_html(display_df, mode="long"):
     )
 
 
-def _build_basket_detail_sections(display_df, basket_df, mode="long"):
+def _build_trend_reversals_html(display_df, mode="long"):
     """
-    Build per-basket TOP 5 tables (long) or BOTTOM 5 tables (short).
-    Each basket gets its own card with a table.
+    Build the "Trend Reversal" section replacing the old basket breakdown.
+    Criteria (long only):
+      - 7-Factor >= 40
+      - ADR >= 3%
+      - Market Cap >= 700M
+      - Close > 21 EMA daily
+    Sorted by R2 (21 days) descending to find tight new trends.
     """
-    import sector_baskets
-
-    prefix = "short_" if mode == "short" else ""
-
     if mode == "short":
-        basket_top = sector_baskets.get_basket_bottom_stocks(display_df, top_n=5)
-        score_col = 'Short_Score' if 'Short_Score' in display_df.columns else 'Final_Score'
-    else:
-        basket_top = sector_baskets.get_basket_top_stocks(display_df, top_n=5)
-        score_col = 'Final_Score'
+        return ""  # Only implementing long trend reversals for now
 
-    if not basket_top:
+    df = display_df.copy()
+    
+    # Base filters
+    if 'ema21_dist' not in df.columns or 'r_squared_21d' not in df.columns:
+        return ""
+        
+    mask = (df['Final_Score'] >= 40) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0)
+    filtered = df[mask].copy()
+
+    if filtered.empty:
         return ""
 
-    basket_order = []
-    if basket_df is not None and not basket_df.empty:
-        basket_order = basket_df['Basket'].tolist()
+    # ── Market cap filter: >= $700M ─────────────────────────────────────
+    MIN_MARKET_CAP = 700_000_000
+    tickers_to_check = [str(t) for t in filtered.index]
+    mkt_caps = _fetch_market_caps(tickers_to_check)
+    if mkt_caps:
+        qualified = {t for t, cap in mkt_caps.items() if cap >= MIN_MARKET_CAP}
+        filtered = filtered[filtered.index.map(str).isin(qualified)].copy()
+        
+    if filtered.empty:
+        return ""
 
-    for b in basket_top:
-        if b not in basket_order:
-            basket_order.append(b)
+    # Sort by 21-day R-squared descending
+    filtered = filtered.sort_values('r_squared_21d', ascending=False).head(30)
 
-    sections = []
-    table_counter = 0
-
-    basket_data = []
-    import jinja2
-    for bname in basket_order:
-        if bname not in basket_top:
-            continue
-        top_stocks = basket_top[bname]
-        if top_stocks.empty:
-            continue
-
-        table_counter += 1
-        tid = f"{prefix}basketDetail{table_counter}"
-
-        rows = []
-        for ticker, row in zip(top_stocks.index, top_stocks.to_dict(orient="records")):
-            rows.append({
-                "Ticker": str(ticker),
-                "Score": round(row.get(score_col, 0), 1),
-                "R²":    round(row.get('r_squared', 0), 2),
-                "1D %": round(row.get('1d_return', 0) * 100, 2),
-                "3D %": round(row.get('3d_return', 0) * 100, 2),
-                "1W %": round(row.get('1w_return', 0) * 100, 2),
-                "1M %": round(row.get('1m_return', 0) * 100, 2),
-            })
-
-        bdf = pd.DataFrame(rows)
-        n_stocks = len(bdf)
-
-        score_badge_class = "score-badge-short" if mode == "short" else "score-badge"
-        table_html = _build_table_html(
-            bdf, tid,
-            columns=["Ticker", "Score", "R²", "1D %", "3D %", "1W %", "1M %"],
-            formatters={
-                "Score": lambda v: f'<span class="{score_badge_class}">{_fmt(v, 1)}</span>',
-            },
-            pct_columns=["1D %", "3D %", "1W %", "1M %"]
-        )
-
-        label = f"Top {n_stocks}" if mode == "long" else f"Worst {n_stocks}"
-        toggle_fn = f"toggleBasket{'Short' if mode == 'short' else ''}(this)"
-
-        basket_data.append({
-            "name": bname,
-            "label": label,
-            "toggle_fn": toggle_fn,
-            "table_html": table_html
+    rows = []
+    for ticker, row in zip(filtered.index, filtered.to_dict(orient="records")):
+        rows.append({
+            "Ticker":          str(ticker),
+            "Price":           round(row.get('last_price', 0), 2),
+            "7-Factor":        round(row.get('Final_Score', 0), 1),
+            "R² (21d)":        round(row.get('r_squared_21d', 0) * 100, 1),
+            "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
+            "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
+            "21EMA Dist%":     round(float(row.get('ema21_dist', 0)) * 100, 2),
+            "1D %":            round(row.get('1d_return', 0) * 100, 2),
+            "1W %":            round(row.get('1w_return', 0) * 100, 2),
+            "1M %":            round(row.get('1m_return', 0) * 100, 2),
         })
 
-    if not basket_data:
+    if not rows:
         return ""
 
-    if mode == "short":
-        title = "Basket Breakdown &mdash; Worst 5 per Sector"
-        subtitle = "Worst 5 stocks per basket, sorted by Short Score (descending). Best short candidates by sector."
-        badge_class = "badge-short"
-        section_id = "short_basket-details-section"
-    else:
-        title = "Basket Breakdown &mdash; Top 5 per Sector"
-        subtitle = "Top 5 stocks per basket, sorted by Score (descending). Only baskets with stocks found in the current scan are shown."
-        badge_class = "badge-basket"
-        section_id = "basket-details-section"
+    tr_df = pd.DataFrame(rows)
+    n_tr  = len(tr_df)
 
+    table_id    = "trendReversalsTable"
+    badge_class = "badge-basket"
+    score_badge = "score-badge"
+    title       = "Trend Reversals / Bottom Fishing"
+    subtitle    = ("Stocks with 7-Factor &ge; 40, ADR &ge; 3%, Market Cap &ge; $700M, "
+                   "and Price closing above the 21 EMA. "
+                   "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends.")
+    section_id  = "trend-reversals-section"
+
+    tr_table = _build_table_html(
+        tr_df, table_id,
+        columns=["Ticker", "Price", "7-Factor", "R² (21d)", "ATR%", "ADR%",
+                 "21EMA Dist%", "1D %", "1W %", "1M %"],
+        formatters={
+            "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
+        },
+        pct_columns=["21EMA Dist%", "1D %", "1W %", "1M %"]
+    )
+
+    import jinja2
     script_dir = os.path.dirname(os.path.abspath(__file__))
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(script_dir, "templates")))
-    template = env.get_template("report_basket_details.html")
+    template = env.get_template("report_card.html")
     return template.render(
         section_id=section_id,
         title=title,
         badge_class=badge_class,
-        active_baskets_count=table_counter,
+        count_label=f"{n_tr} Setups",
         subtitle=subtitle,
-        baskets=basket_data
+        table_html=tr_table
     )
 
 
@@ -564,9 +530,8 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             table_html=basket_table
         )
 
-    # ── Long Basket Details (Top 5) — rimosso dal report giornaliero ──
-    # La sezione Top 5 per basket è stata spostata fuori dal layout del report.
-    long_basket_detail_section = ""
+    # ── Long Trend Reversals ──
+    long_basket_detail_section = _build_trend_reversals_html(display_df, mode="long")
 
     # ── Long Full Screener ──
     screener_rows = []
@@ -637,8 +602,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             table_html=sbasket_table
         )
 
-    # ── Short Basket Details (Worst 5) — rimosso dal report giornaliero ──
-    # La sezione Worst 5 per basket è stata spostata fuori dal layout del report.
+    # ── Short Trend Reversals (Not implemented yet) ──
     short_basket_detail_section = ""
 
     # ── Short Full Screener ──

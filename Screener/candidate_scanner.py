@@ -947,11 +947,14 @@ def scan_candidates(full_df, basket_df):
         if candidates else pd.DataFrame()
     )
 
-    # ── Finviz market cap filter ─────────────────────────────────────────────
+    # ── Market cap filter ─────────────────────────────────────────────
     if not cand_df.empty:
         all_tickers = cand_df["Ticker"].tolist()
-        logger.info("[LONG] Finviz mcap check — %d candidates…", len(all_tickers))
-        passed_mcap = _finviz_mcap_filter(all_tickers, min_cap=1_000_000_000)
+        logger.info("[LONG] Mcap check (yfinance) — %d candidates…", len(all_tickers))
+        import data_fetcher
+        mkt_caps = data_fetcher.fetch_market_caps(all_tickers, max_workers=20)
+        # Use fail-closed to be strict about the minimum cap
+        passed_mcap = {t for t, cap in mkt_caps.items() if cap >= 1_000_000_000}
         cand_df = cand_df[cand_df["Ticker"].isin(passed_mcap)].reset_index(drop=True)
         logger.info("[LONG] Final output after mcap filter: %d ≥$1B", len(cand_df))
 
@@ -1094,11 +1097,13 @@ def scan_short_candidates(full_df, basket_df):
         if candidates else pd.DataFrame()
     )
 
-    # ── Finviz market cap filter ─────────────────────────────────────────────
+    # ── Market cap filter ─────────────────────────────────────────────
     if not cand_df.empty:
         all_tickers = cand_df["Ticker"].tolist()
-        logger.info("[SHORT] Finviz mcap check — %d candidates…", len(all_tickers))
-        passed_mcap = _finviz_mcap_filter(all_tickers, min_cap=1_000_000_000)
+        logger.info("[SHORT] Mcap check (yfinance) — %d candidates…", len(all_tickers))
+        import data_fetcher
+        mkt_caps = data_fetcher.fetch_market_caps(all_tickers, max_workers=20)
+        passed_mcap = {t for t, cap in mkt_caps.items() if cap >= 1_000_000_000}
         cand_df = cand_df[cand_df["Ticker"].isin(passed_mcap)].reset_index(drop=True)
         logger.info("[SHORT] Final output after mcap filter: %d ≥$1B", len(cand_df))
 

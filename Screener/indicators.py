@@ -70,11 +70,17 @@ def calc_price_performance(df, months=cfg.lookback_months):
     ema21        = float(ema21_series.dropna().iloc[-1])
     ema21_dist   = float((last_close - ema21) / ema21) if ema21 != 0 else 0.0
 
-    # Linear regression
+    # Linear regression (Full period)
     y = clean.values
     x = np.arange(len(y))
     slope, _, r_value, _, _ = linregress(x, y)
     r_squared = r_value ** 2
+
+    # Linear regression (21 days)
+    y_21 = clean.iloc[-21:].values if len(clean) >= 21 else clean.values
+    x_21 = np.arange(len(y_21))
+    _, _, r_value_21, _, _ = linregress(x_21, y_21)
+    r_squared_21d = r_value_21 ** 2
 
     return {
         "3m_return":  ret_3m,
@@ -86,6 +92,7 @@ def calc_price_performance(df, months=cfg.lookback_months):
         "ema21":      ema21,
         "ema21_dist": ema21_dist,
         "r_squared":  r_squared,
+        "r_squared_21d": r_squared_21d,
         "slope":      slope,
     }
 
