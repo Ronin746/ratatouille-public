@@ -116,6 +116,7 @@ def run_screener(tickers=None):
                 'ema21':      pp.get('ema21', 0.0),
                 'ema21_dist': pp.get('ema21_dist', 0.0),
                 'r_squared':  pp['r_squared'],
+                'r_squared_21d': pp.get('r_squared_21d', 0.0),
                 'slope':      pp['slope'],
                 # Bullish Candles
                 'bullish_ratio': bc['bullish_ratio'],
