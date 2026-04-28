@@ -189,7 +189,7 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  score_val,
-            "R²":     round(row.get('r_squared', 0) * 100, 1),
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -379,7 +379,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if 'ema21_dist' not in df.columns or 'r_squared_21d' not in df.columns:
         return ""
         
-    mask = (df['Final_Score'] >= 40) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0)
+    mask = (df['Final_Score'] >= 40) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0) & (df['r_squared_21d'] >= 0.01)
     filtered = df[mask].copy()
 
     if filtered.empty:
@@ -523,7 +523,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Final_Score', 0), 1),
-            "R²":     round(row.get('r_squared', 0) * 100, 1),
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -576,7 +576,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Short_Score', 100 - row.get('Final_Score', 0)), 1),
-            "R²":     round(row.get('r_squared', 0) * 100, 1),
+            "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
