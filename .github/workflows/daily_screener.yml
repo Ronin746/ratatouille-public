@@ -1,4 +1,4 @@
-name: Daily Screener v3
+name: Daily Screener
 
 on:
   schedule:
@@ -14,10 +14,8 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout repository (v3)
+      - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: v3
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v6
@@ -39,9 +37,9 @@ jobs:
           git config user.name "Andrea"
           git config user.email "chiefuseless@gmail.com"
           git add Reports/ Archive/ Screener/ Data/archive/
-          git diff --cached --quiet && echo "Nessuna modifica da committare" || git commit -m "Auto screener v3 - $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin v3
-          git push origin v3
+          git diff --cached --quiet && echo "Nessuna modifica da committare" || git commit -m "Auto screener - $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin main
+          git push origin main
 
       - name: Deploy su Cloudflare Pages (production)
         uses: cloudflare/pages-action@v1
