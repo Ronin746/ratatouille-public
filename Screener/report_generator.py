@@ -189,7 +189,7 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  score_val,
-            "R²":     round(row.get('r_squared', 0), 2),
+            "R²":     round(row.get('r_squared', 0) * 100, 1),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -423,7 +423,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
     table_id    = "trendReversalsTable"
     badge_class = "badge-basket"
     score_badge = "score-badge"
-    title       = "Trend Reversals / Bottom Fishing"
+    title       = "Trend Reversals"
     subtitle    = ("Stocks with 7-Factor &ge; 40, ADR &ge; 3%, Market Cap &ge; $700M, "
                    "and Price closing above the 21 EMA. "
                    "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends.")
@@ -523,7 +523,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Final_Score', 0), 1),
-            "R²":     round(row.get('r_squared', 0), 2),
+            "R²":     round(row.get('r_squared', 0) * 100, 1),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
@@ -576,7 +576,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  round(row.get('Short_Score', 100 - row.get('Final_Score', 0)), 1),
-            "R²":     round(row.get('r_squared', 0), 2),
+            "R²":     round(row.get('r_squared', 0) * 100, 1),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
