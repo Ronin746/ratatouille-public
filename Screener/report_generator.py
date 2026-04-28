@@ -250,12 +250,9 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
 def _build_trend_continuation_html(display_df, mode="long"):
     """
     Build the "Trend Continuation Setups" section.
-    Source: top 300 stocks by score.
-    Criteria: long  — Final_Score >= 70 AND R² >= 0.80
-              short — Short_Score >= 60 AND R² >= 0.80
+    Criteria: long  — Final_Score >= 70 AND R²(21d) >= 0.80 AND Market Cap >= $500M
+              short — Short_Score >= 60 AND R²(21d) >= 0.80 AND Market Cap >= $500M
     Sort: ascending by |Distance from 21 EMA| — stocks nearest to their EMA first.
-    mode='long'  → green theme, long candidates
-    mode='short' → red theme,   short candidates
     """
     df = display_df.copy()
 
@@ -264,19 +261,16 @@ def _build_trend_continuation_html(display_df, mode="long"):
     else:
         score_col = 'Final_Score'
 
-    # Top 300 by score
-    top300 = df.sort_values(score_col, ascending=False).head(300)
-
-    # Filter: long >= 70, short >= 60; both require R² >= 0.80
-    score_threshold = 60 if mode == "short" else 70
-    mask = (top300[score_col] >= score_threshold) & (top300['r_squared'] >= 0.80)
-    filtered = top300[mask].copy()
-
-    if filtered.empty:
+    # Check required columns
+    if 'r_squared_21d' not in df.columns or 'ema21_dist' not in df.columns:
         return ""
 
-    # ema21_dist is stored as fraction (e.g. 0.03 = 3%)
-    if 'ema21_dist' not in filtered.columns:
+    # Filter: long >= 70, short >= 60; both require R²(21d) >= 0.80
+    score_threshold = 60 if mode == "short" else 70
+    mask = (df[score_col] >= score_threshold) & (df['r_squared_21d'] >= 0.80)
+    filtered = df[mask].copy()
+
+    if filtered.empty:
         return ""
 
     # ── Market cap filter: >= $500M ─────────────────────────────────────
@@ -300,7 +294,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
             "Ticker":          str(ticker),
             "Price":           round(row.get('last_price', 0), 2),
             "7-Factor":        score_val,
-            "R²":              round(row.get('r_squared', 0) * 100, 1),
+            "R² (21d)":        round(row.get('r_squared_21d', 0) * 100, 1),
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     dist_pct,
@@ -320,7 +314,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
         badge_class = "badge-short"
         score_badge = "score-badge-short"
         title       = "Short Trend Continuation Setups"
-        subtitle    = ("Stocks from top 300 Short Score with 7-Factor &ge; 60, R&sup2; &ge; 80, "
+        subtitle    = ("Stocks with 7-Factor &ge; 60, R&sup2;(21d) &ge; 80, "
                        "Market Cap &ge; $500M. "
                        "Sorted by proximity to 21 EMA &mdash; closest first. "
                        "Ideal candidates showing orderly reversion toward key moving average.")
@@ -330,7 +324,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
         badge_class = "badge-gold"
         score_badge = "score-badge"
         title       = "Trend Continuation Setups"
-        subtitle    = ("Stocks from top 300 with 7-Factor &ge; 70, R&sup2; &ge; 80, "
+        subtitle    = ("Stocks with 7-Factor &ge; 70, R&sup2;(21d) &ge; 80, "
                        "Market Cap &ge; $500M. "
                        "Sorted by proximity to 21 EMA &mdash; closest first. "
                        "Orderly pullback or squeeze near key moving average.")
@@ -338,7 +332,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
 
     tc_table = _build_table_html(
         tc_df, table_id,
-        columns=["Ticker", "Price", "7-Factor", "R²", "ATR%", "ADR%",
+        columns=["Ticker", "Price", "7-Factor", "R² (21d)", "ATR%", "ADR%",
                  "21EMA Dist%", "1D %", "1W %", "1M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
@@ -396,8 +390,8 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
-    # Sort by 21-day R-squared descending
-    filtered = filtered.sort_values('r_squared_21d', ascending=False).head(30)
+    # Sort by 21-day R-squared descending — show all qualifying stocks
+    filtered = filtered.sort_values('r_squared_21d', ascending=False)
 
     rows = []
     for ticker, row in zip(filtered.index, filtered.to_dict(orient="records")):

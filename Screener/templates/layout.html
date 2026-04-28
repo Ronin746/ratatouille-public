@@ -703,9 +703,9 @@ table.dataTable thead .sorting_desc::after {
 
     {{ long_basket_detail_section | safe }}
 
-    {{ long_recommended_section | safe }}
-
     {{ long_trend_continuation_section | safe }}
+
+    {{ long_recommended_section | safe }}
 
     <section class="card" id="screener-section">
         <div class="card-header">
@@ -753,9 +753,9 @@ table.dataTable thead .sorting_desc::after {
 
     {{ short_basket_detail_section | safe }}
 
-    {{ short_recommended_section | safe }}
-
     {{ short_trend_continuation_section | safe }}
+
+    {{ short_recommended_section | safe }}
 
     <section class="card" id="short_screener-section">
         <div class="card-header">
@@ -790,15 +790,15 @@ var tablesInitialized = { long: false, short: false };
 
 var longNavItems = [
     { href: '#trend-reversals-section', label: 'Trend Reversals' },
-    { href: '#recommended-section', label: 'Recommended' },
     { href: '#trend-continuation-section', label: 'Trend Setups' },
+    { href: '#recommended-section', label: 'Recommended' },
     { href: '#screener-section', label: 'Full Screen' }
 ];
 
 var shortNavItems = [
     { href: '#short_trend-reversals-section', label: 'Short Reversals' },
-    { href: '#short_recommended-section', label: 'Short Recommended' },
     { href: '#short_trend-continuation-section', label: 'Short Setups' },
+    { href: '#short_recommended-section', label: 'Short Recommended' },
     { href: '#short_screener-section', label: 'Full Short Screen' }
 ];
 
