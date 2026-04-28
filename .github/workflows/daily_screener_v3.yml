@@ -2,7 +2,7 @@ name: Daily Screener v3
 
 on:
   schedule:
-    - cron: '0 3 * * 2-6'    # 03:00 UTC = 04:00 CET (inv) / 05:00 CEST (est) (mar-sab)
+    - cron: '30 20 * * 1-5'   # 20:30 UTC = 16:30 ET (30 min after US market close, Mon-Fri)
   workflow_dispatch:           # Avvio manuale da GitHub.com
 
 permissions:
