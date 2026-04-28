@@ -43,11 +43,11 @@ jobs:
           git pull --rebase origin v3
           git push origin v3
 
-      - name: Deploy su Cloudflare Pages (v3)
+      - name: Deploy su Cloudflare Pages (production)
         uses: cloudflare/pages-action@v1
         with:
           apiToken:    ${{ secrets.CF_API_TOKEN }}
           accountId:   ${{ secrets.CF_ACCOUNT_ID }}
           projectName: ratatouille-radar
           directory:   Archive
-          branch:      v3
+          branch:      main
