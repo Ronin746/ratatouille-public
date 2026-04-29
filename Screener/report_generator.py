@@ -192,6 +192,9 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
+            "21EMA%": round(float(row.get('ema21_dist', 0)) * 100, 2),
+            "30W%":   round(float(row.get('sma30w_dist', 0)) * 100, 2),
+            "ATR×50": round(float(row.get('atr_dist_50sma', 0)), 1),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
             "1W %":   round(row.get('1w_return', 0) * 100, 2),
             "1M %":   round(row.get('1m_return', 0) * 100, 2),
@@ -209,11 +212,12 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
     rec_df.insert(0, "Rank", rec_df.index + 1)
     rec_table = _build_table_html(
         rec_df, table_id,
-        columns=["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"],
+        columns=["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%",
+                 "21EMA%", "30W%", "ATR×50", "1D %", "1W %", "1M %", "3M %"],
         formatters={
             "Score": lambda v: f'<span class="{score_badge_class}">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["1D %", "1W %", "1M %", "3M %"]
+        pct_columns=["21EMA%", "30W%", "1D %", "1W %", "1M %", "3M %"]
     )
 
     if mode == "short":
@@ -298,6 +302,8 @@ def _build_trend_continuation_html(display_df, mode="long"):
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     dist_pct,
+            "30W SMA%":        round(float(row.get('sma30w_dist', 0)) * 100, 2),
+            "ATR×50":          round(float(row.get('atr_dist_50sma', 0)), 1),
             "1D %":            round(row.get('1d_return', 0) * 100, 2),
             "1W %":            round(row.get('1w_return', 0) * 100, 2),
             "1M %":            round(row.get('1m_return', 0) * 100, 2),
@@ -333,11 +339,11 @@ def _build_trend_continuation_html(display_df, mode="long"):
     tc_table = _build_table_html(
         tc_df, table_id,
         columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
-                 "21EMA Dist%", "1D %", "1W %", "1M %"],
+                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["21EMA Dist%", "1D %", "1W %", "1M %"]
+        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %"]
     )
 
     import jinja2
@@ -403,6 +409,8 @@ def _build_trend_reversals_html(display_df, mode="long"):
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     round(float(row.get('ema21_dist', 0)) * 100, 2),
+            "30W SMA%":        round(float(row.get('sma30w_dist', 0)) * 100, 2),
+            "ATR×50":          round(float(row.get('atr_dist_50sma', 0)), 1),
             "1D %":            round(row.get('1d_return', 0) * 100, 2),
             "1W %":            round(row.get('1w_return', 0) * 100, 2),
             "1M %":            round(row.get('1m_return', 0) * 100, 2),
@@ -427,11 +435,11 @@ def _build_trend_reversals_html(display_df, mode="long"):
     tr_table = _build_table_html(
         tr_df, table_id,
         columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
-                 "21EMA Dist%", "1D %", "1W %", "1M %"],
+                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["21EMA Dist%", "1D %", "1W %", "1M %"]
+        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %"]
     )
 
     import jinja2
@@ -521,6 +529,9 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
+            "21EMA%": round(float(row.get('ema21_dist', 0)) * 100, 2),
+            "30W%":   round(float(row.get('sma30w_dist', 0)) * 100, 2),
+            "ATR×50": round(float(row.get('atr_dist_50sma', 0)), 1),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
             "1W %":   round(row.get('1w_return', 0) * 100, 2),
             "1M %":   round(row.get('1m_return', 0) * 100, 2),
@@ -528,7 +539,8 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         })
 
     screener_df = pd.DataFrame(screener_rows)
-    screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
+    screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%",
+                     "21EMA%", "30W%", "ATR×50", "1D %", "1W %", "1M %", "3M %"]
 
     long_screener_table = _build_table_html(
         screener_df, "screenerTable",
@@ -536,7 +548,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         formatters={
             "Score": lambda v: f'<span class="score-badge">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["1D %", "1W %", "1M %", "3M %"]
+        pct_columns=["21EMA%", "30W%", "1D %", "1W %", "1M %", "3M %"]
     )
 
     # ══════════════════════════════════════════════════════
@@ -574,6 +586,9 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
             "R²":     round(row.get('r_squared', 0), 2),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
+            "21EMA%": round(float(row.get('ema21_dist', 0)) * 100, 2),
+            "30W%":   round(float(row.get('sma30w_dist', 0)) * 100, 2),
+            "ATR×50": round(float(row.get('atr_dist_50sma', 0)), 1),
             "1D %":   round(row.get('1d_return', 0) * 100, 2),
             "1W %":   round(row.get('1w_return', 0) * 100, 2),
             "1M %":   round(row.get('1m_return', 0) * 100, 2),
@@ -581,7 +596,8 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         })
 
     short_screener_df = pd.DataFrame(short_screener_rows)
-    short_screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%", "1D %", "1W %", "1M %", "3M %"]
+    short_screener_cols = ["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%",
+                           "21EMA%", "30W%", "ATR×50", "1D %", "1W %", "1M %", "3M %"]
 
     short_screener_table = _build_table_html(
         short_screener_df, "short_screenerTable",
@@ -589,7 +605,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         formatters={
             "Score": lambda v: f'<span class="score-badge-short">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["1D %", "1W %", "1M %", "3M %"]
+        pct_columns=["21EMA%", "30W%", "1D %", "1W %", "1M %", "3M %"]
     )
 
     # ══════════════════════════════════════════════════════

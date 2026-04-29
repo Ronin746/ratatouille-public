@@ -97,6 +97,32 @@ def calc_price_performance(df, months=cfg.lookback_months):
     }
 
 
+def calc_weekly_sma30_dist(df):
+    """
+    Calculate distance (%) from the 30-week SMA.
+    Resamples daily Close data to weekly (Friday close) and computes SMA(30).
+    Returns dict with sma30w_dist as a fraction (e.g. 0.05 = 5%).
+    """
+    close = _valid_close(df, min_rows=150)
+    if close is None:
+        return {"sma30w_dist": 0.0}
+
+    # Resample to weekly (Friday close)
+    weekly = close.resample('W-FRI').last().dropna()
+    if len(weekly) < 30:
+        return {"sma30w_dist": 0.0}
+
+    sma30w = weekly.rolling(30).mean()
+    last_sma30w = sma30w.dropna().iloc[-1]
+    last_price = float(close.dropna().iloc[-1])
+
+    if last_sma30w == 0:
+        return {"sma30w_dist": 0.0}
+
+    dist = (last_price - last_sma30w) / last_sma30w
+    return {"sma30w_dist": float(dist)}
+
+
 def calc_bullish_candles(df, months=cfg.lookback_months):
     """
     Factor 2: Bullish Candles (15%)

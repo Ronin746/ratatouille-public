@@ -98,10 +98,21 @@ def run_screener(tickers=None):
             vol = ind.calc_volatility(df, atr_length=14, adr_length=20)
             v = ind.calc_volume(df)
             rs = ind.calc_relative_strength(df, benchmark_data)
+            w30 = ind.calc_weekly_sma30_dist(df)
             
             if not all([pp, bc, ma, tc, vol, v, rs]):
                 logger.warning("Insufficient data for %s, skipping.", ticker)
                 continue
+
+            # Derived: ATR distance from 50 SMA daily
+            _last_price = pp.get('last_price', 0.0)
+            _ma50 = ma.get('ma50', 0)
+            _atr_pct = vol.get('atr_pct', 0.0)
+            if _ma50 and _ma50 > 0 and _atr_pct and _atr_pct > 0:
+                _dist_50_pct = (_last_price - _ma50) / _ma50
+                _atr_dist_50 = _dist_50_pct / _atr_pct
+            else:
+                _atr_dist_50 = 0.0
                 
             # Flatten into a dict
             row = {
@@ -118,6 +129,9 @@ def run_screener(tickers=None):
                 'r_squared':  pp['r_squared'],
                 'r_squared_15d': pp.get('r_squared_15d', 0.0),
                 'slope':      pp['slope'],
+                # Weekly 30 SMA & ATR dist from 50 SMA
+                'sma30w_dist':    w30.get('sma30w_dist', 0.0),
+                'atr_dist_50sma': round(_atr_dist_50, 2),
                 # Bullish Candles
                 'bullish_ratio': bc['bullish_ratio'],
                 'strong_bullish_count': bc['strong_bullish_count'],

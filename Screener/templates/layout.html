@@ -578,14 +578,17 @@ table.dataTable thead .sorting_desc::after {
 
 /* ── Column Filters ── */
 .col-filter-row th {
-    padding:6px 8px !important;
+    padding:4px 4px !important;
     background:var(--bg-elevated) !important;
     border-bottom:2px solid var(--border-base) !important;
 }
+.col-filter-wrap {
+    display:flex; gap:3px; align-items:center;
+}
 .col-filter-input {
-    width:100%; min-width:48px; max-width:80px;
-    padding:4px 6px;
-    font-size:0.7rem; font-family:'JetBrains Mono',monospace;
+    width:50%; min-width:34px; max-width:52px;
+    padding:3px 4px;
+    font-size:0.65rem; font-family:'JetBrains Mono',monospace;
     color:var(--text-primary);
     background:var(--bg-input);
     border:1px solid var(--border-base);
@@ -598,7 +601,7 @@ table.dataTable thead .sorting_desc::after {
     box-shadow:0 0 0 2px var(--accent-dim);
 }
 .col-filter-input::placeholder {
-    color:var(--text-muted); font-size:0.62rem;
+    color:var(--text-muted); font-size:0.58rem;
 }
 
 /* ── Responsive ── */
@@ -1020,45 +1023,55 @@ function initColumnFilters(tableId, dtInstance) {
     var thead = $('#' + tableId + ' thead');
     var headerCells = thead.find('tr').first().find('th');
     var filterRow = $('<tr class="col-filter-row"></tr>');
-    var skipCols = ['Ticker'];  // columns that don't get a filter
+    var skipCols = ['Ticker'];
 
     headerCells.each(function(i) {
         var colName = $(this).text().trim();
         if (skipCols.indexOf(colName) !== -1) {
             filterRow.append('<th></th>');
         } else {
-            var input = $('<input type="number" step="any" class="col-filter-input" placeholder="Min">')
-                .attr('data-table', tableId)
+            var wrap = $('<div class="col-filter-wrap"></div>');
+            var minInput = $('<input type="number" step="any" class="col-filter-input col-filter-min" placeholder="Min">')
                 .attr('data-col', i);
-            var td = $('<th></th>').append(input);
-            filterRow.append(td);
+            var maxInput = $('<input type="number" step="any" class="col-filter-input col-filter-max" placeholder="Max">')
+                .attr('data-col', i);
+            wrap.append(minInput).append(maxInput);
+            filterRow.append($('<th></th>').append(wrap));
         }
     });
     thead.append(filterRow);
 
-    // Register a single custom search function for this table
+    // Custom search: check min AND max per column
     var filterFn = function(settings, data) {
         if (settings.nTable.id !== tableId) return true;
-        var inputs = filterRow.find('.col-filter-input');
         var pass = true;
-        inputs.each(function() {
+
+        // Check all MIN inputs
+        filterRow.find('.col-filter-min').each(function() {
             var minVal = parseFloat($(this).val());
-            if (isNaN(minVal)) return true;  // no filter on this column
+            if (isNaN(minVal)) return true;
             var colIdx = parseInt($(this).attr('data-col'));
-            // Extract numeric value: strip HTML tags, %, +, commas
             var raw = (data[colIdx] || '').replace(/<[^>]*>/g, '').replace(/[,%+]/g, '').trim();
             var cellVal = parseFloat(raw);
-            if (isNaN(cellVal) || cellVal < minVal) {
-                pass = false;
-                return false;  // break .each
-            }
+            if (isNaN(cellVal) || cellVal < minVal) { pass = false; return false; }
+        });
+        if (!pass) return false;
+
+        // Check all MAX inputs
+        filterRow.find('.col-filter-max').each(function() {
+            var maxVal = parseFloat($(this).val());
+            if (isNaN(maxVal)) return true;
+            var colIdx = parseInt($(this).attr('data-col'));
+            var raw = (data[colIdx] || '').replace(/<[^>]*>/g, '').replace(/[,%+]/g, '').trim();
+            var cellVal = parseFloat(raw);
+            if (isNaN(cellVal) || cellVal > maxVal) { pass = false; return false; }
         });
         return pass;
     };
     $.fn.dataTable.ext.search.push(filterFn);
     _colFilterFns.push(filterFn);
 
-    // Bind input events — debounce for smooth UX
+    // Debounced redraw on any filter input
     var timer;
     filterRow.find('.col-filter-input').on('input', function() {
         clearTimeout(timer);
