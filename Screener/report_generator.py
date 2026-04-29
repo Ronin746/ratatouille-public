@@ -250,8 +250,8 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
 def _build_trend_continuation_html(display_df, mode="long"):
     """
     Build the "Trend Continuation Setups" section.
-    Criteria: long  — Final_Score >= 70 AND R²(21d) >= 0.80 AND Market Cap >= $500M
-              short — Short_Score >= 60 AND R²(21d) >= 0.80 AND Market Cap >= $500M
+    Criteria: long  — Final_Score >= 70 AND R²(15d) >= 0.80 AND Market Cap >= $500M
+              short — Short_Score >= 60 AND R²(15d) >= 0.80 AND Market Cap >= $500M
     Sort: ascending by |Distance from 21 EMA| — stocks nearest to their EMA first.
     """
     df = display_df.copy()
@@ -262,12 +262,12 @@ def _build_trend_continuation_html(display_df, mode="long"):
         score_col = 'Final_Score'
 
     # Check required columns
-    if 'r_squared_21d' not in df.columns or 'ema21_dist' not in df.columns:
+    if 'r_squared_15d' not in df.columns or 'ema21_dist' not in df.columns:
         return ""
 
-    # Filter: long >= 70, short >= 60; both require R²(21d) >= 0.80
+    # Filter: long >= 70, short >= 60; both require R²(15d) >= 0.80
     score_threshold = 60 if mode == "short" else 70
-    mask = (df[score_col] >= score_threshold) & (df['r_squared_21d'] >= 0.80)
+    mask = (df[score_col] >= score_threshold) & (df['r_squared_15d'] >= 0.80)
     filtered = df[mask].copy()
 
     if filtered.empty:
@@ -294,7 +294,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
             "Ticker":          str(ticker),
             "Price":           round(row.get('last_price', 0), 2),
             "7-Factor":        score_val,
-            "R² (21d)":        round(row.get('r_squared_21d', 0) * 100, 1),
+            "R² (15d)":        round(row.get('r_squared_15d', 0) * 100, 1),
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     dist_pct,
@@ -314,7 +314,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
         badge_class = "badge-short"
         score_badge = "score-badge-short"
         title       = "Short Trend Continuation Setups"
-        subtitle    = ("Stocks with 7-Factor &ge; 60, R&sup2;(21d) &ge; 80, "
+        subtitle    = ("Stocks with 7-Factor &ge; 60, R&sup2;(15d) &ge; 80, "
                        "Market Cap &ge; $500M. "
                        "Sorted by proximity to 21 EMA &mdash; closest first. "
                        "Ideal candidates showing orderly reversion toward key moving average.")
@@ -324,7 +324,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
         badge_class = "badge-gold"
         score_badge = "score-badge"
         title       = "Trend Continuation Setups"
-        subtitle    = ("Stocks with 7-Factor &ge; 70, R&sup2;(21d) &ge; 80, "
+        subtitle    = ("Stocks with 7-Factor &ge; 70, R&sup2;(15d) &ge; 80, "
                        "Market Cap &ge; $500M. "
                        "Sorted by proximity to 21 EMA &mdash; closest first. "
                        "Orderly pullback or squeeze near key moving average.")
@@ -332,7 +332,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
 
     tc_table = _build_table_html(
         tc_df, table_id,
-        columns=["Ticker", "Price", "7-Factor", "R² (21d)", "ATR%", "ADR%",
+        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
                  "21EMA Dist%", "1D %", "1W %", "1M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
@@ -370,10 +370,10 @@ def _build_trend_reversals_html(display_df, mode="long"):
     df = display_df.copy()
     
     # Base filters
-    if 'ema21_dist' not in df.columns or 'r_squared_21d' not in df.columns:
+    if 'ema21_dist' not in df.columns or 'r_squared_15d' not in df.columns:
         return ""
         
-    mask = (df['Final_Score'] >= 50) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0) & (df['r_squared_21d'] >= 0.01)
+    mask = (df['Final_Score'] >= 50) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0) & (df['r_squared_15d'] >= 0.01)
     filtered = df[mask].copy()
 
     if filtered.empty:
@@ -391,7 +391,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
         return ""
 
     # Sort by 21-day R-squared descending — show all qualifying stocks
-    filtered = filtered.sort_values('r_squared_21d', ascending=False)
+    filtered = filtered.sort_values('r_squared_15d', ascending=False)
 
     rows = []
     for ticker, row in zip(filtered.index, filtered.to_dict(orient="records")):
@@ -399,7 +399,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
             "Ticker":          str(ticker),
             "Price":           round(row.get('last_price', 0), 2),
             "7-Factor":        round(row.get('Final_Score', 0), 1),
-            "R² (21d)":        round(row.get('r_squared_21d', 0) * 100, 1),
+            "R² (15d)":        round(row.get('r_squared_15d', 0) * 100, 1),
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     round(float(row.get('ema21_dist', 0)) * 100, 2),
@@ -420,13 +420,13 @@ def _build_trend_reversals_html(display_df, mode="long"):
     title       = "Trend Reversals"
     subtitle    = ("Stocks with 7-Factor &ge; 50, ADR &ge; 3%, Market Cap &ge; $500M, "
                    "and Price closing above the 21 EMA. "
-                   "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends. "
+                   "Sorted by highest 15-day R&sup2; to highlight tight emerging uptrends. "
                    "Use column filters below headers to refine.")
     section_id  = "trend-reversals-section"
 
     tr_table = _build_table_html(
         tr_df, table_id,
-        columns=["Ticker", "Price", "7-Factor", "R² (21d)", "ATR%", "ADR%",
+        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
                  "21EMA Dist%", "1D %", "1W %", "1M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
