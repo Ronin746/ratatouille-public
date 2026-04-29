@@ -379,8 +379,8 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
-    # ── Market cap filter: >= $700M ─────────────────────────────────────
-    MIN_MARKET_CAP = 700_000_000
+    # ── Market cap filter: >= $500M ─────────────────────────────────────
+    MIN_MARKET_CAP = 500_000_000
     tickers_to_check = [str(t) for t in filtered.index]
     mkt_caps = _fetch_market_caps(tickers_to_check)
     if mkt_caps:
@@ -418,7 +418,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
     badge_class = "badge-basket"
     score_badge = "score-badge"
     title       = "Trend Reversals"
-    subtitle    = ("Stocks with 7-Factor &ge; 50, ADR &ge; 3%, Market Cap &ge; $700M, "
+    subtitle    = ("Stocks with 7-Factor &ge; 50, ADR &ge; 3%, Market Cap &ge; $500M, "
                    "and Price closing above the 21 EMA. "
                    "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends. "
                    "Use column filters below headers to refine.")
