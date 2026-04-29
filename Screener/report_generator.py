@@ -373,7 +373,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if 'ema21_dist' not in df.columns or 'r_squared_21d' not in df.columns:
         return ""
         
-    mask = (df['Final_Score'] >= 40) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0) & (df['r_squared_21d'] >= 0.01)
+    mask = (df['Final_Score'] >= 50) & (df['adr_pct'] >= 0.03) & (df['ema21_dist'] > 0) & (df['r_squared_21d'] >= 0.01)
     filtered = df[mask].copy()
 
     if filtered.empty:
@@ -418,9 +418,10 @@ def _build_trend_reversals_html(display_df, mode="long"):
     badge_class = "badge-basket"
     score_badge = "score-badge"
     title       = "Trend Reversals"
-    subtitle    = ("Stocks with 7-Factor &ge; 40, ADR &ge; 3%, Market Cap &ge; $700M, "
+    subtitle    = ("Stocks with 7-Factor &ge; 50, ADR &ge; 3%, Market Cap &ge; $700M, "
                    "and Price closing above the 21 EMA. "
-                   "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends.")
+                   "Sorted by highest 21-day R&sup2; to highlight tight emerging uptrends. "
+                   "Use column filters below headers to refine.")
     section_id  = "trend-reversals-section"
 
     tr_table = _build_table_html(

@@ -576,6 +576,31 @@ table.dataTable thead .sorting_desc::after {
     letter-spacing:0.3px;
 }
 
+/* ── Column Filters ── */
+.col-filter-row th {
+    padding:6px 8px !important;
+    background:var(--bg-elevated) !important;
+    border-bottom:2px solid var(--border-base) !important;
+}
+.col-filter-input {
+    width:100%; min-width:48px; max-width:80px;
+    padding:4px 6px;
+    font-size:0.7rem; font-family:'JetBrains Mono',monospace;
+    color:var(--text-primary);
+    background:var(--bg-input);
+    border:1px solid var(--border-base);
+    border-radius:var(--radius-xs);
+    outline:none; transition:border-color 0.2s;
+    text-align:center;
+}
+.col-filter-input:focus {
+    border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent-dim);
+}
+.col-filter-input::placeholder {
+    color:var(--text-muted); font-size:0.62rem;
+}
+
 /* ── Responsive ── */
 @media (max-width:768px) {
     .topbar-wrap { padding:8px 12px; }
@@ -880,18 +905,20 @@ function initTabTables(tab) {
             });
         }
         if ($('#trendReversalsTable').length && !$.fn.DataTable.isDataTable('#trendReversalsTable')) {
-            $('#trendReversalsTable').DataTable({
+            var trTable = $('#trendReversalsTable').DataTable({
                 order: [[3, 'desc']], pageLength: 25, searching: true,
                 dom: '<"dt-top"f>rt<"dt-bottom"lip>',
                 language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
             });
+            initColumnFilters('trendReversalsTable', trTable);
         }
         if ($('#trendContTable').length && !$.fn.DataTable.isDataTable('#trendContTable')) {
-            $('#trendContTable').DataTable({
+            var tcTable = $('#trendContTable').DataTable({
                 order: [[6, 'asc']], pageLength: 25, searching: true,
                 dom: '<"dt-top"f>rt<"dt-bottom"lip>',
                 language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
             });
+            initColumnFilters('trendContTable', tcTable);
         }
     } else {
         if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {
@@ -980,6 +1007,62 @@ function buildSidebar(items, label) {
             a.classList.add('active');
         });
         container.appendChild(a);
+    });
+}
+
+// ══ COLUMN MIN-VALUE FILTERS ══
+// Adds a second header row with inputs for numeric columns.
+// Each input acts as a "minimum" filter: only rows where column >= value pass.
+// Clearing the input removes that filter.
+var _colFilterFns = [];  // track active filter functions
+
+function initColumnFilters(tableId, dtInstance) {
+    var thead = $('#' + tableId + ' thead');
+    var headerCells = thead.find('tr').first().find('th');
+    var filterRow = $('<tr class="col-filter-row"></tr>');
+    var skipCols = ['Ticker'];  // columns that don't get a filter
+
+    headerCells.each(function(i) {
+        var colName = $(this).text().trim();
+        if (skipCols.indexOf(colName) !== -1) {
+            filterRow.append('<th></th>');
+        } else {
+            var input = $('<input type="number" step="any" class="col-filter-input" placeholder="Min">')
+                .attr('data-table', tableId)
+                .attr('data-col', i);
+            var td = $('<th></th>').append(input);
+            filterRow.append(td);
+        }
+    });
+    thead.append(filterRow);
+
+    // Register a single custom search function for this table
+    var filterFn = function(settings, data) {
+        if (settings.nTable.id !== tableId) return true;
+        var inputs = filterRow.find('.col-filter-input');
+        var pass = true;
+        inputs.each(function() {
+            var minVal = parseFloat($(this).val());
+            if (isNaN(minVal)) return true;  // no filter on this column
+            var colIdx = parseInt($(this).attr('data-col'));
+            // Extract numeric value: strip HTML tags, %, +, commas
+            var raw = (data[colIdx] || '').replace(/<[^>]*>/g, '').replace(/[,%+]/g, '').trim();
+            var cellVal = parseFloat(raw);
+            if (isNaN(cellVal) || cellVal < minVal) {
+                pass = false;
+                return false;  // break .each
+            }
+        });
+        return pass;
+    };
+    $.fn.dataTable.ext.search.push(filterFn);
+    _colFilterFns.push(filterFn);
+
+    // Bind input events — debounce for smooth UX
+    var timer;
+    filterRow.find('.col-filter-input').on('input', function() {
+        clearTimeout(timer);
+        timer = setTimeout(function() { dtInstance.draw(); }, 200);
     });
 }
 
