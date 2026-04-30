@@ -97,14 +97,20 @@ EXCLUDED_INDUSTRIES = {"Biotechnology"}
 
 def _exclude_biotech(filtered_df):
     """
-    Remove tickers classified as Biotechnology by yfinance.
-    Fetches industry data in parallel, then drops matching rows.
+    Remove tickers classified as Biotechnology by yfinance,
+    UNLESS the ticker belongs to one of our SECTOR_BASKETS.
     """
     import data_fetcher
+    import sector_baskets
     tickers = [str(t) for t in filtered_df.index]
     if not tickers:
         return filtered_df
-    industries = data_fetcher.fetch_industries(tickers, max_workers=20)
+    basket_map = sector_baskets.build_ticker_basket_map()
+    # Only check industry for tickers NOT in any basket
+    tickers_to_check = [t for t in tickers if t not in basket_map]
+    if not tickers_to_check:
+        return filtered_df
+    industries = data_fetcher.fetch_industries(tickers_to_check, max_workers=20)
     biotech_tickers = {t for t, ind in industries.items() if ind in EXCLUDED_INDUSTRIES}
     if biotech_tickers:
         filtered_df = filtered_df[~filtered_df.index.map(str).isin(biotech_tickers)].copy()
