@@ -70,6 +70,25 @@ def calc_price_performance(df, months=cfg.lookback_months):
     ema21        = float(ema21_series.dropna().iloc[-1])
     ema21_dist   = float((last_close - ema21) / ema21) if ema21 != 0 else 0.0
 
+    # 60 EMA daily
+    ema60_series = close.ewm(span=60, adjust=False).mean()
+    ema60        = float(ema60_series.dropna().iloc[-1])
+    ema60_dist   = float((last_close - ema60) / ema60) if ema60 != 0 else 0.0
+
+    # 52-week metrics (use all available data, up to ~252 trading days)
+    full_close = close.dropna()
+    low_52w = float(full_close.min()) if len(full_close) > 0 else 0.0
+    dist_from_52w_low = float((last_close - low_52w) / low_52w) if low_52w > 0 else 0.0
+    perf_52w = float((last_close - full_close.iloc[0]) / full_close.iloc[0]) if len(full_close) > 1 and full_close.iloc[0] != 0 else 0.0
+
+    # Average daily dollar volume (20-day)
+    if 'Volume' in df.columns:
+        vol_series = df['Volume'].fillna(0).iloc[-20:]
+        close_series = close.iloc[-20:]
+        avg_dollar_vol = float((close_series * vol_series).mean())
+    else:
+        avg_dollar_vol = 0.0
+
     # Linear regression (Full period)
     y = clean.values
     x = np.arange(len(y))
@@ -91,6 +110,12 @@ def calc_price_performance(df, months=cfg.lookback_months):
         "last_price": float(last_close),
         "ema21":      ema21,
         "ema21_dist": ema21_dist,
+        "ema60":      ema60,
+        "ema60_dist": ema60_dist,
+        "low_52w":    low_52w,
+        "dist_from_52w_low": dist_from_52w_low,
+        "perf_52w":   perf_52w,
+        "avg_dollar_vol": avg_dollar_vol,
         "r_squared":  r_squared,
         "r_squared_15d": r_squared_15d,
         "slope":      slope,

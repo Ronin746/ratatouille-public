@@ -283,9 +283,16 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
 def _build_trend_continuation_html(display_df, mode="long"):
     """
     Build the "Trend Continuation Setups" section.
-    Criteria: long  — Final_Score >= 70 AND R²(15d) >= 0.80 AND Market Cap >= $500M
-              short — Short_Score >= 60 AND R²(15d) >= 0.80 AND Market Cap >= $500M
-    Sort: ascending by |Distance from 21 EMA| — stocks nearest to their EMA first.
+    Criteria (long):
+      - 3M return > 0%
+      - ADR >= 3%
+      - Avg dollar volume (price*vol) > $5M
+      - Price > 60 EMA daily
+      - 52-week performance > 0%
+      - Price at least 70% above 52-week low
+      - Exclude biotech (yfinance industry)
+    Short: reversed directional filters.
+    Sort: ascending by |Distance from 21 EMA| — closest first.
     """
     df = display_df.copy()
 
@@ -295,24 +302,30 @@ def _build_trend_continuation_html(display_df, mode="long"):
         score_col = 'Final_Score'
 
     # Check required columns
-    if 'r_squared_15d' not in df.columns or 'ema21_dist' not in df.columns:
+    required = ['adr_pct', 'ema21_dist', '3m_return', 'ema60', 'perf_52w',
+                'dist_from_52w_low', 'avg_dollar_vol']
+    if not all(c in df.columns for c in required):
         return ""
 
-    # Filter: long >= 70, short >= 60; both require R²(15d) >= 0.80
-    score_threshold = 60 if mode == "short" else 70
-    mask = (df[score_col] >= score_threshold) & (df['r_squared_15d'] >= 0.80)
+    if mode == "short":
+        mask = (
+            (df['3m_return'] < 0) &
+            (df['adr_pct'] >= 0.03) &
+            (df['avg_dollar_vol'] >= 5_000_000) &
+            (df['last_price'] < df['ema60']) &
+            (df['perf_52w'] < 0)
+        )
+    else:
+        mask = (
+            (df['3m_return'] > 0) &
+            (df['adr_pct'] >= 0.03) &
+            (df['avg_dollar_vol'] >= 5_000_000) &
+            (df['last_price'] > df['ema60']) &
+            (df['perf_52w'] > 0) &
+            (df['dist_from_52w_low'] >= 0.70)
+        )
     filtered = df[mask].copy()
 
-    if filtered.empty:
-        return ""
-
-    # ── Market cap filter: >= $500M ─────────────────────────────────────
-    MIN_MARKET_CAP = 500_000_000
-    tickers_to_check = [str(t) for t in filtered.index]
-    mkt_caps = _fetch_market_caps(tickers_to_check)
-    if mkt_caps:
-        qualified = {t for t, cap in mkt_caps.items() if cap >= MIN_MARKET_CAP}
-        filtered = filtered[filtered.index.map(str).isin(qualified)].copy()
     if filtered.empty:
         return ""
 
@@ -356,20 +369,21 @@ def _build_trend_continuation_html(display_df, mode="long"):
         badge_class = "badge-short"
         score_badge = "score-badge-short"
         title       = "Short Trend Continuation Setups"
-        subtitle    = ("Stocks with 7-Factor &ge; 60, R&sup2;(15d) &ge; 80, "
-                       "Market Cap &ge; $500M. "
-                       "Sorted by proximity to 21 EMA &mdash; closest first. "
-                       "Ideal candidates showing orderly reversion toward key moving average.")
+        subtitle    = ("3M &lt; 0%, ADR &ge; 3%, Dollar Vol &gt; $5M, "
+                       "Price &lt; 60 EMA, 52W Perf &lt; 0%. "
+                       "Sorted by proximity to 21 EMA. "
+                       "Use column filters to refine.")
         section_id  = "short_trend-continuation-section"
     else:
         table_id    = "trendContTable"
         badge_class = "badge-gold"
         score_badge = "score-badge"
         title       = "Trend Continuation Setups"
-        subtitle    = ("Stocks with 7-Factor &ge; 70, R&sup2;(15d) &ge; 80, "
-                       "Market Cap &ge; $500M. "
+        subtitle    = ("3M &gt; 0%, ADR &ge; 3%, Dollar Vol &gt; $5M, "
+                       "Price &gt; 60 EMA, 52W Perf &gt; 0%, "
+                       "Price &ge; 70% above 52W Low. "
                        "Sorted by proximity to 21 EMA &mdash; closest first. "
-                       "Orderly pullback or squeeze near key moving average.")
+                       "Use column filters to refine.")
         section_id  = "trend-continuation-section"
 
     tc_table = _build_table_html(
