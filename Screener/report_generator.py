@@ -173,8 +173,11 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
         pre_filtered = pre_filtered.sort_values('Final_Score', ascending=False)
 
     rows = []
+    _biotech = sector_baskets.get_biotech_tickers()
     for ticker, row in zip(pre_filtered.index, pre_filtered.to_dict(orient="records")):
         ticker_str = str(ticker)
+        if ticker_str in _biotech:
+            continue
         sector_label, source = sector_baskets.get_deep_sector(ticker_str, ticker_map)
 
         if sector_label == "Unclassified":
@@ -287,6 +290,13 @@ def _build_trend_continuation_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
+    # ── Exclude biotech ──
+    import sector_baskets as _sb
+    _biotech = _sb.get_biotech_tickers()
+    filtered = filtered[~filtered.index.map(str).isin(_biotech)].copy()
+    if filtered.empty:
+        return ""
+
     filtered['_abs_dist'] = filtered['ema21_dist'].abs()
     filtered = filtered.sort_values('_abs_dist', ascending=True)
 
@@ -299,6 +309,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
             "Price":           round(row.get('last_price', 0), 2),
             "7-Factor":        score_val,
             "R² (15d)":        round(row.get('r_squared_15d', 0) * 100, 1),
+            "R²":              round(row.get('r_squared', 0) * 100, 1),
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     dist_pct,
@@ -307,6 +318,7 @@ def _build_trend_continuation_html(display_df, mode="long"):
             "1D %":            round(row.get('1d_return', 0) * 100, 2),
             "1W %":            round(row.get('1w_return', 0) * 100, 2),
             "1M %":            round(row.get('1m_return', 0) * 100, 2),
+            "3M %":            round(row.get('3m_return', 0) * 100, 2),
         })
 
     if not rows:
@@ -338,12 +350,12 @@ def _build_trend_continuation_html(display_df, mode="long"):
 
     tc_table = _build_table_html(
         tc_df, table_id,
-        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
-                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %"],
+        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "R²", "ATR%", "ADR%",
+                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %", "3M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %"]
+        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %", "3M %"]
     )
 
     import jinja2
@@ -396,7 +408,14 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
-    # Sort by 21-day R-squared descending — show all qualifying stocks
+    # ── Exclude biotech ──
+    import sector_baskets as _sb2
+    _biotech2 = _sb2.get_biotech_tickers()
+    filtered = filtered[~filtered.index.map(str).isin(_biotech2)].copy()
+    if filtered.empty:
+        return ""
+
+    # Sort by 15-day R-squared descending — show all qualifying stocks
     filtered = filtered.sort_values('r_squared_15d', ascending=False)
 
     rows = []
@@ -406,6 +425,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
             "Price":           round(row.get('last_price', 0), 2),
             "7-Factor":        round(row.get('Final_Score', 0), 1),
             "R² (15d)":        round(row.get('r_squared_15d', 0) * 100, 1),
+            "R²":              round(row.get('r_squared', 0) * 100, 1),
             "ATR%":            round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":            round(row.get('adr_pct', 0) * 100, 2),
             "21EMA Dist%":     round(float(row.get('ema21_dist', 0)) * 100, 2),
@@ -414,6 +434,7 @@ def _build_trend_reversals_html(display_df, mode="long"):
             "1D %":            round(row.get('1d_return', 0) * 100, 2),
             "1W %":            round(row.get('1w_return', 0) * 100, 2),
             "1M %":            round(row.get('1m_return', 0) * 100, 2),
+            "3M %":            round(row.get('3m_return', 0) * 100, 2),
         })
 
     if not rows:
@@ -434,12 +455,12 @@ def _build_trend_reversals_html(display_df, mode="long"):
 
     tr_table = _build_table_html(
         tr_df, table_id,
-        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "ATR%", "ADR%",
-                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %"],
+        columns=["Ticker", "Price", "7-Factor", "R² (15d)", "R²", "ATR%", "ADR%",
+                 "21EMA Dist%", "30W SMA%", "ATR×50", "1D %", "1W %", "1M %", "3M %"],
         formatters={
             "7-Factor": lambda v: f'<span class="{score_badge}">{_fmt(v, 1)}</span>',
         },
-        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %"]
+        pct_columns=["21EMA Dist%", "30W SMA%", "1D %", "1W %", "1M %", "3M %"]
     )
 
     import jinja2

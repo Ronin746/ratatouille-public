@@ -140,6 +140,18 @@ def build_ticker_basket_map():
     return mapping
 
 
+# Baskets classified as biotech/pharma — excluded from certain sections
+BIOTECH_BASKETS = {"GENOMICS", "GLP1", "AI DRUG DEVELOPMENT"}
+
+
+def get_biotech_tickers():
+    """Return set of all tickers belonging to biotech-related baskets."""
+    tickers = set()
+    for basket in BIOTECH_BASKETS:
+        if basket in SECTOR_BASKETS:
+            tickers.update(SECTOR_BASKETS[basket])
+    return tickers
+
 def get_deep_sector(ticker, basket_map):
     """
     Return (sector_label, source) for a ticker using the basket map.
