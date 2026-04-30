@@ -272,6 +272,34 @@ def fetch_market_caps(tickers: list[str], max_workers: int = 10) -> dict[str, fl
     return result
 
 
+def fetch_industries(tickers: list[str], max_workers: int = 20) -> dict[str, str]:
+    """
+    Fetch industry classification for a list of tickers using yf.Ticker().info.
+    Returns dict: {ticker: industry_string} (e.g. 'Biotechnology', 'Software').
+    Uses ThreadPoolExecutor for parallel fetching.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    logger.info("Fetching industries for %d tickers (%d threads)...", len(tickers), max_workers)
+
+    def _get_industry(ticker):
+        try:
+            info = yf.Ticker(ticker).info
+            return ticker, info.get("industry", "") or ""
+        except Exception:
+            return ticker, ""
+
+    result = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(_get_industry, t): t for t in tickers}
+        for future in as_completed(futures):
+            ticker, industry = future.result()
+            result[ticker] = industry
+
+    logger.info("Industries fetched for %d tickers.", len(result))
+    return result
+
+
 if __name__ == "__main__":
     # simple test
     df = fetch_data(["AAPL", "SPY"], period="1mo")

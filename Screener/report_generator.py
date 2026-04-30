@@ -88,8 +88,27 @@ def _fetch_market_caps(tickers, chunk_size=100):
     Fetch market caps for a list of tickers using data_fetcher (yfinance).
     """
     import data_fetcher
-    # Use max_workers=20 to speed up since yfinance is fast
     return data_fetcher.fetch_market_caps(tickers, max_workers=20)
+
+
+# Industries to exclude from curated sections (TC, TR, Recommended)
+EXCLUDED_INDUSTRIES = {"Biotechnology"}
+
+
+def _exclude_biotech(filtered_df):
+    """
+    Remove tickers classified as Biotechnology by yfinance.
+    Fetches industry data in parallel, then drops matching rows.
+    """
+    import data_fetcher
+    tickers = [str(t) for t in filtered_df.index]
+    if not tickers:
+        return filtered_df
+    industries = data_fetcher.fetch_industries(tickers, max_workers=20)
+    biotech_tickers = {t for t, ind in industries.items() if ind in EXCLUDED_INDUSTRIES}
+    if biotech_tickers:
+        filtered_df = filtered_df[~filtered_df.index.map(str).isin(biotech_tickers)].copy()
+    return filtered_df
 
 
 def _build_recommended_html(display_df, basket_df, mode="long"):
@@ -171,13 +190,14 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             pre_filtered = pre_filtered.sort_values('Final_Score', ascending=True)
     else:
         pre_filtered = pre_filtered.sort_values('Final_Score', ascending=False)
+    # ── Exclude biotech by yfinance industry ──
+    pre_filtered = _exclude_biotech(pre_filtered)
+    if pre_filtered.empty:
+        return ""
 
     rows = []
-    _biotech = sector_baskets.get_biotech_tickers()
     for ticker, row in zip(pre_filtered.index, pre_filtered.to_dict(orient="records")):
         ticker_str = str(ticker)
-        if ticker_str in _biotech:
-            continue
         sector_label, source = sector_baskets.get_deep_sector(ticker_str, ticker_map)
 
         if sector_label == "Unclassified":
@@ -290,10 +310,8 @@ def _build_trend_continuation_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
-    # ── Exclude biotech ──
-    import sector_baskets as _sb
-    _biotech = _sb.get_biotech_tickers()
-    filtered = filtered[~filtered.index.map(str).isin(_biotech)].copy()
+    # ── Exclude biotech by yfinance industry ──
+    filtered = _exclude_biotech(filtered)
     if filtered.empty:
         return ""
 
@@ -408,10 +426,8 @@ def _build_trend_reversals_html(display_df, mode="long"):
     if filtered.empty:
         return ""
 
-    # ── Exclude biotech ──
-    import sector_baskets as _sb2
-    _biotech2 = _sb2.get_biotech_tickers()
-    filtered = filtered[~filtered.index.map(str).isin(_biotech2)].copy()
+    # ── Exclude biotech by yfinance industry ──
+    filtered = _exclude_biotech(filtered)
     if filtered.empty:
         return ""
 
