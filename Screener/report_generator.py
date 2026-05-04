@@ -218,7 +218,8 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
             "Ticker": ticker_str,
             "Price":  round(row.get('last_price', 0), 2),
             "Score":  score_val,
-            "R²":     round(row.get('r_squared', 0), 2),
+            "R² (15d)": round(row.get('r_squared_15d', 0) * 100, 1),
+            "R²":     round(row.get('r_squared', 0) * 100, 1),
             "ATR%":   round(row.get('atr_pct', 0) * 100, 2),
             "ADR%":   round(row.get('adr_pct', 0) * 100, 2),
             "21EMA%": round(float(row.get('ema21_dist', 0)) * 100, 2),
@@ -241,7 +242,7 @@ def _build_recommended_html(display_df, basket_df, mode="long"):
     rec_df.insert(0, "Rank", rec_df.index + 1)
     rec_table = _build_table_html(
         rec_df, table_id,
-        columns=["Rank", "Ticker", "Price", "Score", "R²", "ATR%", "ADR%",
+        columns=["Rank", "Ticker", "Price", "Score", "R² (15d)", "R²", "ATR%", "ADR%",
                  "21EMA%", "30W%", "ATR×50", "1D %", "1W %", "1M %", "3M %"],
         formatters={
             "Score": lambda v: f'<span class="{score_badge_class}">{_fmt(v, 1)}</span>',
