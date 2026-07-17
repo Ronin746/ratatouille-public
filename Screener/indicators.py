@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import linregress
+from config import cfg
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ def _volume_ok(df: pd.DataFrame, min_rows: int = 5) -> bool:
 
 # ── factor calculations ───────────────────────────────────────────────────────
 
-def calc_price_performance(df, months=3):
+def calc_price_performance(df, months=cfg.lookback_months):
     """
     Factor 1: Price Performance (25%)
     - 3M/1M/1W/3D returns
@@ -59,37 +60,122 @@ def calc_price_performance(df, months=3):
             return 0.0
         return (seg.iloc[-1] - seg.iloc[0]) / seg.iloc[0] if seg.iloc[0] != 0 else 0.0
 
+    ret_6m = _ret(126)
     ret_1m = _ret(21)
     ret_1w = _ret(5)
     ret_3d = _ret(3)
     ret_1d = _ret(2)
+
+    # 9 EMA at the last available daily close
+    ema9_series  = close.ewm(span=9, adjust=False).mean()
+    ema9         = float(ema9_series.dropna().iloc[-1])
+    ema9_dist    = float((last_close - ema9) / ema9) if ema9 != 0 else 0.0
 
     # 21 EMA at the last available daily close
     ema21_series = close.ewm(span=21, adjust=False).mean()
     ema21        = float(ema21_series.dropna().iloc[-1])
     ema21_dist   = float((last_close - ema21) / ema21) if ema21 != 0 else 0.0
 
-    # Linear regression
+    # 65 EMA daily
+    ema65_series = close.ewm(span=65, adjust=False).mean()
+    ema65        = float(ema65_series.dropna().iloc[-1])
+    ema65_dist   = float((last_close - ema65) / ema65) if ema65 != 0 else 0.0
+
+    # 30 SMA daily
+    sma30d = float(close.rolling(30).mean().dropna().iloc[-1]) if len(close) >= 30 else 0.0
+
+    # 52-week metrics (use all available data, up to ~252 trading days)
+    full_close = close.dropna()
+    low_52w = float(full_close.min()) if len(full_close) > 0 else 0.0
+    dist_from_52w_low = float((last_close - low_52w) / low_52w) if low_52w > 0 else 0.0
+    perf_52w = float((last_close - full_close.iloc[0]) / full_close.iloc[0]) if len(full_close) > 1 and full_close.iloc[0] != 0 else 0.0
+
+    # Average daily dollar volume (20-day)
+    if 'Volume' in df.columns:
+        vol_series = df['Volume'].fillna(0).iloc[-20:]
+        close_series = close.iloc[-20:]
+        avg_dollar_vol = float((close_series * vol_series).mean())
+    else:
+        avg_dollar_vol = 0.0
+
+    # IPO VWAP — volume-weighted average price over all available data
+    if all(c in df.columns for c in ['High', 'Low', 'Close', 'Volume']):
+        tp = ((df['High'] + df['Low'] + df['Close']) / 3).fillna(0)
+        vol = df['Volume'].fillna(0)
+        cum_tpv = (tp * vol).sum()
+        cum_vol = vol.sum()
+        ipo_vwap = float(cum_tpv / cum_vol) if cum_vol > 0 else 0.0
+        ipo_vwap_dist = float((last_close - ipo_vwap) / ipo_vwap) if ipo_vwap > 0 else 0.0
+    else:
+        ipo_vwap = 0.0
+        ipo_vwap_dist = 0.0
+
+    # Linear regression (Full period)
     y = clean.values
     x = np.arange(len(y))
     slope, _, r_value, _, _ = linregress(x, y)
     r_squared = r_value ** 2
 
+    # Linear regression (15 days)
+    y_15 = clean.iloc[-15:].values if len(clean) >= 15 else clean.values
+    x_15 = np.arange(len(y_15))
+    _, _, r_value_15, _, _ = linregress(x_15, y_15)
+    r_squared_15d = r_value_15 ** 2
+
     return {
+        "6m_return":  ret_6m,
         "3m_return":  ret_3m,
         "1m_return":  ret_1m,
         "1w_return":  ret_1w,
         "3d_return":  ret_3d,
         "1d_return":  ret_1d,
         "last_price": float(last_close),
+        "ema9":       ema9,
+        "ema9_dist":  ema9_dist,
         "ema21":      ema21,
         "ema21_dist": ema21_dist,
+        "ema65":      ema65,
+        "ema65_dist": ema65_dist,
+        "sma30d":     sma30d,
+        "low_52w":    low_52w,
+        "dist_from_52w_low": dist_from_52w_low,
+        "perf_52w":   perf_52w,
+        "avg_dollar_vol": avg_dollar_vol,
+        "ipo_vwap":      ipo_vwap,
+        "ipo_vwap_dist": ipo_vwap_dist,
         "r_squared":  r_squared,
+        "r_squared_15d": r_squared_15d,
         "slope":      slope,
     }
 
 
-def calc_bullish_candles(df, months=3):
+def calc_weekly_sma30_dist(df):
+    """
+    Calculate distance (%) from the 30-week SMA.
+    Resamples daily Close data to weekly (Friday close) and computes SMA(30).
+    Returns dict with sma30w_dist as a fraction (e.g. 0.05 = 5%).
+    """
+    close = _valid_close(df, min_rows=150)
+    if close is None:
+        return {"sma30w_dist": 0.0}
+
+    # Resample to weekly (Friday close)
+    weekly = close.resample('W-FRI').last().dropna()
+    if len(weekly) < 30:
+        return {"sma30w_dist": 0.0}
+
+    sma30w = weekly.rolling(30).mean()
+    last_sma30w = sma30w.dropna().iloc[-1]
+    last_price = float(close.dropna().iloc[-1])
+
+    if last_sma30w == 0:
+        return {"sma30w_dist": 0.0}
+
+    dist = (last_price - last_sma30w) / last_sma30w
+    return {"sma30w_dist": float(dist)}
+
+
+def calc_bullish_candles(df, months=cfg.lookback_months):
     """
     Factor 2: Bullish Candles (15%)
     - Ratio of green candles (Close > Open)
@@ -125,17 +211,17 @@ def calc_ma_alignment(df):
     - 10 > 20 > 50 alignment
     - Positive slopes on all three MAs
     """
-    if len(df) < 50:
+    if len(df) < cfg.sma_slow:
         return None
 
     close = df["Close"].ffill()
-    if close.dropna().shape[0] < 50:
+    if close.dropna().shape[0] < cfg.sma_slow:
         return None
 
-    ma10 = close.rolling(window=10).mean()
-    ma20 = close.rolling(window=20).mean()
-    ma30 = close.rolling(window=30).mean()
-    ma50 = close.rolling(window=50).mean()
+    ma10 = close.rolling(window=cfg.sma_fast).mean()
+    ma20 = close.rolling(window=cfg.sma_medium).mean()
+    ma30 = close.rolling(window=cfg.sma_trend).mean()
+    ma50 = close.rolling(window=cfg.sma_slow).mean()
 
     current_ma10 = ma10.iloc[-1]
     current_ma20 = ma20.iloc[-1]
@@ -161,7 +247,7 @@ def calc_ma_alignment(df):
     }
 
 
-def calc_trend_consistency(df, months=3):
+def calc_trend_consistency(df, months=cfg.lookback_months):
     """
     Factor 4: Trend Consistency (15%)
     - Higher Highs / Higher Lows ratio (trend structure)
@@ -188,10 +274,10 @@ def calc_trend_consistency(df, months=3):
     drawdown = (clean - rolling_max) / rolling_max
     max_drawdown = drawdown.min()
 
-    # Higher Highs / Higher Lows — 45 market days, chunks of 5 days each
-    hhhl_days  = 45
-    chunk_size = 5
-    n_chunks   = hhhl_days // chunk_size  # = 9
+    # Higher Highs / Higher Lows — market days and chunk size driven from config
+    hhhl_days  = cfg.hhhl_lookback_days
+    chunk_size = cfg.hhhl_chunk_size
+    n_chunks   = hhhl_days // chunk_size  # e.g., 45 / 5 = 9
     hhhl_df    = df.iloc[-hhhl_days:].copy()
 
     if chunk_size >= 1 and _ohlc_ok(hhhl_df, min_rows=chunk_size):
@@ -220,7 +306,7 @@ def calc_trend_consistency(df, months=3):
         ll_lh_score      = float(lllh_count / (n_chunks - 1)) if n_chunks > 1 else 0.0
     else:
         # Fallback: % of days above MA50 when High/Low data is unavailable
-        ma50 = period_df["Close"].rolling(window=50).mean()
+        ma50 = period_df["Close"].rolling(window=cfg.sma_slow).mean()
         days_above = (period_df["Close"] > ma50).sum()
         consistency_score = float(days_above / len(period_df))
         ll_lh_score       = 1.0 - consistency_score  # mirror fallback for short
@@ -233,7 +319,7 @@ def calc_trend_consistency(df, months=3):
     }
 
 
-def calc_volatility(df, atr_length=14, adr_length=20):
+def calc_volatility(df, atr_length=cfg.atr_length, adr_length=cfg.adr_length):
     """
     Factor 5: Volatility (10%)
     - ATR stability (lower = steadier trend)
@@ -308,7 +394,7 @@ def calc_volatility(df, atr_length=14, adr_length=20):
     }
 
 
-def calc_volume(df, length=20):
+def calc_volume(df, length=cfg.volume_ma_length):
     """
     Factor 6: Volume (10%)
     - Up/down volume ratio
@@ -349,7 +435,7 @@ def calc_volume(df, length=20):
     }
 
 
-def calc_relative_strength(df, benchmark_df, months=3):
+def calc_relative_strength(df, benchmark_df, months=cfg.lookback_months):
     """
     Factor 7: Relative Strength (10%)
     - Return of the RS line (stock / benchmark) over the period
@@ -372,3 +458,71 @@ def calc_relative_strength(df, benchmark_df, months=3):
     rs_ret = (rs_line.iloc[-1] - rs_line.iloc[0]) / rs_line.iloc[0] if rs_line.iloc[0] != 0 else 0.0
 
     return {"rs_rating": float(rs_ret)}
+
+
+def calc_weekly_ema21_sma30(df):
+    """
+    Calculate weekly 21 EMA and 30 SMA, and whether price is above them.
+    Resamples daily Close data to weekly (Friday close).
+    """
+    close = _valid_close(df, min_rows=150)
+    if close is None:
+        return {"ema21w": 0.0, "sma30w": 0.0, "ema21w_above_price": False, "sma30w_above_price": False}
+
+    weekly = close.resample('W-FRI').last().dropna()
+    if len(weekly) < 30:
+        return {"ema21w": 0.0, "sma30w": 0.0, "ema21w_above_price": False, "sma30w_above_price": False}
+
+    sma30w = weekly.rolling(30).mean()
+    ema21w = weekly.ewm(span=21, adjust=False).mean()
+    
+    last_sma30w = float(sma30w.dropna().iloc[-1])
+    last_ema21w = float(ema21w.dropna().iloc[-1])
+    last_price = float(close.dropna().iloc[-1])
+
+    return {
+        "ema21w": last_ema21w,
+        "sma30w": last_sma30w,
+        "ema21w_above_price": last_ema21w < last_price,
+        "sma30w_above_price": last_sma30w < last_price
+    }
+
+
+def calc_sma65_30min_dist(ticker: str) -> dict:
+    """
+    Fetch 60 days of 30-minute data for the ticker and calculate the
+    distance (%) of the last price from the 65-period SMA on the 30-min chart.
+    Formula: (last_price - sma65) / sma65  (same convention as ema21_dist).
+    Returns a fraction, e.g. 0.05 = +5%, -0.03 = -3%.
+    """
+    import yfinance as yf
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        ticker_obj = yf.Ticker(ticker)
+        df = ticker_obj.history(period="60d", interval="30m")
+
+        if df.empty or 'Close' not in df.columns:
+            return {"sma65_30m_dist": 0.0}
+
+        close = df['Close'].dropna()
+        if len(close) < 65:
+            return {"sma65_30m_dist": 0.0}
+
+        sma65 = close.rolling(65).mean().dropna()
+        if sma65.empty:
+            return {"sma65_30m_dist": 0.0}
+
+        current_sma = float(sma65.iloc[-1])
+        last_price  = float(close.iloc[-1])
+
+        if current_sma == 0:
+            return {"sma65_30m_dist": 0.0}
+
+        dist = (last_price - current_sma) / current_sma
+        return {"sma65_30m_dist": round(dist, 6)}
+
+    except Exception as e:
+        logger.warning(f"Failed to calculate SMA65 30min dist for {ticker}: {e}")
+        return {"sma65_30m_dist": 0.0}
