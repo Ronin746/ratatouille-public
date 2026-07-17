@@ -1,0 +1,44 @@
+name: Daily Screener EU
+
+on:
+  # schedule:
+  #   - cron: '0 16 * * 1-5'   # SUSPENDED — EU extension paused
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-eu-screener:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: Screener/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r Screener/requirements.txt
+
+      - name: Run EU screener (intermediate only)
+        run: |
+          cd Screener
+          python daily_auto_backfill.py --region eu --skip-backfill
+
+      - name: Commit and push EU intermediate
+        run: |
+          git config user.name "Andrea"
+          git config user.email "chiefuseless@gmail.com"
+          git add Data/intermediate/ Data/tickers/
+          git diff --cached --quiet && echo "No EU changes" || git commit -m "EU intermediate scores - $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git checkout -- .
+          git clean -fd
+          git pull --rebase origin main
+          git push origin main

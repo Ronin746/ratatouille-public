@@ -8,6 +8,7 @@ __pycache__/
 # Logs
 *.log
 Screener/screener.log
+Screener/daily_backfill.log
 
 # Credenziali / segreti (mai in git)
 Screener/email_config.json
@@ -17,25 +18,14 @@ Screener/credentials.json
 # macOS
 .DS_Store
 **/.DS_Store
+._*
 
 # Excel temp files
 ~$*
 
 # Archivi compressi locali
-deploy_cloudflare.zip
 *.zip
-
-# Cartelle di lavoro locali
-Cestinabile/
-
-# Archive: ora versionata in git (Cloudflare Pages si aggiorna da qui)
-# Archive/
 
 # CSV screener (troppo grandi per git, ~4MB/giorno)
 # La storia è preservata in Archive/market_score_history.json
 Data/*.csv
-
-# Vecchie cartelle Netlify (già cancellate ma per sicurezza)
-.netlify
-netlify-site/
-netlify.toml
