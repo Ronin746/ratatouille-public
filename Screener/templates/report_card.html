@@ -1,0 +1,12 @@
+<section class="card" id="{{ section_id }}">
+    <div class="card-header">
+        <div class="card-title">
+            <h2>{{ title }}</h2>
+        </div>
+        <span class="card-badge {{ badge_class }}">{{ count_label }}</span>
+    </div>
+    <p class="card-subtitle">{{ subtitle | safe }}</p>
+    <div class="card-body">
+        {{ table_html | safe }}
+    </div>
+</section>

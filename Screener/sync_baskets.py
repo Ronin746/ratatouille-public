@@ -37,7 +37,7 @@ def _parse_docx(docx_path: str) -> dict:
         return {}
 
     if not os.path.isfile(docx_path):
-        logger.warning(f"Basket.docx not found at {docx_path} — skipping sync.")
+        logger.warning("Basket.docx not found at %s — skipping sync.", docx_path)
         return {}
 
     doc = Document(docx_path)
@@ -173,7 +173,7 @@ def sync_baskets() -> int:
 
     for name, tickers in sorted(docx_baskets.items()):
         if _normalize_name(name) not in existing_norm:
-            logger.info(f"  NEW basket: {name!r} ({len(tickers)} tickers) → adding to sector_baskets.py")
+            logger.info("  NEW basket: %r (%d tickers) → adding to sector_baskets.py", name, len(tickers))
             _insert_basket_into_file(baskets_path, name, tickers)
             existing_norm.add(_normalize_name(name))  # avoid duplicates within same run
             added += 1
@@ -181,7 +181,7 @@ def sync_baskets() -> int:
     if added == 0:
         logger.info("Basket sync: no new baskets — sector_baskets.py is up to date.")
     else:
-        logger.info(f"Basket sync: {added} new basket(s) added to sector_baskets.py.")
+        logger.info("Basket sync: %d new basket(s) added to sector_baskets.py.", added)
 
     return added
 

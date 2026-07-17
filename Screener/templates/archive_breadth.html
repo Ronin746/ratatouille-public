@@ -1,0 +1,216 @@
+<!-- ── Market Breadth ────────────────────────────────────────────────── -->
+<div class="br-wrap">
+  <div class="br-stats-row">
+    <div class="br-stat">
+      <div class="br-stat-label">Regime</div>
+      <div class="br-stat-value" style="color:{{ regime_color }}">{{ regime_label }}</div>
+      <div class="br-sub">{{ regime_sub }}</div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Long Breadth</div>
+      <div class="br-stat-value stat-green">{{ l_pct }}%
+        <span class="br-delta" style="color:{{ l_dcol }}">{{ l_dstr }}</span>
+      </div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Short Breadth</div>
+      <div class="br-stat-value stat-red">{{ s_pct }}%
+        <span class="br-delta" style="color:{{ s_dcol }}">{{ s_dstr }}</span>
+      </div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">L-S Spread</div>
+      <div class="br-stat-value stat-blue">{{ spread_val }}
+        <span class="br-delta" style="color:{{ sp_dcol }}">{{ sp_dstr }}</span>
+      </div>
+      <div class="br-sub">5d mom: {{ sp_mom_str }}</div>
+    </div>
+    <div class="br-stat">
+      <div class="br-stat-label">Sector Avg Score</div>
+      <div class="br-stat-value stat-blue">{{ s_avg }}
+        <span class="br-delta" style="color:{{ a_dcol }}">{{ a_dstr }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="br-chart-card">
+    <div class="br-chart-row">
+      <div class="br-chart-label">
+        Macro Regime
+        <span class="br-pill" style="background:rgba(128,128,128,.09);color:{{ macro_col }};border:1px solid {{ macro_col }}44">{{ macro_lbl }}</span>
+      </div>
+    </div>
+    <p class="br-chart-desc">Composite (prezzo) vs SMA10 / SMA20: sopra entrambe = <strong style="color:#00d4aa">Bullish</strong> &middot; sopra SMA10 ma sotto SMA20 = <strong style="color:#f5a623">Cautious</strong> &middot; sotto SMA10 = <strong style="color:#ff4a6a">Bearish</strong>. Cross-asset: ARKK/QQQ &middot; IWM/SPY &middot; XLY/XLP &middot; HYG/IEF.</p>
+
+    <div class="br-chart-row" style="margin-top:14px">
+      <div class="br-chart-label">Ratio Spread &mdash; Combined (ATR-normalised)</div>
+    </div>
+    <p class="br-chart-desc">Equal-weight composite (close&minus;SMA20)/ATR14 across ARKK, IWM, HYG, XLY. Above 0 = above trend <span class="br-leg-blue">&#9632;</span> &middot; below 0 = below trend <span class="br-leg-red">&#9632;</span>. Dashed: SMA10 (blue) &middot; SMA20 (amber).</p>
+    <div class="br-combined-wrap"><canvas id="macroCombinedChart"></canvas></div>
+
+    <hr class="br-divider">
+
+    <div class="br-chart-row" style="margin-top:8px">
+      <div class="br-chart-label">
+        ARKK / QQQ
+        <span class="br-pill" style="background:rgba(128,128,128,.09);color:{{ arkk_col }};border:1px solid {{ arkk_col }}44">{{ arkk_lbl }}</span>
+        <span class="br-guide">{{ arkk_val }}</span>
+      </div>
+    </div>
+    <div class="br-macro-wrap"><canvas id="macroArkkChart"></canvas></div>
+
+    <div class="br-chart-row" style="margin-top:10px">
+      <div class="br-chart-label">
+        IWM / SPY
+        <span class="br-pill" style="background:rgba(128,128,128,.09);color:{{ iwm_col }};border:1px solid {{ iwm_col }}44">{{ iwm_lbl }}</span>
+        <span class="br-guide">{{ iwm_val }}</span>
+      </div>
+    </div>
+    <div class="br-macro-wrap"><canvas id="macroIwmChart"></canvas></div>
+
+    <div class="br-chart-row" style="margin-top:10px">
+      <div class="br-chart-label">
+        XLY / XLP
+        <span class="br-pill" style="background:rgba(128,128,128,.09);color:{{ xly_col }};border:1px solid {{ xly_col }}44">{{ xly_lbl }}</span>
+        <span class="br-guide">{{ xly_val }}</span>
+      </div>
+    </div>
+    <div class="br-macro-wrap"><canvas id="macroXlyChart"></canvas></div>
+
+    <div class="br-chart-row" style="margin-top:10px">
+      <div class="br-chart-label">
+        HYG / IEF
+        <span class="br-pill" style="background:rgba(128,128,128,.09);color:{{ hyg_col }};border:1px solid {{ hyg_col }}44">{{ hyg_lbl }}</span>
+        <span class="br-guide">{{ hyg_val }}</span>
+      </div>
+    </div>
+    <div class="br-macro-wrap"><canvas id="macroHygChart"></canvas></div>
+  </div>
+</div>
+<!-- ── /Market Breadth ───────────────────────────────────────────────── -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var macroDates = {{ jmacrodates | safe }};
+
+  /* Legge i token corretti in base al tema attivo (light / dark) */
+  function getC() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      grid:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)',
+      tick:   dark ? '#505068'                : '#9ca3af',
+      ttBg:   dark ? '#10101a'               : '#ffffff',
+      ttBd:   dark ? '#2a2a44'               : '#e5e7eb',
+      ttTi:   dark ? '#e8e8f0'               : '#111827',
+      ttBo:   dark ? '#8888a0'               : '#6b7280',
+      /* colori linea invariati per chiarezza su entrambi i temi */
+      green:  'rgba(0,212,170,0.9)',
+      red:    'rgba(255,74,106,0.85)',
+      blue:   'rgba(74,158,255,0.75)',
+      amber:  'rgba(245,166,35,0.65)',
+      gray:   'rgba(107,114,128,0.40)',
+      purple: 'rgba(139,92,246,0.70)',
+    };
+  }
+
+  function buildRatioChart(id, ratio, s10, s20, s30, s50) {
+    var ctx = document.getElementById(id).getContext('2d');
+    var gUp = ctx.createLinearGradient(0,0,0,130);
+    gUp.addColorStop(0,'rgba(0,212,170,0.20)'); gUp.addColorStop(1,'rgba(0,212,170,0)');
+    var gDn = ctx.createLinearGradient(0,0,0,130);
+    gDn.addColorStop(0,'rgba(255,74,106,0)');  gDn.addColorStop(1,'rgba(255,74,106,0.16)');
+    var c = getC();
+    new Chart(ctx, {
+      type:'line',
+      data:{ labels:macroDates, datasets:[
+        { label:'Ratio', data:ratio,
+          segment:{
+            borderColor:function(x){ return s10[x.p1DataIndex]!==null && x.p1.parsed.y>s10[x.p1DataIndex] ? c.green : c.red; },
+            backgroundColor:function(x){ return s10[x.p1DataIndex]!==null && x.p1.parsed.y>s10[x.p1DataIndex] ? gUp : gDn; }
+          },
+          borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:0.3, fill:false, spanGaps:true },
+        { label:'SMA10',  data:s10, borderColor:c.blue,   borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, spanGaps:true },
+        { label:'SMA20',  data:s20, borderColor:c.amber,  borderWidth:1.5, borderDash:[2,4], pointRadius:0, fill:false, spanGaps:true },
+        { label:'SMA30',  data:s30, borderColor:c.gray,   borderWidth:1.5, borderDash:[3,5], pointRadius:0, fill:false, spanGaps:true },
+        { label:'SMA50',  data:s50, borderColor:c.purple, borderWidth:1.5, borderDash:[6,3], pointRadius:0, fill:false, spanGaps:true }
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:'index', intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:c.ttBg, borderColor:c.ttBd, borderWidth:1,
+            titleColor:c.ttTi, bodyColor:c.ttBo,
+            callbacks:{ label:function(ct){
+              var n=['Ratio','SMA10','SMA20','SMA30','SMA50'];
+              return ' '+n[ct.datasetIndex]+': '+(ct.parsed.y!==null?ct.parsed.y.toFixed(4):'—');
+            }}
+          }
+        },
+        scales:{
+          x:{ grid:{color:c.grid}, ticks:{color:c.tick, font:{size:10}, maxTicksLimit:12} },
+          y:{ grid:{color:c.grid}, ticks:{color:c.tick, font:{size:10}, callback:function(v){return v.toFixed(3);}} }
+        }
+      }
+    });
+  }
+
+  buildRatioChart('macroArkkChart', {{ jmacro_arkk | safe }}, {{ jmacro_arkk_s10 | safe }}, {{ jmacro_arkk_s20 | safe }}, {{ jmacro_arkk_s30 | safe }}, {{ jmacro_arkk_s50 | safe }});
+  buildRatioChart('macroIwmChart',  {{ jmacro_iwm  | safe }}, {{ jmacro_iwm_s10  | safe }}, {{ jmacro_iwm_s20  | safe }}, {{ jmacro_iwm_s30  | safe }}, {{ jmacro_iwm_s50  | safe }});
+  buildRatioChart('macroXlyChart',  {{ jmacro_xly  | safe }}, {{ jmacro_xly_s10  | safe }}, {{ jmacro_xly_s20  | safe }}, {{ jmacro_xly_s30  | safe }}, {{ jmacro_xly_s50  | safe }});
+  buildRatioChart('macroHygChart',  {{ jmacro_hyg  | safe }}, {{ jmacro_hyg_s10  | safe }}, {{ jmacro_hyg_s20  | safe }}, {{ jmacro_hyg_s30  | safe }}, {{ jmacro_hyg_s50  | safe }});
+
+  /* Combined composite */
+  (function() {
+    var comp = {{ jcomposite  | safe }};
+    var s10  = {{ jcomp_sma10 | safe }};
+    var s20  = {{ jcomp_sma20 | safe }};
+    var c    = getC();
+    var ctx  = document.getElementById('macroCombinedChart').getContext('2d');
+    var gUp  = ctx.createLinearGradient(0,0,0,190);
+    gUp.addColorStop(0,'rgba(74,158,255,0.20)'); gUp.addColorStop(1,'rgba(74,158,255,0)');
+    var gDn  = ctx.createLinearGradient(0,0,0,190);
+    gDn.addColorStop(0,'rgba(255,74,106,0)');   gDn.addColorStop(1,'rgba(255,74,106,0.16)');
+    new Chart(ctx, {
+      type:'line',
+      data:{ labels:macroDates, datasets:[
+        { label:'Composite', data:comp,
+          segment:{
+            borderColor:function(x){ return x.p1.parsed.y>=0?'rgba(74,158,255,0.95)':'rgba(255,74,106,0.90)'; },
+            backgroundColor:function(x){ return x.p1.parsed.y>=0?gUp:gDn; }
+          },
+          borderWidth:2.2, pointRadius:0, pointHoverRadius:5, tension:0.35,
+          fill:{target:{value:0}}, spanGaps:true },
+        { label:'SMA10', data:s10, borderColor:c.blue,  borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, spanGaps:true },
+        { label:'SMA20', data:s20, borderColor:c.amber, borderWidth:1.5, borderDash:[2,4], pointRadius:0, fill:false, spanGaps:true },
+        { label:'_base', data:comp.map(function(){return 0;}),
+          borderColor:'rgba(107,114,128,0.22)', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, spanGaps:true }
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:'index', intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:c.ttBg, borderColor:c.ttBd, borderWidth:1,
+            titleColor:c.ttTi, bodyColor:c.ttBo,
+            callbacks:{ label:function(ct){
+              if(ct.datasetIndex===3) return null;
+              if(ct.datasetIndex===1) return ' SMA10: '+(ct.parsed.y!==null?ct.parsed.y.toFixed(2):'—');
+              if(ct.datasetIndex===2) return ' SMA20: '+(ct.parsed.y!==null?ct.parsed.y.toFixed(2):'—');
+              var v=ct.parsed.y;
+              var lbl=v>=1?'RISK ON':v>=0?'POSITIVE':v>=-1?'NEGATIVE':'RISK OFF';
+              return [' Composite: '+(v!==null?v.toFixed(2):'—'), ' Signal: '+lbl];
+            }}
+          }
+        },
+        scales:{
+          x:{ grid:{color:c.grid}, ticks:{color:c.tick, font:{size:10}, maxTicksLimit:12} },
+          y:{ grid:{color:c.grid}, ticks:{color:c.tick, font:{size:10}, callback:function(v){return v.toFixed(1);}} }
+        }
+      }
+    });
+  })();
+});
+</script>
