@@ -18,7 +18,7 @@ def update_sheet(df, spreadsheet_name="Stock Screener Top 120", json_keyfile="se
     Updates a Google Sheet with the provided DataFrame.
     """
     if not os.path.exists(json_keyfile):
-        logger.warning(f"Google Sheets key file '{json_keyfile}' not found. Skipping export.")
+        logger.warning("Google Sheets key file '%s' not found. Skipping export.", json_keyfile)
         return
 
     try:
@@ -30,7 +30,7 @@ def update_sheet(df, spreadsheet_name="Stock Screener Top 120", json_keyfile="se
         try:
             sheet = client.open(spreadsheet_name)
         except gspread.SpreadsheetNotFound:
-            logger.info(f"Spreadsheet '{spreadsheet_name}' not found. Creating it...")
+            logger.info("Spreadsheet '%s' not found. Creating it...", spreadsheet_name)
             sheet = client.create(spreadsheet_name)
             # Share with the user's email if possible? 
             # We can't know the email from the service account easily. 
@@ -60,10 +60,10 @@ def update_sheet(df, spreadsheet_name="Stock Screener Top 120", json_keyfile="se
         # gspread handles basic types mostly.
         
         # Upload
-        logger.info(f"Uploading {len(export_df)} rows to Google Sheets...")
+        logger.info("Uploading %d rows to Google Sheets...", len(export_df))
         worksheet.update([export_df.columns.values.tolist()] + export_df.values.tolist())
         
-        logger.info(f"Google Sheet updated successfully: {sheet.url}")
+        logger.info("Google Sheet updated successfully: %s", sheet.url)
         
     except Exception as e:
-        logger.error(f"Failed to update Google Sheet: {e}")
+        logger.error("Failed to update Google Sheet: %s", e)

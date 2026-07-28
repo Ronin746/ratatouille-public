@@ -32,6 +32,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+from config import cfg
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,7 +96,7 @@ def _fetch_weekly(ticker: str) -> pd.DataFrame | None:
         return df if len(df) >= 205 else None
 
     except Exception as e:
-        logger.debug(f"[_fetch_weekly] {ticker}: {e}")
+        logger.debug("[_fetch_weekly] %s: %s", ticker, e)
         return None
 
 
@@ -148,18 +150,18 @@ def _fetch_daily(ticker: str) -> pd.DataFrame | None:
 
         # Compute indicators over full history (warm the rolling windows)
         close = df["Close"]
-        df["EMA21"] = close.ewm(span=21, adjust=False).mean()
-        df["SMA10"]  = close.rolling(10).mean()
-        df["SMA20"]  = close.rolling(20).mean()
-        df["SMA30"]  = close.rolling(30).mean()
-        df["SMA50"]  = close.rolling(50).mean()
-        df["Vol50"]  = df["Volume"].rolling(50).mean()
+        df["EMA21"] = close.ewm(span=cfg.ema_fast, adjust=False).mean()
+        df["SMA10"]  = close.rolling(cfg.sma_fast).mean()
+        df["SMA20"]  = close.rolling(cfg.sma_medium).mean()
+        df["SMA30"]  = close.rolling(cfg.sma_trend).mean()
+        df["SMA50"]  = close.rolling(cfg.sma_slow).mean()
+        df["Vol50"]  = df["Volume"].rolling(cfg.volume_surge_ma_length).mean()
 
         # Return last ~130 sessions (enough for 60-day VCP + 15-day cross window)
         return df.iloc[-130:].copy() if len(df) >= 130 else df.copy()
 
     except Exception as e:
-        logger.debug(f"[_fetch_daily] {ticker}: {e}")
+        logger.debug("[_fetch_daily] %s: %s", ticker, e)
         return None
 
 
@@ -178,11 +180,11 @@ def _check_weekly_alignment(weekly_df: pd.DataFrame, side: str = "long"):
     if len(close) < 205:
         return False, "Wk insufficient data"
 
-    sma10  = close.rolling(10).mean()
-    sma20  = close.rolling(20).mean()
-    sma30  = close.rolling(30).mean()
-    sma50  = close.rolling(50).mean()
-    sma200 = close.rolling(200).mean()
+    sma10  = close.rolling(cfg.sma_fast).mean()
+    sma20  = close.rolling(cfg.sma_medium).mean()
+    sma30  = close.rolling(cfg.sma_trend).mean()
+    sma50  = close.rolling(cfg.sma_slow).mean()
+    sma200 = close.rolling(cfg.sma_200).mean()
 
     p    = close.iloc[-1]
     s10  = sma10.iloc[-1]
@@ -570,28 +572,27 @@ def _parse_finviz_mcap(s: str) -> float | None:
 
 
 def _finviz_mcap_filter(
-    tickers: list,
+    tickers: list[str],
     min_cap: float = 1_000_000_000,
     batch_size: int = 200,
-) -> set:
+) -> set[str]:
     """
-    Query Finviz screener for market caps of given tickers.
+    Query Finviz screener for market caps of given tickers using asynchronous aiohttp.
     Returns set of tickers with market cap >= min_cap.
     On network/parse error for a batch, those tickers are INCLUDED (fail-open)
     so no legitimate signal is silently dropped.
     """
-    import time as _time
+    import asyncio
     try:
-        import requests as _req
+        import aiohttp
         from bs4 import BeautifulSoup as _BS
     except ImportError:
-        logger.warning("[mcap] requests/bs4 not available — skipping Finviz filter")
+        logger.warning("[mcap] aiohttp/bs4 not available — skipping Finviz async filter")
         return set(tickers)
 
     if not tickers:
         return set()
 
-    passed: set = set()
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -602,56 +603,73 @@ def _finviz_mcap_filter(
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
 
-    for i in range(0, len(tickers), batch_size):
-        batch = list(tickers[i : i + batch_size])
+    async def _fetch_batch(session: aiohttp.ClientSession, batch: list[str], batch_idx: int) -> set[str]:
         t_str = ",".join(batch)
         url = f"https://finviz.com/screener.ashx?v=111&t={t_str}"
-
+        batch_passed = set()
+        found_in_batch = set()
+        
         try:
-            resp = _req.get(url, headers=headers, timeout=25)
-            resp.raise_for_status()
-            soup = _BS(resp.text, "html.parser")
+            # Finviz blocks parallel spam; use a micro-delay based on batch index
+            await asyncio.sleep(0.5 * batch_idx)
+            async with session.get(url, headers=headers, timeout=25) as resp:
+                resp.raise_for_status()
+                html = await resp.text()
+                soup = _BS(html, "html.parser")
 
-            # Finviz screener rows: each data row has class "screener-body-table-nw"
-            # Columns (0-indexed): 0=No 1=Ticker 2=Company 3=Sector 4=Industry
-            #                      5=Country 6=Market Cap 7=P/E ...
-            rows = soup.find_all("tr", class_="screener-body-table-nw")
-            found_in_batch: set = set()
+                rows = soup.find_all("tr", class_="screener-body-table-nw")
+                for row in rows:
+                    cells = row.find_all("td")
+                    if len(cells) < 7:
+                        continue
+                    ticker_cell = cells[1].get_text(strip=True)
+                    mcap_cell   = cells[6].get_text(strip=True)
+                    mcap_val    = _parse_finviz_mcap(mcap_cell)
 
-            for row in rows:
-                cells = row.find_all("td")
-                if len(cells) < 7:
-                    continue
-                ticker_cell = cells[1].get_text(strip=True)
-                mcap_cell   = cells[6].get_text(strip=True)
-                mcap_val    = _parse_finviz_mcap(mcap_cell)
+                    if mcap_val is not None and mcap_val >= cfg.mcap_min:
+                        batch_passed.add(ticker_cell)
+                    found_in_batch.add(ticker_cell)
 
-                if mcap_val is not None and mcap_val >= min_cap:
-                    passed.add(ticker_cell)
-                found_in_batch.add(ticker_cell)
+                not_found = set(batch) - found_in_batch
+                if not_found:
+                    logger.debug("[mcap] Finviz async: not found %s — included", not_found)
+                    batch_passed.update(not_found)
 
-            # Tickers not found in the page → Finviz doesn't recognise them;
-            # include them fail-open to avoid silently dropping valid tickers
-            not_found = set(batch) - found_in_batch
-            if not_found:
-                logger.debug(f"[mcap] Finviz: not found for {not_found} — included")
-                passed.update(not_found)
+                logger.info(
+                    "[mcap] Finviz batch %d: %d found, %d passed ≥$1B",
+                    batch_idx + 1,
+                    len(found_in_batch),
+                    sum(1 for t in found_in_batch if t in batch_passed)
+                )
+                return batch_passed
 
-            logger.info(
-                f"[mcap] Finviz batch {i//batch_size + 1}: "
-                f"{len(found_in_batch)} found, "
-                f"{sum(1 for t in found_in_batch if t in passed)} passed ≥$1B"
-            )
-
+        except asyncio.TimeoutError as exc:
+            logger.warning("[mcap] Finviz async timeout (%s…): %s", t_str[:40], exc)
         except Exception as exc:
-            logger.warning(
-                f"[mcap] Finviz batch failed ({t_str[:40]}…): {exc} — including all"
-            )
-            passed.update(batch)
+            logger.warning("[mcap] Finviz async failure (%s…): %s", t_str[:40], exc)
+        
+        # Fail-open
+        return set(batch)
 
-        _time.sleep(1.2)   # polite delay between batches
+    async def _run_all_batches() -> set[str]:
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for i in range(0, len(tickers), batch_size):
+                batch = list(tickers[i : i + batch_size])
+                tasks.append(_fetch_batch(session, batch, len(tasks)))
+            
+            # Run all Finviz batches in parallel
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            passed = set()
+            for r in results:
+                if isinstance(r, set):
+                    passed.update(r)
+                elif isinstance(r, Exception):
+                    logger.warning("[mcap] Unexpected async gather exception: %s", r)
+            return passed
 
-    return passed
+    return asyncio.run(_run_all_batches())
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  EXTRA FLAGS
@@ -815,33 +833,35 @@ def scan_candidates(full_df, basket_df):
     candidates:      list[dict] = []
     below_threshold: list[dict] = []
 
-    for ticker, row in full_df.iterrows():
+    if full_df.empty:
+        return pd.DataFrame()
+
+    # ── Vectorized Pre-filtering (Replacing iterrows) ────────────────────────
+    # Extract series safely, filling missing with 0.0
+    price_s = full_df.get("last_price", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    fscore_s = full_df.get("Final_Score", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    atr_pct_s = full_df.get("atr_pct", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    ma50_s = full_df.get("ma50", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+
+    # 1. Min price, 1b. Min Score, 2a. Min ATR
+    mask = (price_s >= 10.0) & (fscore_s > 60.0) & (atr_pct_s >= 0.025)
+
+    # Overextension filter
+    atr_abs_s = price_s * atr_pct_s
+    dist_50_s = pd.Series(0.0, index=full_df.index)
+    valid_dist = (atr_abs_s > 0) & (ma50_s > 0)
+    dist_50_s = dist_50_s.mask(valid_dist, (price_s - ma50_s) / atr_abs_s)
+    mask = mask & (dist_50_s <= 4.0)
+
+    filtered_indices = full_df[mask].index
+
+    # Only loop networking/slow ops on the filtered set
+    for ticker in filtered_indices:
         ticker_str = str(ticker)
-        price      = float(row.get("last_price", 0.0))
-
-        # ── 1. Minimum price ──────────────────────────────────────────────
-        if price < 10.0:
-            continue
-
-        # ── 1b. 7-Factor score pre-filter ────────────────────────────────
-        if float(row.get("Final_Score", 0.0)) <= 60.0:
-            continue
-
-        # ── 2. Overextension filter (HARD) ───────────────────────────────
-        ma50    = float(row.get("ma50", 0.0))
-        atr_pct = float(row.get("atr_pct", 0.0))
-        atr_abs = price * atr_pct if atr_pct > 0 else 0.0
-
-        # ── 2a. ATR minimum filter (≥ 2.5%) ───────────────────────────────
-        if atr_pct < 0.025:
-            continue
-
-        if atr_abs > 0 and ma50 > 0:
-            dist_50_atr = (price - ma50) / atr_abs
-            if dist_50_atr > 4.0:
-                continue
-        else:
-            dist_50_atr = 0.0
+        row = full_df.loc[ticker].to_dict()
+        price = float(price_s.loc[ticker])
+        atr_abs = float(atr_abs_s.loc[ticker])
+        dist_50_atr = float(dist_50_s.loc[ticker])
 
         # ── 3. Weekly pre-filter (MANDATORY) ─────────────────────────────
         weekly_df = _fetch_weekly(ticker_str)
@@ -927,15 +947,18 @@ def scan_candidates(full_df, basket_df):
         if candidates else pd.DataFrame()
     )
 
-    # ── Finviz market cap filter ─────────────────────────────────────────────
+    # ── Market cap filter ─────────────────────────────────────────────
     if not cand_df.empty:
         all_tickers = cand_df["Ticker"].tolist()
-        logger.info(f"[LONG] Finviz mcap check — {len(all_tickers)} candidates…")
-        passed_mcap = _finviz_mcap_filter(all_tickers, min_cap=1_000_000_000)
+        logger.info("[LONG] Mcap check (yfinance) — %d candidates…", len(all_tickers))
+        import data_fetcher
+        mkt_caps = data_fetcher.fetch_market_caps(all_tickers, max_workers=20)
+        # Use fail-closed to be strict about the minimum cap
+        passed_mcap = {t for t, cap in mkt_caps.items() if cap >= 1_000_000_000}
         cand_df = cand_df[cand_df["Ticker"].isin(passed_mcap)].reset_index(drop=True)
-        logger.info(f"[LONG] Final output after mcap filter: {len(cand_df)} ≥$1B")
+        logger.info("[LONG] Final output after mcap filter: %d ≥$1B", len(cand_df))
 
-    logger.info(f"[LONG] Done — {len(cand_df)} candidates (Score > 6.0).")
+    logger.info("[LONG] Done — %d candidates (Score > 6.0).", len(cand_df))
     return cand_df
 
 
@@ -962,34 +985,36 @@ def scan_short_candidates(full_df, basket_df):
     candidates:      list[dict] = []
     below_threshold: list[dict] = []
 
-    for ticker, row in full_df.iterrows():
+    if full_df.empty:
+        return pd.DataFrame()
+
+    # ── Vectorized Pre-filtering (Replacing iterrows) ────────────────────────
+    price_s = full_df.get("last_price", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    short_s = full_df.get("Short_Score", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    atr_pct_s = full_df.get("atr_pct", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+    ma50_s = full_df.get("ma50", pd.Series(0.0, index=full_df.index)).fillna(0.0).astype(float)
+
+    mask = (price_s >= 30.0) & (short_s > 60.0) & (atr_pct_s >= 0.025)
+
+    atr_abs_s = price_s * atr_pct_s
+    dist_50_s = pd.Series(0.0, index=full_df.index)
+    dist_50_signed_s = pd.Series(0.0, index=full_df.index)
+    
+    valid_dist = (atr_abs_s > 0) & (ma50_s > 0)
+    dist_50_s = dist_50_s.mask(valid_dist, (ma50_s - price_s) / atr_abs_s)
+    dist_50_signed_s = dist_50_signed_s.mask(valid_dist, (price_s - ma50_s) / atr_abs_s)
+    
+    mask = mask & (dist_50_s <= 4.0)
+    
+    filtered_indices = full_df[mask].index
+
+    for ticker in filtered_indices:
         ticker_str = str(ticker)
-        price      = float(row.get("last_price", 0.0))
-
-        # ── 1. Minimum price $30 ─────────────────────────────────────────
-        if price < 30.0:
-            continue
-
-        # ── 1b. Short 7-Factor score pre-filter ──────────────────────────
-        if float(row.get("Short_Score", 0.0)) <= 60.0:
-            continue
-
-        # ── 2. Overextension filter (HARD) ───────────────────────────────
-        ma50    = float(row.get("ma50", 0.0))
-        atr_pct = float(row.get("atr_pct", 0.0))
-        atr_abs = price * atr_pct if atr_pct > 0 else 0.0
-
-        # ── 2a. ATR minimum filter (≥ 2.5%) ───────────────────────────────
-        if atr_pct < 0.025:
-            continue
-
-        if atr_abs > 0 and ma50 > 0:
-            dist_50_atr = (ma50 - price) / atr_abs   # positive for short (price < SMA50)
-            if dist_50_atr > 4.0:
-                continue
-            dist_50_atr_signed = (price - ma50) / atr_abs  # negative for output
-        else:
-            dist_50_atr_signed = 0.0
+        row = full_df.loc[ticker].to_dict()
+        price = float(price_s.loc[ticker])
+        atr_abs = float(atr_abs_s.loc[ticker])
+        dist_50_atr = float(dist_50_s.loc[ticker])
+        dist_50_atr_signed = float(dist_50_signed_s.loc[ticker])
 
         # ── 3. Weekly pre-filter (MANDATORY) ─────────────────────────────
         weekly_df = _fetch_weekly(ticker_str)
@@ -1072,13 +1097,15 @@ def scan_short_candidates(full_df, basket_df):
         if candidates else pd.DataFrame()
     )
 
-    # ── Finviz market cap filter ─────────────────────────────────────────────
+    # ── Market cap filter ─────────────────────────────────────────────
     if not cand_df.empty:
         all_tickers = cand_df["Ticker"].tolist()
-        logger.info(f"[SHORT] Finviz mcap check — {len(all_tickers)} candidates…")
-        passed_mcap = _finviz_mcap_filter(all_tickers, min_cap=1_000_000_000)
+        logger.info("[SHORT] Mcap check (yfinance) — %d candidates…", len(all_tickers))
+        import data_fetcher
+        mkt_caps = data_fetcher.fetch_market_caps(all_tickers, max_workers=20)
+        passed_mcap = {t for t, cap in mkt_caps.items() if cap >= 1_000_000_000}
         cand_df = cand_df[cand_df["Ticker"].isin(passed_mcap)].reset_index(drop=True)
-        logger.info(f"[SHORT] Final output after mcap filter: {len(cand_df)} ≥$1B")
+        logger.info("[SHORT] Final output after mcap filter: %d ≥$1B", len(cand_df))
 
-    logger.info(f"[SHORT] Done — {len(cand_df)} candidates (Score > 6.0).")
+    logger.info("[SHORT] Done — %d candidates (Score > 6.0).", len(cand_df))
     return cand_df

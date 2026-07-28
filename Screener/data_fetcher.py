@@ -24,7 +24,7 @@ try:
 except Exception:
     _yf_version = (0, 0, 0)
 
-logger.info(f"yfinance version detected: {_yf_version}")
+logger.info("yfinance version detected: %s", _yf_version)
 
 # yfinance >= 1.x changed group_by default to 'column' → (Price, Ticker) MultiIndex.
 # We force group_by='ticker' → (Ticker, Price) so data[ticker] still works.
@@ -84,7 +84,7 @@ def _normalize_batch(data: pd.DataFrame, batch: list) -> pd.DataFrame:
     return data
 
 
-def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
+def fetch_data(tickers: list[str] | tuple[str, ...] = ALL_TICKERS, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
     """
     Fetch historical OHLCV data for the given tickers via yfinance batch download.
 
@@ -94,7 +94,7 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
     - Handles both (Ticker, Price) and (Price, Ticker) MultiIndex structures
     - Failed batches are retried in smaller batches of 10 tickers
     """
-    logger.info(f"Downloading data for {len(tickers)} tickers in batches... [yfinance {_yf_version}]")
+    logger.info("Downloading data for %d tickers in batches... [yfinance %s]", len(tickers), _yf_version)
 
     # Adding benchmark to the list if not present
     unique_tickers = list(set(tickers + [BENCHMARK_TICKER]))
@@ -108,7 +108,7 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
 
     for i in range(0, len(unique_tickers), BATCH_SIZE):
         batch = unique_tickers[i:i + BATCH_SIZE]
-        logger.info(f"Fetching batch {i // BATCH_SIZE + 1}/{total_batches} ({len(batch)} tickers)...")
+        logger.info("Fetching batch %d/%d (%d tickers)...", i // BATCH_SIZE + 1, total_batches, len(batch))
 
         try:
             data = yf.download(
@@ -119,7 +119,7 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
             )
 
             if data.empty:
-                logger.warning(f"Batch {i // BATCH_SIZE + 1} returned empty — queuing for retry.")
+                logger.warning("Batch %d returned empty — queuing for retry.", i // BATCH_SIZE + 1)
                 failed_tickers.extend(batch)
                 continue
 
@@ -129,8 +129,12 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
             # Small sleep to let DNS/Network stack recover on macOS
             time.sleep(0.5)
 
+        except (ValueError, KeyError, ConnectionError) as e:
+            logger.warning("Batch %d network/data reject: %s — queuing %d tickers.", i // BATCH_SIZE + 1, e, len(batch))
+            failed_tickers.extend(batch)
+            continue
         except Exception as e:
-            logger.warning(f"Batch {i // BATCH_SIZE + 1} failed: {e} — queuing {len(batch)} tickers for retry.")
+            logger.warning("Batch %d unexpected failure: %s — queuing %d tickers.", i // BATCH_SIZE + 1, e, len(batch))
             failed_tickers.extend(batch)
             continue
 
@@ -140,12 +144,12 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
         # Remove duplicates (benchmark might be in the list twice)
         failed_tickers = list(set(failed_tickers))
         total_retry = (len(failed_tickers) + RETRY_BATCH_SIZE - 1) // RETRY_BATCH_SIZE
-        logger.info(f"Retrying {len(failed_tickers)} tickers in {total_retry} mini-batches of {RETRY_BATCH_SIZE}...")
+        logger.info("Retrying %d tickers in %d mini-batches of %d...", len(failed_tickers), total_retry, RETRY_BATCH_SIZE)
 
         for j in range(0, len(failed_tickers), RETRY_BATCH_SIZE):
             retry_batch = failed_tickers[j:j + RETRY_BATCH_SIZE]
             retry_num = j // RETRY_BATCH_SIZE + 1
-            logger.info(f"Retry {retry_num}/{total_retry}: {retry_batch}...")
+            logger.info("Retry %d/%d: %s...", retry_num, total_retry, retry_batch)
 
             try:
                 data = yf.download(
@@ -156,17 +160,20 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
                 )
 
                 if data.empty:
-                    logger.warning(f"Retry {retry_num} still empty — skipping.")
+                    logger.warning("Retry %d still empty — skipping.", retry_num)
                     continue
 
                 data = _normalize_batch(data, retry_batch)
                 all_data.append(data)
-                logger.info(f"Retry {retry_num} OK — recovered {len(retry_batch)} tickers.")
+                logger.info("Retry %d OK — recovered %d tickers.", retry_num, len(retry_batch))
 
                 time.sleep(1.0)  # Longer pause between retries
 
+            except (ValueError, KeyError, ConnectionError) as e:
+                logger.warning("Retry %d failed (network/data): %s — tickers permanently skipped.", retry_num, e)
+                continue
             except Exception as e:
-                logger.warning(f"Retry {retry_num} failed again: {e} — tickers permanently skipped.")
+                logger.warning("Retry %d failed (unexpected): %s — tickers permanently skipped.", retry_num, e)
                 continue
 
     if not all_data:
@@ -178,10 +185,10 @@ def fetch_data(tickers=ALL_TICKERS, period="1y", interval="1d"):
         final_data = pd.concat(all_data, axis=1)
         # Remove duplicate ticker columns
         final_data = final_data.loc[:, ~final_data.columns.duplicated()]
-        logger.info(f"Download complete. Shape: {final_data.shape}")
+        logger.info("Download complete. Shape: %s", final_data.shape)
         return final_data
     except Exception as e:
-        logger.error(f"Error concatenating batches: {e}")
+        logger.error("Error concatenating batches: %s", e)
         return pd.DataFrame()
 
 
@@ -210,23 +217,23 @@ def get_ticker_data(data: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
         try:
             df = data[ticker].copy()
         except KeyError:
-            logger.warning(f"Ticker {ticker} not found in downloaded data.")
+            logger.warning("Ticker %s not found in downloaded data.", ticker)
             return None
     elif l0_unique <= price_cols:
         # (Price, Ticker) structure — extract via cross-section
         try:
             df = data.xs(ticker, axis=1, level=1).copy()
         except KeyError:
-            logger.warning(f"Ticker {ticker} not found in downloaded data (Price,Ticker level).")
+            logger.warning("Ticker %s not found in downloaded data (Price,Ticker level).", ticker)
             return None
     else:
-        logger.warning(f"Ticker {ticker} not found. Known tickers: {list(l0_unique)[:5]}...")
+        logger.warning("Ticker %s not found. Known tickers: %s...", ticker, list(l0_unique)[:5])
         return None
 
     return _normalize_ticker_df(df)
 
 
-def fetch_market_caps(tickers, max_workers=10):
+def fetch_market_caps(tickers: list[str], max_workers: int = 10) -> dict[str, float]:
     """
     Fetch market capitalization for a list of tickers using yf.Ticker().fast_info.
     Uses ThreadPoolExecutor for parallel fetching.
@@ -240,7 +247,7 @@ def fetch_market_caps(tickers, max_workers=10):
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    logger.info(f"Fetching market caps for {len(tickers)} tickers ({max_workers} threads)...")
+    logger.info("Fetching market caps for %d tickers (%d threads)...", len(tickers), max_workers)
 
     def _get_mcap(ticker):
         try:
@@ -258,10 +265,38 @@ def fetch_market_caps(tickers, max_workers=10):
             result[ticker] = mcap
             done_count += 1
             if done_count % 500 == 0:
-                logger.info(f"  Market cap progress: {done_count}/{len(tickers)}")
+                logger.info("  Market cap progress: %d/%d", done_count, len(tickers))
 
     above_500m = sum(1 for v in result.values() if v >= 500_000_000)
-    logger.info(f"Market caps fetched. {above_500m}/{len(tickers)} above $500M")
+    logger.info("Market caps fetched. %d/%d above $500M", above_500m, len(tickers))
+    return result
+
+
+def fetch_industries(tickers: list[str], max_workers: int = 20) -> dict[str, str]:
+    """
+    Fetch industry classification for a list of tickers using yf.Ticker().info.
+    Returns dict: {ticker: industry_string} (e.g. 'Biotechnology', 'Software').
+    Uses ThreadPoolExecutor for parallel fetching.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    logger.info("Fetching industries for %d tickers (%d threads)...", len(tickers), max_workers)
+
+    def _get_industry(ticker):
+        try:
+            info = yf.Ticker(ticker).info
+            return ticker, info.get("industry", "") or ""
+        except Exception:
+            return ticker, ""
+
+    result = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(_get_industry, t): t for t in tickers}
+        for future in as_completed(futures):
+            ticker, industry = future.result()
+            result[ticker] = industry
+
+    logger.info("Industries fetched for %d tickers.", len(result))
     return result
 
 

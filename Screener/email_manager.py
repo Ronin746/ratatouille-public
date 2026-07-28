@@ -29,7 +29,7 @@ def create_config_template():
         }
         with open(CONFIG_FILE, 'w') as f:
             json.dump(template, f, indent=4)
-        logger.info(f"Created template {CONFIG_FILE}. Please edit it with your credentials.")
+        logger.info("Created template %s. Please edit it with your credentials.", CONFIG_FILE)
 
 def send_email_report(attachment_path):
     """
@@ -38,7 +38,7 @@ def send_email_report(attachment_path):
     config = load_config()
     if not config:
         create_config_template()
-        logger.warning(f"Email config not found. Created {CONFIG_FILE}. Please fill it out to enable emails.")
+        logger.warning("Email config not found. Created %s. Please fill it out to enable emails.", CONFIG_FILE)
         return
 
     sender_email = config.get("sender_email")
@@ -84,7 +84,7 @@ def send_email_report(attachment_path):
         server.sendmail(sender_email, receiver_email, text)
         server.quit()
         
-        logger.info(f"Email sent successfully to {receiver_email}")
+        logger.info("Email sent successfully to %s", receiver_email)
 
     except Exception as e:
-        logger.error(f"Failed to send email: {e}")
+        logger.error("Failed to send email: %s", e)

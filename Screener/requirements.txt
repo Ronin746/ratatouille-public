@@ -7,3 +7,7 @@ schedule
 pytickersymbols
 requests
 jinja2
+python-docx
+beautifulsoup4
+pytz
+pyarrow
