@@ -731,6 +731,8 @@ table.dataTable thead .sorting_desc::after {
 
     {{ long_momentum_pullback_section | safe }}
 
+    {{ long_htf_section | safe }}
+
     <div style="display:none">
         {{ long_recommended_section | safe }}
     </div>
@@ -819,6 +821,7 @@ var tablesInitialized = { long: false, short: false };
 
 var longNavItems = [
     { href: '#momentum-pullback-section', label: 'Recommended Stocks' },
+    { href: '#htf-section', label: 'High Tight Flag' },
     { href: '#screener-section', label: 'Full Screen' }
 ];
 
@@ -910,6 +913,19 @@ function initTabTables(tab) {
                 dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
                 buttons: [
                     {
+                        text: 'Download TXT Watchlist',
+                        action: function(e, dt) {
+                            var tickers = dt.column(0).data().toArray();
+                            var blob = new Blob([tickers.join('\n')], {type: 'text/plain'});
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'recommended_watchlist.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    },
+                    {
                         extend: 'copyHtml5',
                         text: 'Copy for TradingView',
                         header: false,
@@ -917,9 +933,8 @@ function initTabTables(tab) {
                     },
                     {
                         extend: 'csvHtml5',
-                        text: 'Download for TradingView',
-                        header: false,
-                        filename: 'tradingview_watchlist',
+                        text: 'Download CSV',
+                        filename: 'recommended_watchlist',
                         exportOptions: { columns: [0] }
                     }
                 ],
@@ -927,6 +942,35 @@ function initTabTables(tab) {
             });
             initColumnFilters('momentumPullbackTable', mpTable, {});
             mpTable.draw();
+        }
+        if ($('#htfTable').length && !$.fn.DataTable.isDataTable('#htfTable')) {
+            var htfDt = $('#htfTable').DataTable({
+                order: [[2, 'desc']], pageLength: 25, searching: true,
+                dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
+                buttons: [
+                    {
+                        text: 'Download TXT Watchlist',
+                        action: function(e, dt) {
+                            var tickers = dt.column(0).data().toArray();
+                            var blob = new Blob([tickers.join('\n')], {type: 'text/plain'});
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'htf_watchlist.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: 'Download CSV',
+                        filename: 'htf_screener'
+                    }
+                ],
+                language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
+            });
+            initColumnFilters('htfTable', htfDt, {});
+            htfDt.draw();
         }
     } else {
         if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {
@@ -962,6 +1006,19 @@ function initTabTables(tab) {
                 dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
                 buttons: [
                     {
+                        text: 'Download TXT Watchlist',
+                        action: function(e, dt) {
+                            var tickers = dt.column(0).data().toArray();
+                            var blob = new Blob([tickers.join('\n')], {type: 'text/plain'});
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'short_watchlist.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    },
+                    {
                         extend: 'copyHtml5',
                         text: 'Copy for TradingView',
                         header: false,
@@ -969,9 +1026,8 @@ function initTabTables(tab) {
                     },
                     {
                         extend: 'csvHtml5',
-                        text: 'Download for TradingView',
-                        header: false,
-                        filename: 'short_tradingview_watchlist',
+                        text: 'Download CSV',
+                        filename: 'short_watchlist',
                         exportOptions: { columns: [0] }
                     }
                 ],

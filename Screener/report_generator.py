@@ -400,6 +400,151 @@ def _build_momentum_pullback_short_html(display_df):
 
 
 
+def _build_htf_section_html(display_df, daily_data_map=None):
+    """
+    Build the "High Tight Flag" screener section.
+    Criteria:
+      - Gain from 60d low >= 50%
+      - Price within 20% of 60d high
+      - 10-day consolidation range <= 20%
+      - ADR% >= 2.5%
+      - Market cap >= $500M, exclude biotech
+      - Price > 21 EMA daily
+    Sorted by HTF Score descending.
+    Includes TXT watchlist download.
+    """
+    df = display_df.copy()
+
+    required = ['last_price', 'adr_pct', 'ema21', '3m_return',
+                'ema9_dist', 'ema21_dist', '1d_return', '1w_return', '1m_return']
+    for col in required:
+        if col not in df.columns:
+            df[col] = 0.0
+
+    # Pre-filter: basic sanity
+    mask = (
+        (df['last_price'] > 1.0) &
+        (df['adr_pct'] >= 0.025) &
+        (df['3m_return'] > 0) &
+        (df['last_price'] > df.get('ema21', pd.Series(0, index=df.index)))
+    )
+    filtered = df[mask].copy()
+    if filtered.empty:
+        return ""
+
+    # ── Market cap filter: >= $500M ──
+    MIN_MARKET_CAP = 500_000_000
+    tickers_to_check = [str(t) for t in filtered.index]
+    mkt_caps = _fetch_market_caps(tickers_to_check)
+    if mkt_caps:
+        qualified = {t for t, cap in mkt_caps.items() if cap >= MIN_MARKET_CAP}
+        filtered = filtered[filtered.index.map(str).isin(qualified)].copy()
+    if filtered.empty:
+        return ""
+
+    # ── Exclude biotech ──
+    filtered = _exclude_biotech(filtered)
+    if filtered.empty:
+        return ""
+
+    # ── Compute HTF metrics for each ticker ──
+    import indicators as ind
+
+    htf_data = {}
+    for ticker in filtered.index:
+        ticker_str = str(ticker)
+        if daily_data_map and ticker_str in daily_data_map:
+            ticker_df = daily_data_map[ticker_str]
+        else:
+            # Fallback: try to fetch
+            try:
+                import yfinance as yf
+                ticker_df = yf.Ticker(ticker_str).history(period="6mo")
+            except Exception:
+                ticker_df = pd.DataFrame()
+
+        if not ticker_df.empty:
+            metrics = ind.calc_htf_metrics(ticker_df)
+        else:
+            metrics = ind._htf_defaults()
+        htf_data[ticker] = metrics
+
+    # Apply HTF-specific filters
+    htf_qualified = []
+    for ticker in filtered.index:
+        m = htf_data.get(ticker, ind._htf_defaults())
+        if (m['gain_from_60d_low'] >= 0.50 and          # 50%+ gain
+            m['pct_from_60d_high'] <= 0.20 and          # within 20% of high
+            m['consolidation_range_10d'] <= 0.20):      # tight 10d range
+            htf_qualified.append(ticker)
+
+    if not htf_qualified:
+        return ""
+
+    filtered = filtered.loc[htf_qualified].copy()
+
+    # Add HTF metrics to df
+    for col in ['gain_from_60d_low', 'pct_from_60d_high', 'consolidation_range_10d',
+                'vol_contraction', 'htf_score']:
+        filtered[col] = filtered.index.map(lambda t: htf_data.get(t, {}).get(col, 0.0))
+
+    # Sort by HTF Score descending
+    filtered = filtered.sort_values('htf_score', ascending=False)
+
+    rows = []
+    for ticker, row in zip(filtered.index, filtered.to_dict(orient="records")):
+        rows.append({
+            "Ticker":       str(ticker),
+            "Price":        round(row.get('last_price', 0), 2),
+            "HTF Score":    round(row.get('htf_score', 0), 1),
+            "Gain Low%":    round(row.get('gain_from_60d_low', 0) * 100, 1),
+            "Dist High%":   round(row.get('pct_from_60d_high', 0) * 100, 1),
+            "10D Range%":   round(row.get('consolidation_range_10d', 0) * 100, 1),
+            "Vol Ratio":    round(row.get('vol_contraction', 0), 2),
+            "ADR%":         round(row.get('adr_pct', 0) * 100, 2),
+            "1D %":         round(row.get('1d_return', 0) * 100, 2),
+            "1W %":         round(row.get('1w_return', 0) * 100, 2),
+            "1M %":         round(row.get('1m_return', 0) * 100, 2),
+        })
+
+    if not rows:
+        return ""
+
+    htf_df   = pd.DataFrame(rows)
+    n_htf    = len(htf_df)
+    table_id = "htfTable"
+
+    htf_table = _build_table_html(
+        htf_df, table_id,
+        columns=["Ticker", "Price", "HTF Score", "Gain Low%", "Dist High%",
+                 "10D Range%", "Vol Ratio", "ADR%", "1D %", "1W %", "1M %"],
+        formatters={
+            "HTF Score": lambda v: f'<span class="score-badge">{_fmt(v, 1)}</span>',
+        },
+        pct_columns=["1D %", "1W %", "1M %"]
+    )
+
+    subtitle = (
+        "Gain &ge; 50% from 60d low, Price within 20% of 60d high, "
+        "10D consolidation &le; 20%, ADR &ge; 2.5%, "
+        "Market Cap &ge; $500M (No Biotech), Price &gt; 21 EMA. "
+        "Sorted by HTF Score descending."
+    )
+
+    import jinja2
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(script_dir, "templates")))
+    template = env.get_template("report_card.html")
+    return template.render(
+        section_id="htf-section",
+        title="High Tight Flag",
+        badge_class="badge-gold",
+        count_label=f"{n_htf} Setups",
+        subtitle=subtitle,
+        table_html=htf_table
+    )
+
+
 def generate_html_report(display_df, filename="dashboard.html", **kwargs):
     """
     Generates a premium dark-theme HTML dashboard with LONG/SHORT dual-tab system.
@@ -450,6 +595,10 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
 
     # ── Long Momentum Pullback Screener ("Recommended Stocks" Long) ──
     long_momentum_pullback_section = _build_momentum_pullback_html(display_df)
+
+    # ── Long High Tight Flag section ──
+    daily_data_map = kwargs.get('daily_data_map', None)
+    long_htf_section = _build_htf_section_html(display_df, daily_data_map=daily_data_map)
 
     # ── Long Recommended — hidden (replaced by Momentum Pullback above) ──
     long_recommended_section = ""
@@ -590,6 +739,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         median_short_score=median_short_score,
         long_candidate_section=long_candidate_section,
         long_momentum_pullback_section=long_momentum_pullback_section,
+        long_htf_section=long_htf_section,
         long_recommended_section=long_recommended_section,
         long_basket_section=long_basket_section,
         long_screener_table=long_screener_table,
