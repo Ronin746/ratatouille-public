@@ -403,6 +403,10 @@ def _build_momentum_pullback_short_html(display_df):
 def _build_htf_section_html(display_df, daily_data_map=None):
     """
     Build the "High Tight Flag" screener section.
+    Uses pre-computed HTF columns from the indicator loop in scheduler_app.py:
+      gain_from_60d_low, pct_from_60d_high, consolidation_range_10d,
+      vol_contraction, htf_score.
+
     Criteria:
       - Gain from 60d low >= 50%
       - Price within 20% of 60d high
@@ -411,22 +415,27 @@ def _build_htf_section_html(display_df, daily_data_map=None):
       - Market cap >= $500M, exclude biotech
       - Price > 21 EMA daily
     Sorted by HTF Score descending.
-    Includes TXT watchlist download.
     """
     df = display_df.copy()
 
+    # Ensure required columns exist
     required = ['last_price', 'adr_pct', 'ema21', '3m_return',
-                'ema9_dist', 'ema21_dist', '1d_return', '1w_return', '1m_return']
+                'ema9_dist', 'ema21_dist', '1d_return', '1w_return', '1m_return',
+                'gain_from_60d_low', 'pct_from_60d_high',
+                'consolidation_range_10d', 'vol_contraction', 'htf_score']
     for col in required:
         if col not in df.columns:
             df[col] = 0.0
 
-    # Pre-filter: basic sanity
+    # Combined filter: basic + HTF criteria
     mask = (
         (df['last_price'] > 1.0) &
         (df['adr_pct'] >= 0.025) &
         (df['3m_return'] > 0) &
-        (df['last_price'] > df.get('ema21', pd.Series(0, index=df.index)))
+        (df['last_price'] > df['ema21']) &
+        (df['gain_from_60d_low'] >= 0.50) &
+        (df['pct_from_60d_high'] <= 0.20) &
+        (df['consolidation_range_10d'] <= 0.20)
     )
     filtered = df[mask].copy()
     if filtered.empty:
@@ -446,47 +455,6 @@ def _build_htf_section_html(display_df, daily_data_map=None):
     filtered = _exclude_biotech(filtered)
     if filtered.empty:
         return ""
-
-    # ── Compute HTF metrics for each ticker ──
-    import indicators as ind
-
-    htf_data = {}
-    for ticker in filtered.index:
-        ticker_str = str(ticker)
-        if daily_data_map and ticker_str in daily_data_map:
-            ticker_df = daily_data_map[ticker_str]
-        else:
-            # Fallback: try to fetch
-            try:
-                import yfinance as yf
-                ticker_df = yf.Ticker(ticker_str).history(period="6mo")
-            except Exception:
-                ticker_df = pd.DataFrame()
-
-        if not ticker_df.empty:
-            metrics = ind.calc_htf_metrics(ticker_df)
-        else:
-            metrics = ind._htf_defaults()
-        htf_data[ticker] = metrics
-
-    # Apply HTF-specific filters
-    htf_qualified = []
-    for ticker in filtered.index:
-        m = htf_data.get(ticker, ind._htf_defaults())
-        if (m['gain_from_60d_low'] >= 0.50 and          # 50%+ gain
-            m['pct_from_60d_high'] <= 0.20 and          # within 20% of high
-            m['consolidation_range_10d'] <= 0.20):      # tight 10d range
-            htf_qualified.append(ticker)
-
-    if not htf_qualified:
-        return ""
-
-    filtered = filtered.loc[htf_qualified].copy()
-
-    # Add HTF metrics to df
-    for col in ['gain_from_60d_low', 'pct_from_60d_high', 'consolidation_range_10d',
-                'vol_contraction', 'htf_score']:
-        filtered[col] = filtered.index.map(lambda t: htf_data.get(t, {}).get(col, 0.0))
 
     # Sort by HTF Score descending
     filtered = filtered.sort_values('htf_score', ascending=False)
