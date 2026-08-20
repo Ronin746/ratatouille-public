@@ -156,7 +156,7 @@ def run_screener(tickers=None):
             rs = ind.calc_relative_strength(df, benchmark_data)
             w30 = ind.calc_weekly_sma30_dist(df)
             w21_30 = ind.calc_weekly_ema21_sma30(df)
-            htf = ind.calc_htf_metrics(df)
+            vol9m = ind.calc_vol_surge_metrics(df)
             
             if not all([pp, bc, ma, tc, vol, v, rs]):
                 logger.warning("Insufficient data for %s, skipping.", ticker)
@@ -226,12 +226,10 @@ def run_screener(tickers=None):
                 'volume_surge': v['volume_surge'],
                 # RS
                 'rs_rating': rs['rs_rating'],
-                # HTF (High Tight Flag)
-                'gain_from_60d_low':      htf.get('gain_from_60d_low', 0.0),
-                'pct_from_60d_high':      htf.get('pct_from_60d_high', 1.0),
-                'consolidation_range_10d': htf.get('consolidation_range_10d', 1.0),
-                'vol_contraction':        htf.get('vol_contraction', 1.0),
-                'htf_score':              htf.get('htf_score', 0.0),
+                                # Volume Surge > 9M
+                'has_9m_vol':             vol9m.get('has_9m_vol', False),
+                'max_vol_25d':            vol9m.get('max_vol_25d', 0),
+                'days_since_9m':          vol9m.get('days_since_9m', 99),
             }
             results.append(row)
             

@@ -528,78 +528,33 @@ def calc_sma65_30min_dist(ticker: str) -> dict:
         return {"sma65_30m_dist": 0.0}
 
 
-def calc_htf_metrics(df: pd.DataFrame) -> dict:
-    """
-    High Tight Flag detection metrics.
+def calc_vol_surge_metrics(df: pd.DataFrame) -> dict:
+    if df.empty or 'Volume' not in df.columns:
+        return _vol_surge_defaults()
 
-    Returns:
-      - gain_from_60d_low : % gain from the lowest close in last 60 trading days
-      - pct_from_60d_high : % distance below the highest close in last 60 days (0 = at high)
-      - consolidation_range_10d : (10d_high - 10d_low) / 10d_high  (tightness of flag)
-      - vol_contraction : avg_vol_5d / avg_vol_50d  (< 1 = drying up)
-      - htf_score : composite ranking score (higher = better HTF pattern)
-    """
-    close = _valid_close(df, min_rows=60)
-    if close is None:
-        return _htf_defaults()
+    tail = df.tail(25).copy()
+    if tail.empty:
+        return _vol_surge_defaults()
 
-    last_price = float(close.iloc[-1])
+    max_vol = int(tail['Volume'].max())
+    has_9m = max_vol > 9_000_000
 
-    # ── 60-day lookback ──
-    c60 = close.iloc[-60:]
-    low_60d = float(c60.min())
-    high_60d = float(c60.max())
-
-    if low_60d <= 0 or high_60d <= 0:
-        return _htf_defaults()
-
-    gain_from_60d_low = (last_price - low_60d) / low_60d          # e.g. 0.80 = +80%
-    pct_from_60d_high = (high_60d - last_price) / high_60d        # e.g. 0.05 = 5% below high
-
-    # ── 10-day consolidation range ──
-    c10 = close.iloc[-10:]
-    high_10d = float(c10.max())
-    low_10d = float(c10.min())
-    consolidation_range = (high_10d - low_10d) / high_10d if high_10d > 0 else 1.0
-
-    # ── Volume contraction ──
-    vol_contraction = 1.0
-    if _volume_ok(df, min_rows=50):
-        vol = df["Volume"].fillna(0)
-        avg_5 = float(vol.iloc[-5:].mean())
-        avg_50 = float(vol.iloc[-50:].mean())
-        if avg_50 > 0:
-            vol_contraction = avg_5 / avg_50
-
-    # ── HTF composite score (0-100) ──
-    # Higher gain from low = better pole
-    gain_score = min(gain_from_60d_low / 1.5, 1.0) * 35     # max at 150% gain
-
-    # Closer to high = better (0 = at high = perfect)
-    proximity_score = max(0, 1.0 - pct_from_60d_high / 0.20) * 30  # max at < 20% from high
-
-    # Tighter consolidation = better
-    tight_score = max(0, 1.0 - consolidation_range / 0.25) * 20  # max at < 25% range
-
-    # Volume drying up = better (lower ratio = better)
-    vol_score = max(0, 1.0 - vol_contraction) * 15  # max when vol_contraction → 0
-
-    htf_score = gain_score + proximity_score + tight_score + vol_score
+    days_since = 99
+    if has_9m:
+        for idx_offset, (ts, row) in enumerate(tail.iloc[::-1].iterrows()):
+            if row['Volume'] > 9_000_000:
+                days_since = idx_offset
+                break
 
     return {
-        "gain_from_60d_low": round(gain_from_60d_low, 4),
-        "pct_from_60d_high": round(pct_from_60d_high, 4),
-        "consolidation_range_10d": round(consolidation_range, 4),
-        "vol_contraction": round(vol_contraction, 4),
-        "htf_score": round(htf_score, 1),
+        "has_9m_vol": has_9m,
+        "max_vol_25d": max_vol,
+        "days_since_9m": days_since,
     }
 
-
-def _htf_defaults() -> dict:
+def _vol_surge_defaults() -> dict:
     return {
-        "gain_from_60d_low": 0.0,
-        "pct_from_60d_high": 1.0,
-        "consolidation_range_10d": 1.0,
-        "vol_contraction": 1.0,
-        "htf_score": 0.0,
+        "has_9m_vol": False,
+        "max_vol_25d": 0,
+        "days_since_9m": 99,
     }

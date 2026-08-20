@@ -821,7 +821,7 @@ var tablesInitialized = { long: false, short: false };
 
 var longNavItems = [
     { href: '#momentum-pullback-section', label: 'Recommended Stocks' },
-    { href: '#htf-section', label: 'High Tight Flag' },
+    { href: '#htf-section', label: 'Volume Surge > 9M' },
     { href: '#screener-section', label: 'Full Screen' }
 ];
 
@@ -943,8 +943,8 @@ function initTabTables(tab) {
             initColumnFilters('momentumPullbackTable', mpTable, {});
             mpTable.draw();
         }
-        if ($('#htfTable').length && !$.fn.DataTable.isDataTable('#htfTable')) {
-            var htfDt = $('#htfTable').DataTable({
+        if ($('#vol9mTable').length && !$.fn.DataTable.isDataTable('#vol9mTable')) {
+            var vol9mDt = $('#vol9mTable').DataTable({
                 order: [[2, 'desc']], pageLength: 25, searching: true,
                 dom: '<"dt-top"Bf>rt<"dt-bottom"lip>',
                 buttons: [
@@ -956,7 +956,7 @@ function initTabTables(tab) {
                             var url = URL.createObjectURL(blob);
                             var a = document.createElement('a');
                             a.href = url;
-                            a.download = 'htf_watchlist.txt';
+                            a.download = 'vol9m_watchlist.txt';
                             a.click();
                             URL.revokeObjectURL(url);
                         }
@@ -964,13 +964,13 @@ function initTabTables(tab) {
                     {
                         extend: 'csvHtml5',
                         text: 'Download CSV',
-                        filename: 'htf_screener'
+                        filename: 'vol9m_screener'
                     }
                 ],
                 language: { search: 'Filter:', info: '_START_&ndash;_END_ of _TOTAL_', paginate: { previous: '&larr;', next: '&rarr;' } }
             });
-            initColumnFilters('htfTable', htfDt, {});
-            htfDt.draw();
+            initColumnFilters('vol9mTable', vol9mDt, {});
+            vol9mDt.draw();
         }
     } else {
         if ($('#short_screenerTable').length && !$.fn.DataTable.isDataTable('#short_screenerTable')) {

@@ -863,6 +863,28 @@ body {
 }
 .dash-panel-body-flush > .sec-etf-filter-bar { padding:0 24px; }
 
+/* ══ STOCKBEE BREADTH TABLE ══════════════════════════════════════════════════ */
+.sb-wrap { padding: 4px 0; }
+.sb-title-row { display:flex; align-items:baseline; gap:12px; margin-bottom:12px; padding:0 24px; }
+.sb-title { font-size:1.1rem; font-weight:700; color:var(--text-primary); letter-spacing:-0.2px; }
+.sb-subtitle { font-size:0.75rem; color:var(--text-muted); font-weight:500; }
+.sb-table-scroll { overflow-x:auto; padding:0 24px 8px; }
+.sb-table { width:100%; min-width:800px; border-collapse:collapse; text-align:center; font-family:'Inter',sans-serif; }
+.sb-table th, .sb-table td { border:1px solid var(--border); padding:6px 4px; font-size:0.72rem; }
+.sb-header-group th { background:rgba(0,0,0,0.02); font-weight:700; padding:8px 4px; color:var(--text-primary); text-transform:uppercase; font-size:0.65rem; letter-spacing:0.5px; }
+.sb-th-primary { background:#00d4aa15 !important; color:#00d4aa !important; }
+.sb-th-secondary { background:#f5a62315 !important; color:#d97706 !important; }
+.sb-header-sub th { background:var(--bg-muted); font-weight:600; color:var(--text-secondary); line-height:1.2; font-size:0.65rem; }
+.sb-th-date { text-align:left; padding-left:12px !important; }
+.sb-date { text-align:left; font-family:'JetBrains Mono',monospace; padding-left:12px !important; font-size:0.68rem; font-weight:600; color:var(--text-secondary); }
+/* Colored Cells */
+.sb-green { background:rgba(0,212,170,0.25); color:var(--text-primary); font-weight:600; }
+.sb-green-dark { background:rgba(0,212,170,0.5); color:#fff; font-weight:700; }
+.sb-red { background:rgba(255,74,106,0.25); color:var(--text-primary); font-weight:600; }
+.sb-red-dark { background:rgba(255,74,106,0.5); color:#fff; font-weight:700; }
+.sb-yellow { background:rgba(245,166,35,0.25); color:var(--text-primary); font-weight:600; }
+.sb-charts-grid { padding:0 24px; }
+
 @media (max-width:900px) {
     .sidebar { display:none; }
     .app-layout { display:block; }
@@ -923,6 +945,15 @@ body {
 <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════ -->
 <div class="main-content">
 <div class="page-wrap">
+
+    <!-- ── Stockbee Breadth Monitor ─────────────────────────────── -->
+    <section id="sec-stockbee" class="dash-section-anchor">
+      <div class="dash-panel" style="margin-bottom: 24px;">
+        <div class="dash-panel-body-flush">
+            {{ stockbee_html | safe }}
+        </div>
+      </div>
+    </section>
 
     <!-- ── Market Breadth ────────────────────────────────────────── -->
     <section id="sec-breadth" class="dash-section-anchor">

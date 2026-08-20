@@ -421,6 +421,51 @@ def compute_market_scores(date_str):
                 st_long_pct  = round(float(st_long_mask.sum())  / n_st * 100, 1)
                 st_short_pct = round(float(st_short_mask.sum()) / n_st * 100, 1)
 
+        # ── Stockbee-style breadth metrics ─────────────────────────────────
+        sb = {}
+        sb['universe'] = n
+        # Daily movers: up/down 4%+
+        if '1d_return' in df.columns:
+            sb['up_4pct']   = int((df['1d_return'] >= 0.04).sum())
+            sb['down_4pct'] = int((df['1d_return'] <= -0.04).sum())
+        else:
+            sb['up_4pct'] = sb['down_4pct'] = 0
+
+        # Quarterly: up/down 25%+
+        if '3m_return' in df.columns:
+            sb['up_25pct_qtr']   = int((df['3m_return'] >= 0.25).sum())
+            sb['down_25pct_qtr'] = int((df['3m_return'] <= -0.25).sum())
+        else:
+            sb['up_25pct_qtr'] = sb['down_25pct_qtr'] = 0
+
+        # Weekly (5d): up/down 20%+
+        if '1w_return' in df.columns:
+            sb['up_20pct_5d']   = int((df['1w_return'] >= 0.20).sum())
+            sb['down_20pct_5d'] = int((df['1w_return'] <= -0.20).sum())
+        else:
+            sb['up_20pct_5d'] = sb['down_20pct_5d'] = 0
+
+        # Monthly: up/down 25%+ and up/down 50%+
+        if '1m_return' in df.columns:
+            sb['up_25pct_mo']   = int((df['1m_return'] >= 0.25).sum())
+            sb['down_25pct_mo'] = int((df['1m_return'] <= -0.25).sum())
+            sb['up_50pct_mo']   = int((df['1m_return'] >= 0.50).sum())
+            sb['down_50pct_mo'] = int((df['1m_return'] <= -0.50).sum())
+            # ~34 days ≈ 1m: up/down 13%+
+            sb['up_13pct_34d']   = int((df['1m_return'] >= 0.13).sum())
+            sb['down_13pct_34d'] = int((df['1m_return'] <= -0.13).sum())
+        else:
+            sb['up_25pct_mo'] = sb['down_25pct_mo'] = 0
+            sb['up_50pct_mo'] = sb['down_50pct_mo'] = 0
+            sb['up_13pct_34d'] = sb['down_13pct_34d'] = 0
+
+        # T2108 proxy: % stocks above 40-day MA (use ma50 as approximation)
+        if has_price_cols:
+            above_ma = (df['last_price'] > df['ma50']) & df['ma50'].notna() & (df['ma50'] > 0)
+            sb['t2108'] = round(float(above_ma.sum()) / max(n, 1) * 100, 1)
+        else:
+            sb['t2108'] = 0.0
+
         result = {
             'date':              date_str,
             'long_breadth_pct':  long_breadth_pct,
@@ -432,6 +477,7 @@ def compute_market_scores(date_str):
             'short_count':       short_count,
             'sectors':           sectors,
             'sectors_short':     sectors_short,
+            'sb':                sb,
         }
         return result
 
@@ -1020,6 +1066,252 @@ def build_latest_report_html(reports_with_stats):
 </div>
 <!-- ── /Latest Report ────────────────────────────────────────────────── -->
 """
+
+
+def build_stockbee_html(market_history, session_date=None):
+    """
+    Build a Stockbee Market Monitor style table showing daily breadth
+    metrics for the last 15 trading days. Color-coded cells.
+    Uses 'sb' dict stored in each market_history entry.
+    """
+    if not market_history:
+        return ''
+
+    history = sorted(market_history, key=lambda x: x['date'])
+    if session_date:
+        history = [h for h in history if h['date'] <= session_date]
+
+    # Only entries that have 'sb' data
+    history = [h for h in history if h.get('sb')]
+    if not history:
+        return ''
+
+    # Last 15 days
+    history = history[-15:]
+
+    # Compute 5-day and 10-day ratios from stored up_4pct / down_4pct
+    for i, h in enumerate(history):
+        sb = h['sb']
+        # 5-day ratio
+        window5 = history[max(0, i-4):i+1]
+        sum_up5 = sum(w['sb'].get('up_4pct', 0) for w in window5)
+        sum_dn5 = sum(w['sb'].get('down_4pct', 0) for w in window5)
+        sb['ratio_5d'] = round(sum_up5 / max(sum_dn5, 1), 2)
+
+        # 10-day ratio
+        window10 = history[max(0, i-9):i+1]
+        sum_up10 = sum(w['sb'].get('up_4pct', 0) for w in window10)
+        sum_dn10 = sum(w['sb'].get('down_4pct', 0) for w in window10)
+        sb['ratio_10d'] = round(sum_up10 / max(sum_dn10, 1), 2)
+
+    # Build rows (most recent first)
+    rows_html = []
+    for h in reversed(history):
+        sb = h['sb']
+        date_str = h['date']
+        try:
+            from datetime import datetime as _dt
+            date_display = _dt.strptime(date_str, '%Y-%m-%d').strftime('%m/%d/%Y')
+        except Exception:
+            date_display = date_str
+
+        up4   = sb.get('up_4pct', 0)
+        dn4   = sb.get('down_4pct', 0)
+        r5    = sb.get('ratio_5d', 0)
+        r10   = sb.get('ratio_10d', 0)
+        uq25  = sb.get('up_25pct_qtr', 0)
+        dq25  = sb.get('down_25pct_qtr', 0)
+        um25  = sb.get('up_25pct_mo', 0)
+        dm25  = sb.get('down_25pct_mo', 0)
+        um50  = sb.get('up_50pct_mo', 0)
+        dm50  = sb.get('down_50pct_mo', 0)
+        u13   = sb.get('up_13pct_34d', 0)
+        d13   = sb.get('down_13pct_34d', 0)
+        univ  = sb.get('universe', 0)
+        t2108 = sb.get('t2108', 0)
+
+        def _cell(val, thresholds, reverse=False):
+            """Color a cell: green if high (bullish), red if high (bearish for down cols)."""
+            if reverse:
+                # For 'down' columns: high = red, low = green
+                if val >= thresholds[2]: return f'<td class="sb-red-dark">{val}</td>'
+                if val >= thresholds[1]: return f'<td class="sb-red">{val}</td>'
+                if val >= thresholds[0]: return f'<td class="sb-yellow">{val}</td>'
+                return f'<td class="sb-green">{val}</td>'
+            else:
+                # For 'up' columns: high = green, low = red
+                if val >= thresholds[2]: return f'<td class="sb-green-dark">{val}</td>'
+                if val >= thresholds[1]: return f'<td class="sb-green">{val}</td>'
+                if val >= thresholds[0]: return f'<td class="sb-yellow">{val}</td>'
+                return f'<td class="sb-red">{val}</td>'
+
+        def _ratio_cell(val):
+            if val >= 2.0: return f'<td class="sb-green-dark">{val:.2f}</td>'
+            if val >= 1.2: return f'<td class="sb-green">{val:.2f}</td>'
+            if val >= 0.8: return f'<td class="sb-yellow">{val:.2f}</td>'
+            return f'<td class="sb-red">{val:.2f}</td>'
+
+        def _t2108_cell(val):
+            if val >= 60: return f'<td class="sb-green">{val:.1f}</td>'
+            if val >= 40: return f'<td class="sb-yellow">{val:.1f}</td>'
+            if val >= 20: return f'<td class="sb-red">{val:.1f}</td>'
+            return f'<td class="sb-red-dark">{val:.1f}</td>'
+
+        row = f'''<tr>
+          <td class="sb-date">{date_display}</td>
+          {_cell(up4, [100, 300, 500])}
+          {_cell(dn4, [100, 300, 500], reverse=True)}
+          {_ratio_cell(r5)}
+          {_ratio_cell(r10)}
+          {_cell(uq25, [500, 1000, 1500])}
+          {_cell(dq25, [200, 500, 800], reverse=True)}
+          {_cell(um25, [100, 250, 400])}
+          {_cell(dm25, [100, 250, 400], reverse=True)}
+          {_cell(um50, [20, 50, 100])}
+          {_cell(dm50, [20, 50, 100], reverse=True)}
+          {_cell(u13, [300, 700, 1200])}
+          {_cell(d13, [300, 700, 1200], reverse=True)}
+          <td>{univ}</td>
+          {_t2108_cell(t2108)}
+        </tr>'''
+        rows_html.append(row)
+
+    table_body = '\n'.join(rows_html)
+
+    # ── Bar Charts for Up/Down 20% in 5 Days (Last 60 Days) ──
+    chart_history = sorted(market_history, key=lambda x: x['date'])
+    if session_date:
+        chart_history = [h for h in chart_history if h['date'] <= session_date]
+    chart_history = [h for h in chart_history if h.get('sb')]
+    chart_history = chart_history[-60:]
+    
+    chart_dates = []
+    up20_data = []
+    down20_data = []
+    for h in chart_history:
+        try:
+            from datetime import datetime as _dt
+            d_fmt = _dt.strptime(h['date'], '%Y-%m-%d').strftime('%b %d')
+        except Exception:
+            d_fmt = h['date']
+        chart_dates.append(d_fmt)
+        up20_data.append(h['sb'].get('up_20pct_5d', 0))
+        down20_data.append(h['sb'].get('down_20pct_5d', 0))
+
+    import json
+    j_dates = json.dumps(chart_dates)
+    j_up20 = json.dumps(up20_data)
+    j_down20 = json.dumps(down20_data)
+
+    return f'''
+<div class="sb-wrap">
+  <div class="sb-title-row">
+    <span class="sb-title">Breadth Monitor</span>
+    <span class="sb-subtitle">Last 15 Sessions &middot; Stockbee-style</span>
+  </div>
+  <div class="sb-table-scroll">
+  <table class="sb-table">
+    <thead>
+      <tr class="sb-header-group">
+        <th rowspan="2" class="sb-th-date">Date</th>
+        <th colspan="4" class="sb-th-primary">Primary Breadth Indicators</th>
+        <th colspan="8" class="sb-th-secondary">Secondary Breadth Indicators</th>
+        <th rowspan="2">Universe</th>
+        <th rowspan="2">T2108</th>
+      </tr>
+      <tr class="sb-header-sub">
+        <th>Up 4%+<br>Today</th>
+        <th>Down 4%+<br>Today</th>
+        <th>5 Day<br>Ratio</th>
+        <th>10 Day<br>Ratio</th>
+        <th>Up 25%+<br>Quarter</th>
+        <th>Down 25%+<br>Quarter</th>
+        <th>Up 25%+<br>Month</th>
+        <th>Down 25%+<br>Month</th>
+        <th>Up 50%+<br>Month</th>
+        <th>Down 50%+<br>Month</th>
+        <th>Up 13%+<br>34 Days</th>
+        <th>Down 13%+<br>34 Days</th>
+      </tr>
+    </thead>
+    <tbody>
+      {table_body}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="sb-charts-grid" style="display:flex; gap:20px; margin-top:20px;">
+    <div style="flex:1; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+        <div style="font-size:0.9rem; font-weight:600; margin-bottom:10px; color:var(--green)">Stocks Up 20% in 5 Days</div>
+        <div style="height:200px;"><canvas id="up20Chart"></canvas></div>
+    </div>
+    <div style="flex:1; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+        <div style="font-size:0.9rem; font-weight:600; margin-bottom:10px; color:var(--red)">Stocks Down 20% in 5 Days</div>
+        <div style="height:200px;"><canvas id="down20Chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {{
+  var dates = {j_dates};
+  var up20 = {j_up20};
+  var down20 = {j_down20};
+  
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var gridCol = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)';
+  var tickCol = dark ? '#505068' : '#9ca3af';
+
+  var c_up = document.getElementById('up20Chart');
+  if(c_up) {{
+      new Chart(c_up.getContext('2d'), {{
+        type: 'bar',
+        data: {{
+          labels: dates,
+          datasets: [{{
+            label: 'Up 20% (5d)',
+            data: up20,
+            backgroundColor: 'rgba(0,212,170,0.8)',
+            borderRadius: 2
+          }}]
+        }},
+        options: {{
+          responsive: true, maintainAspectRatio: false,
+          plugins: {{ legend: {{ display: false }} }},
+          scales: {{
+            x: {{ grid: {{ display: false }}, ticks: {{ color: tickCol, font: {{ size: 9 }}, maxTicksLimit: 12 }} }},
+            y: {{ grid: {{ color: gridCol }}, ticks: {{ color: tickCol, font: {{ size: 10 }} }} }}
+          }}
+        }}
+      }});
+  }}
+
+  var c_dn = document.getElementById('down20Chart');
+  if(c_dn) {{
+      new Chart(c_dn.getContext('2d'), {{
+        type: 'bar',
+        data: {{
+          labels: dates,
+          datasets: [{{
+            label: 'Down 20% (5d)',
+            data: down20,
+            backgroundColor: 'rgba(255,74,106,0.8)',
+            borderRadius: 2
+          }}]
+        }},
+        options: {{
+          responsive: true, maintainAspectRatio: false,
+          plugins: {{ legend: {{ display: false }} }},
+          scales: {{
+            x: {{ grid: {{ display: false }}, ticks: {{ color: tickCol, font: {{ size: 9 }}, maxTicksLimit: 12 }} }},
+            y: {{ grid: {{ color: gridCol }}, ticks: {{ color: tickCol, font: {{ size: 10 }} }} }}
+          }}
+        }}
+      }});
+  }}
+}});
+</script>
+'''
 
 
 def build_breadth_html(market_history, macro_history=None, session_date=None):
@@ -1980,10 +2272,12 @@ def build_index_html(reports_with_stats, market_history=None, session_date=None,
 
     latest_report_html = build_latest_report_html(reports_with_stats)
     breadth_html       = ''
+    stockbee_html      = ''
     sector_html        = ''
     sector_etf_html    = ''
     candidates_data = []
     if market_history:
+        stockbee_html   = build_stockbee_html(market_history, session_date=session_date)
         breadth_html    = build_breadth_html(market_history, macro_history=macro_history,
                                               session_date=session_date)
         top10_data       = get_latest_basket_top10(session_date=session_date, mode='long')
@@ -2020,6 +2314,7 @@ def build_index_html(reports_with_stats, market_history=None, session_date=None,
     template = env.get_template("archive.html")
     return template.render(
         latest_report_html=latest_report_html,
+        stockbee_html=stockbee_html,
         breadth_html=breadth_html,
         sector_html=sector_html,
         sector_etf_html=sector_etf_html,

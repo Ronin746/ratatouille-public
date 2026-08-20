@@ -566,7 +566,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
 
     # ── Long High Tight Flag section ──
     daily_data_map = kwargs.get('daily_data_map', None)
-    long_htf_section = _build_htf_section_html(display_df, daily_data_map=daily_data_map)
+    long_vol9m_section = _build_vol9m_section_html(display_df, daily_data_map=daily_data_map)
 
     # ── Long Recommended — hidden (replaced by Momentum Pullback above) ──
     long_recommended_section = ""
@@ -707,7 +707,7 @@ def generate_html_report(display_df, filename="dashboard.html", **kwargs):
         median_short_score=median_short_score,
         long_candidate_section=long_candidate_section,
         long_momentum_pullback_section=long_momentum_pullback_section,
-        long_htf_section=long_htf_section,
+        long_htf_section=long_vol9m_section,
         long_recommended_section=long_recommended_section,
         long_basket_section=long_basket_section,
         long_screener_table=long_screener_table,
